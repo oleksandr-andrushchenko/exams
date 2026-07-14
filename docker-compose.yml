@@ -1,10 +1,10 @@
 services:
   be:
     build:
-      context: ../exam-me-api
-      dockerfile: ../exam-me-loc/Dockerfile-be
+      context: ./api
+      dockerfile: ../Dockerfile-be
     volumes:
-      - ../exam-me-api:/usr/app
+      - ./api:/usr/app
     env_file:
       - .env
     environment:
@@ -18,10 +18,10 @@ services:
 
   fe:
     build:
-      context: ../exam-me-fe
-      dockerfile: ../exam-me-loc/Dockerfile-fe
+      context: ./frontend
+      dockerfile: ../Dockerfile-fe
     volumes:
-      - ../exam-me-fe:/usr/app
+      - ./frontend:/usr/app
     env_file:
       - .env
     environment:

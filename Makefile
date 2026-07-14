@@ -12,8 +12,8 @@ else
     DC := docker-compose
 endif
 
-BE_CONTAINER = exam-me-loc-be-1
-FE_CONTAINER = exam-me-loc-fe-1
+BE_SERVICE = be
+FE_SERVICE = fe
 
 .PHONY: help
 help: ## Show this help
@@ -40,11 +40,11 @@ rebuild: ## Rebuild and start Docker containers
 
 .PHONY: be
 be: ## Open shell in Back-End Docker container
-	$(DC) exec -it $(BE_CONTAINER) bash
+	$(DC) exec $(BE_SERVICE) bash
 
 .PHONY: fe
 fe: ## Open shell in Front-End Docker container
-	$(DC) exec -it $(FE_CONTAINER) bash
+	$(DC) exec $(FE_SERVICE) bash
 
 .PHONY: logs
 logs: ## Tail Docker containers logs

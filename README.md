@@ -1,12 +1,18 @@
-# ExamMe - Local dev env for ExamMe
+# ExamMe
+
+Monorepo containing the ExamMe API, frontend, and local development environment.
+
+## Repository layout
+
+- `api/` - back-end application
+- `frontend/` - front-end application
+- Root files - Docker Compose configuration and development commands
 
 ## Prerequisites
 
-1. git clone git@github.com:oleksandr-andrushchenko/exam-me-api.git
-2. git clone git@github.com:oleksandr-andrushchenko/exam-me-fe.git
-3. git clone git@github.com:oleksandr-andrushchenko/exam-me-loc.git
-4. cd exam-me-loc
-5. make up
+1. Clone this repository.
+2. Copy `.env.example` to `.env` and configure it if needed.
+3. Run `make up` from the repository root.
 
 ## Available commands
 
