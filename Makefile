@@ -46,6 +46,11 @@ be: ## Open shell in Back-End Docker container
 fe: ## Open shell in Front-End Docker container
 	$(DC) exec $(FE_SERVICE) bash
 
+.PHONY: tests
+tests: ## Run all API and front-end tests
+	@MONGO_PORT=$${MONGO_PORT:-27017} $(DC) exec -e NODE_ENV=test -e NODE_OPTIONS=--no-deprecation $(BE_SERVICE) npm run --silent test:functional
+	@MONGO_PORT=$${MONGO_PORT:-27017} $(DC) exec -e NODE_OPTIONS=--no-deprecation $(FE_SERVICE) npm run --silent test:dom
+
 .PHONY: logs
 logs: ## Tail Docker containers logs
 	$(DC) logs -f
