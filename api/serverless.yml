@@ -1,0 +1,23 @@
+org: oandrushchenko1988
+app: exam-me
+service: api
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  httpApi:
+    cors: true
+
+functions:
+  graphql:
+    handler: src/lambda.handler
+    events:
+      - httpApi:
+          path: /
+          method: POST
+      - httpApi:
+          path: /
+          method: GET
+
+plugins:
+  - serverless-plugin-typescript
