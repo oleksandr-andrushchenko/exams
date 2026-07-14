@@ -5,7 +5,7 @@ Monorepo containing the ExamMe API, frontend, and local development environment.
 ## Repository layout
 
 - `api/` - back-end application
-- `frontend/` - front-end application
+- `fe/` - front-end application
 - Root files - Docker Compose configuration and development commands
 
 ## Prerequisites

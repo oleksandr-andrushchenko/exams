@@ -18,10 +18,10 @@ services:
 
   fe:
     build:
-      context: ./frontend
+      context: ./fe
       dockerfile: ../Dockerfile-fe
     volumes:
-      - ./frontend:/usr/app
+      - ./fe:/usr/app
     env_file:
       - .env
     environment:
