@@ -8,6 +8,8 @@ import * as yup from 'yup'
 import FormikInput from './formik/FormikInput'
 import Token from '../schema/auth/Token'
 import createAuthenticationToken from '../api/authenticate/createAuthenticationToken'
+import { Link } from 'react-router-dom'
+import Route from '../enum/Route'
 
 interface Props extends ComponentProps<any> {
   onSubmit?: () => void
@@ -57,7 +59,7 @@ const Login = ({ onSubmit, buttons, onRegisterClick }: Props) => {
           setSubmitting,
         )
       } }>
-      { ({ isSubmitting }) => (
+      { ({ isSubmitting, isValid, dirty }) => (
         <Form className="flex flex-col gap-6">
           <Typography variant="h4" color="blue-gray">Login</Typography>
 
@@ -69,18 +71,16 @@ const Login = ({ onSubmit, buttons, onRegisterClick }: Props) => {
           <div>
             { buttons }
 
-            <Button type="submit" className="ml-1" size="md" disabled={ isSubmitting }>
+            <Button type="submit" className="ml-1" size="md" disabled={ isSubmitting || !dirty || !isValid }>
               { isSubmitting ? 'Logging in...' : 'Login' }
             </Button>
 
-            { onRegisterClick && (
-              <Typography variant="small" color="gray" className="mt-4 font-normal">
-                Don't have an account?
-                <Button variant="text" className="font-medium text-gray-900" onClick={ onRegisterClick }>
-                  Register
-                </Button>
-              </Typography>
-            ) }
+            <Typography variant="small" color="gray" className="mt-4 font-normal">
+              Don't have an account?
+              { onRegisterClick
+                ? <Button variant="text" className="font-medium text-gray-900" onClick={ onRegisterClick }>Register</Button>
+                : <Link className="font-medium text-gray-900" to={ Route.Register }>Register</Link> }
+            </Typography>
           </div>
         </Form>
       ) }

@@ -1,6 +1,10 @@
-export default function createListFromObjects(items: object[], keyProp: string = 'id', labelProp: string = 'name') {
-  return items.reduce((acc, item) => {
-    acc[item[keyProp]] = item[labelProp]
+export default function createListFromObjects<T extends object>(
+  items: T[],
+  keyProp: keyof T = 'id' as keyof T,
+  labelProp: keyof T = 'name' as keyof T,
+): Record<string, T[keyof T]> {
+  return items.reduce<Record<string, T[keyof T]>>((acc, item) => {
+    acc[String(item[keyProp])] = item[labelProp]
 
     return acc
   }, {})

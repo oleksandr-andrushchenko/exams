@@ -29,7 +29,7 @@ export function AuthenticationProvider({ children }: { children: ReactNode }) {
     me?: Me | undefined
     permissionHierarchy?: PermissionHierarchy | undefined
   }>(defaultData)
-  const checkAuthorization = (permission, resource, permissions): boolean => {
+  const checkAuthorization: AuthenticationProviderContextValue['checkAuthorization'] = (permission, resource, permissions): boolean => {
     if (!authenticationToken || !me || !permissionHierarchy) {
       return false
     }
@@ -44,19 +44,19 @@ export function AuthenticationProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    permissions = permissions ?? me.permissions
+    const effectivePermissions = permissions ?? me.permissions ?? []
 
-    if (permissions.indexOf(Permission.All) !== -1) {
+    if (effectivePermissions.indexOf(Permission.All) !== -1) {
       return true
     }
 
-    if (permissions.indexOf(permission) !== -1) {
+    if (effectivePermissions.indexOf(permission) !== -1) {
       return true
     }
 
-    for (const mePermission of permissions) {
+    for (const mePermission of effectivePermissions) {
       if (permissionHierarchy.hasOwnProperty(mePermission)) {
-        if (checkAuthorization(permission, resource, permissionHierarchy[mePermission])) {
+        if (checkAuthorization(permission, resource, permissionHierarchy[mePermission as keyof PermissionHierarchy])) {
           return true
         }
       }

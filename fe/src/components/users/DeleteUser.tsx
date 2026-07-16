@@ -6,7 +6,7 @@ import ConfirmDialog from '../dialogs/ConfirmDialog'
 
 interface Props extends ComponentProps<any> {
   user: User
-  onSubmit?: Function
+  onSubmit?: (data: any) => void
   iconButton?: boolean
 }
 

@@ -13,7 +13,7 @@ import IconButton from './elements/IconButton'
 import Text from './typography/Text'
 
 const NavBar = () => {
-  const [ links, setLinks ] = useState({
+  const [ links, setLinks ] = useState<Record<string, { name: string, href: Route }>>({
     categories: { name: 'Categories', href: Route.Categories },
     questions: { name: 'Questions', href: Route.Questions },
   })
@@ -28,12 +28,14 @@ const NavBar = () => {
   }, [])
 
   useEffect(() => {
-    if (me && checkAuthorization(UserPermission.Get)) {
-      setLinks({ ...links, ...{ users: { name: 'Users', href: Route.Users } } })
-    } else {
-      delete links['users']
-      setLinks(links)
-    }
+    setLinks(currentLinks => {
+      const defaultLinks = { ...currentLinks }
+      delete defaultLinks.users
+
+      return me && checkAuthorization(UserPermission.Get)
+        ? { ...defaultLinks, users: { name: 'Users', href: Route.Users } }
+        : defaultLinks
+    })
   }, [ authenticationToken, me ])
 
   const navList = <ul className="mt-2 mb-4 flex flex-col gap-2 lg:mb-0 lg:mt-0 lg:flex-row lg:items-center lg:gap-3">

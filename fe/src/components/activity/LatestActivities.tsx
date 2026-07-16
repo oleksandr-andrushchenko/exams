@@ -11,7 +11,7 @@ import CategoryApprovedActivity from './CategoryApprovedActivity'
 interface Props extends ComponentProps<any> {
 }
 
-const renderers = {
+const renderers: Record<string, (activity: Activity) => JSX.Element> = {
   [CategoryEvent.Created]: (activity: Activity) => <CategoryCreatedActivity activity={ activity }/>,
   [CategoryEvent.Approved]: (activity: Activity) => <CategoryApprovedActivity activity={ activity }/>,
 }
@@ -39,7 +39,7 @@ const LatestActivities = ({}: Props) => {
 
     { activities.map((activity: Activity, index: number) => (
       <div key={ index }>
-        { activity.event in renderers ? renderers[activity.event](activity) : <></> }
+        { activity.event && activity.event in renderers ? renderers[activity.event](activity) : <></> }
       </div>
     )) }
   </>

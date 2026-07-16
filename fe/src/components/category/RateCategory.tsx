@@ -41,7 +41,7 @@ const _RateCategory = (
               apiQuery(
                 getCategory(data.rateCategory.id!),
                 (data: { category: Category }) => {
-                  setRating(data.category.rating)
+                  setRating(data.category.rating ?? {})
                   onChange && onChange(data.category)
                 },
                 setError,

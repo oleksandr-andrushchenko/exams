@@ -1,12 +1,15 @@
 import { ApolloClient, createHttpLink, InMemoryCache } from '@apollo/client'
 import { setContext } from '@apollo/client/link/context'
-import type { ApolloQueryResult, DefaultContext, OperationVariables } from '@apollo/client/core/types'
+import type { DefaultContext, OperationVariables } from '@apollo/client/core/types'
 import type { MutationOptions, QueryOptions } from '@apollo/client/core/watchQueryOptions'
 import type { ApolloCache } from '@apollo/client/cache'
-import type { FetchResult } from '@apollo/client/link/core'
+import testsRunning from '../utils/testsRunning'
 
 const httpLink = createHttpLink({
   uri: import.meta.env.VITE_API_BASE_URL,
+  fetch: testsRunning()
+    ? (() => Promise.reject(new Error('Unexpected network request during tests'))) as typeof fetch
+    : undefined,
 })
 
 const authLink = setContext((_, { headers }) => {
@@ -43,7 +46,7 @@ export function apiQuery<T = any, TVariables extends OperationVariables = Operat
   },
   setLoading: (loading: boolean) => void = () => {
   },
-): Promise<ApolloQueryResult<T>> {
+): Promise<void> {
   setLoading(true)
   options = {
     errorPolicy: 'all',
@@ -63,7 +66,9 @@ export function apiQuery<T = any, TVariables extends OperationVariables = Operat
         }
       }
 
-      setData(data)
+      if (data != null) {
+        setData(data)
+      }
     })
     .catch(err => setError && setError(err.message))
     .finally(() => setLoading && setLoading(false))
@@ -81,7 +86,7 @@ export function apiMutate<
   },
   setLoading: (loading: boolean) => void = () => {
   },
-): Promise<FetchResult<TData>> {
+): Promise<void> {
   setLoading(true)
   options = {
     errorPolicy: 'all',
@@ -101,7 +106,9 @@ export function apiMutate<
         }
       }
 
-      setData(data)
+      if (data != null) {
+        setData(data)
+      }
     })
     .catch(err => setError && setError(err.message))
     .finally(() => setLoading && setLoading(false))

@@ -2,7 +2,7 @@ import { Params, useNavigate, useParams } from 'react-router-dom'
 import { Breadcrumbs, ButtonGroup, Checkbox, Input, Progress } from '@material-tailwind/react'
 import Route from '../enum/Route'
 import { ArrowLeftIcon, ArrowRightIcon, HomeIcon } from '@heroicons/react/24/solid'
-import { memo, useEffect, useState } from 'react'
+import { memo, ReactNode, useEffect, useState } from 'react'
 import useAuth from '../hooks/useAuth'
 import Spinner from '../components/Spinner'
 import ExamPermission from '../enum/exam/ExamPermission'
@@ -47,42 +47,36 @@ const Exam = () => {
   })
   const onDeleted = () => navigate(Route.Category.replace(':categoryId', examQuestion!.exam!.categoryId!), { replace: true })
 
-  const getQuestionNumber = (): number | undefined => {
+  const getQuestionNumber = (): number => {
     if (questionNumber !== undefined) {
       return questionNumber
     }
 
     if (examQuestion === undefined) {
-      return undefined
+      return 0
     }
 
-    return examQuestion?.number
+    return examQuestion.number ?? 0
   }
-  const showPrev = (): boolean | undefined => {
+  const showPrev = (): boolean => {
     if (answering || clearing) {
       return false
     }
 
     const questionNumber = getQuestionNumber()
 
-    if (questionNumber === undefined) {
-      return undefined
-    }
 
     return questionNumber > 0
   }
-  const showNext = (): boolean | undefined => {
+  const showNext = (): boolean => {
     if (answering || clearing) {
       return false
     }
 
     const questionNumber = getQuestionNumber()
 
-    if (questionNumber === undefined) {
-      return undefined
-    }
 
-    return questionNumber < examQuestion!.exam!.questionCount - 1
+    return questionNumber < (examQuestion?.exam?.questionCount ?? 0) - 1
   }
 
   const createAnswer = (answer: number | string) => {
@@ -141,7 +135,7 @@ const Exam = () => {
     return <Unauthorized/>
   }
 
-  const layout = (header: string, body) => {
+  const layout = (header: string, body: ReactNode) => {
     return <>
       <Breadcrumbs>
         <Link icon={ HomeIcon } label="Home" to={ Route.Home }/>
@@ -160,7 +154,7 @@ const Exam = () => {
   }
 
   if (exam?.completedAt) {
-    const score = Math.floor(100 * exam.correctAnswerCount / exam!.questionCount)
+    const score = Math.floor(100 * (exam.correctAnswerCount ?? 0) / (exam.questionCount ?? 1))
     const requiredScore = category?.requiredScore ?? 0
     const passed = score > requiredScore
 
@@ -181,7 +175,7 @@ const Exam = () => {
   return layout('Exam questions', <>
     { !examQuestion ? <Spinner type="text" height="h-3"/> :
       <Progress
-        value={ Math.floor(100 * (getQuestionNumber() + 1) / examQuestion.exam!.questionCount) }
+        value={ Math.floor(100 * (getQuestionNumber() + 1) / (examQuestion.exam?.questionCount ?? 1)) }
         label="Steps"
         size="sm"
         className="mt-4"
@@ -189,7 +183,7 @@ const Exam = () => {
 
     { !examQuestion ? <Spinner type="text" height="h-4"/> :
       <Progress
-        value={ Math.floor(100 * examQuestion.exam!.answeredQuestionCount / examQuestion.exam!.questionCount) }
+        value={ Math.floor(100 * (examQuestion.exam?.answeredQuestionCount ?? 0) / (examQuestion.exam?.questionCount ?? 1)) }
         label="Answered"
         size="lg"
         className="mt-4"

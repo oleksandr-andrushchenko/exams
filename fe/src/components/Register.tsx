@@ -47,7 +47,7 @@ const Register = ({ buttons, onSubmit }: Props) => {
           .required('Password is required'),
         confirmPassword: yup.string()
           .required('Confirm password is required')
-          .oneOf([ yup.ref('password'), null ], 'Passwords must match'),
+          .oneOf([ yup.ref('password') ], 'Passwords must match'),
         terms: yup.bool()
           .oneOf([ true ], 'Terms must be accepted'),
       }) }
@@ -68,7 +68,7 @@ const Register = ({ buttons, onSubmit }: Props) => {
           setSubmitting,
         )
       } }>
-      { ({ isSubmitting }) => (
+      { ({ isSubmitting, isValid, dirty }) => (
         <Form className="flex flex-col gap-6">
           <Typography variant="h4" color="blue-gray">Register</Typography>
 
@@ -85,7 +85,7 @@ const Register = ({ buttons, onSubmit }: Props) => {
           <div>
             { buttons }
 
-            <Button type="submit" className="ml-1" size="md" disabled={ isSubmitting }>
+            <Button type="submit" className="ml-1" size="md" disabled={ isSubmitting || !dirty || !isValid }>
               { isSubmitting ? 'Registering...' : 'Register' }
             </Button>
           </div>

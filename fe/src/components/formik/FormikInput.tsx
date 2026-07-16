@@ -14,6 +14,7 @@ interface Props extends ComponentProps<'input'> {
 export default function FormikInput({ name, type = 'text', size = 'lg', label, children }: Props) {
   const [ input, meta ] = useField(name)
   const { touched, error } = meta
+  const inputLabel = label || (Array.isArray(children) ? children.join('') : children) || name
 
   return (
     <div className="flex flex-col gap-1">
@@ -21,7 +22,8 @@ export default function FormikInput({ name, type = 'text', size = 'lg', label, c
         { ...input }
         type={ type }
         size={ size }
-        label={ label || (children || []).join('') || name }
+        label={ inputLabel }
+        placeholder={ String(inputLabel) }
         success={ touched && !error }
         error={ touched && !!error }
       />

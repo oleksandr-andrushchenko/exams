@@ -1,13 +1,12 @@
 import { Button as MlButton, Tooltip } from '@material-tailwind/react'
-import { ComponentProps, createElement, memo } from 'react'
+import { ComponentPropsWithoutRef, createElement, memo } from 'react'
 
-interface Props extends ComponentProps<'button'> {
+interface Props extends ComponentPropsWithoutRef<'button'> {
   label?: string
   tooltip?: string
   size?: any
   className?: string
   icon?: any
-  onClick: Function
   disabled?: boolean
   type?: any
   variant?: any

@@ -92,7 +92,7 @@ const AddQuestion = ({ category, question, onSubmit, iconButton = false }: Props
       <Card>
         <CardBody className="flex flex-col gap-4">
           <H3 icon={ icon } label={ label }/>
-          <Formik
+          <Formik<Form>
             initialValues={ {
               title: question?.title || '',
               type: question?.type || QuestionType.CHOICE,
@@ -207,7 +207,7 @@ const AddQuestion = ({ category, question, onSubmit, iconButton = false }: Props
                   <FieldArray name="choices">
                     { ({ remove, push }) => (
                       <div className="flex flex-col gap-6">
-                        { values.choices.map((choice, index) => (
+                        { values.choices.map((_choice, index) => (
                           <div key={ `choices.${ index }` } className="flex flex-col gap-3">
 
                             <FormikInput name={ `choices.${ index }.title` }>

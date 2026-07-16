@@ -41,7 +41,7 @@ const _RateQuestion = (
               apiQuery(
                 getQuestion(data.rateQuestion.id!),
                 (data: { question: Question }) => {
-                  setRating(data.question.rating)
+                  setRating(data.question.rating ?? {})
                   onChange && onChange(data.question)
                 },
                 setError,

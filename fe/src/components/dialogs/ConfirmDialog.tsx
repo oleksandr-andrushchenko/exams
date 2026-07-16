@@ -1,5 +1,5 @@
 import { Card, CardBody, CardFooter, Dialog, Typography } from '@material-tailwind/react'
-import { ComponentProps, memo, ReactNode, useState } from 'react'
+import { ComponentProps, memo, useState } from 'react'
 import { apiMutate } from '../../api/apolloClient'
 import Error from '../Error'
 import IconButton from '../elements/IconButton'
@@ -8,12 +8,12 @@ import H3 from '../typography/H3'
 import { Icon } from 'react-bootstrap-icons'
 
 interface Props extends ComponentProps<any> {
-  mutateOptionsFn: Function
-  iconFn: Function | ReactNode | string | Icon
-  labelFn: Function | ReactNode | string
+  mutateOptionsFn: () => any
+  iconFn: Icon
+  labelFn: (isSubmitting: boolean) => string
   title: any
   body: any
-  onSubmit?: Function
+  onSubmit?: (data: any) => void
   iconButton?: boolean
 }
 
@@ -35,8 +35,8 @@ const ConfirmDialog = ({ mutateOptionsFn, iconFn, labelFn, title, body, onSubmit
     )
   }
 
-  const icon = typeof iconFn === 'function' ? iconFn(isSubmitting) : iconFn
-  const label = typeof labelFn === 'function' ? labelFn(isSubmitting) : labelFn
+  const icon = iconFn
+  const label = labelFn(isSubmitting)
 
   return <>
     { iconButton

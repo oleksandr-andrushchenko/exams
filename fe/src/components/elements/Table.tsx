@@ -19,10 +19,10 @@ interface Props extends ComponentProps<any> {
   className?: string
   key2: string | number | undefined
   buttons?: Record<string, any>
-  tabs: Record<string, any>
+  tabs?: Record<string, any>
   filters?: Record<string, any>
   defaultSearchParams?: Record<string, any>
-  queryOptions: Function
+  queryOptions: (filter: Record<string, any>) => any
   queryData: Function
   mapper: Function
   columns: string[]
@@ -136,7 +136,7 @@ const Table = (
                   disabled={ value === searchParams.get(filter) }
                   className="capitalize"
                 >
-                  { label }
+                  { String(label) }
                 </Option>
               )
             }) }
@@ -198,9 +198,9 @@ const Table = (
         <td colSpan={ columns.length } className="p-5 text-center">No data</td>
       </tr> }
       { !isLoading && items && items.data && items.data.map((item, index) => {
-        const values: [] = mapper(item, index)
+        const values: any[] = mapper(item, index)
         const key = values.shift()
-        const controls = values.pop() as object
+        const controls = (values.pop() ?? {}) as Record<string, any>
 
         return (
           <tr key={ `${ key }-${ index }` }>

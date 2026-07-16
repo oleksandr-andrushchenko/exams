@@ -23,7 +23,7 @@ export default function FormikTags({ name, label, whitelist }: Props) {
       <FieldArray name={ name }>
         { ({ remove, push }) => (
           <div className="flex flex-col gap-3">
-            { value.map((tag, index) => (
+            { value.map((_tag: any, index: number) => (
               <div key={ `${ name }.${ index }` } className="grid grid-cols-2 gap-1">
 
                 <FormikSelect

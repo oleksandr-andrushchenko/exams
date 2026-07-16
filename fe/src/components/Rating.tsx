@@ -7,15 +7,13 @@ import Error from './Error'
 
 interface Props extends ComponentProps<any> {
   className?: string
-  rating: RatingValue | null
+  rating?: RatingValue | null
   showAverageMark?: boolean
   showMarkCount?: boolean
-  onChange: (mark: number, setRating: Function, {
-    setLoading = () => {
-    },
-    setError = () => {
-    },
-  }: { setLoading: Function, setError: Function }) => void
+  onChange?: (mark: number, setRating: (rating: RatingValue) => void, {
+    setLoading,
+    setError,
+  }: { setLoading: (loading: boolean) => void, setError: (error: string) => void }) => void
   readonly?: boolean
 }
 
