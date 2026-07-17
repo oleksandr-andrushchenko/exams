@@ -5,7 +5,7 @@ import UserNotFoundError from '../../errors/user/UserNotFoundError'
 import UserWrongCredentialsError from '../../errors/user/UserWrongCredentialsError'
 import { Credentials } from '../../schema/auth/Credentials'
 import ValidatorInterface from '../validator/ValidatorInterface'
-import { ObjectId } from 'mongodb'
+import { ObjectId } from 'bson'
 import UserEmailNotFoundError from '../../errors/user/UserEmailNotFoundError'
 import UserPasswordManager from './UserPasswordManager'
 

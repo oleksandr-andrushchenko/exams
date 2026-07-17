@@ -13,7 +13,7 @@ export default class EventDispatcher {
     this.emitter.on(eventName, listener)
   }
 
-  public dispatch(eventName: string, data?: any) {
-    this.emitter.emit(eventName, data)
+  public async dispatch(eventName: string, data?: any): Promise<void> {
+    await Promise.all(this.emitter.listeners(eventName).map(listener => listener(data)))
   }
 }

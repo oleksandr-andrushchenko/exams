@@ -67,7 +67,7 @@ export default class ExamCreator {
     exam.createdAt = new Date()
 
     await this.entityManager.save<Exam>(exam)
-    this.eventDispatcher.dispatch(ExamEvent.Created, { exam, user: initiator })
+    await this.eventDispatcher.dispatch(ExamEvent.Created, { exam, user: initiator })
 
     return exam
   }

@@ -31,10 +31,10 @@ export default class CategoryApproveSwitcher {
       updatedAt: new Date(),
     })
 
-    this.eventDispatcher.dispatch(CategoryEvent.ApproveToggled, { category, initiator })
+    await this.eventDispatcher.dispatch(CategoryEvent.ApproveToggled, { category, initiator })
 
     if (this.isCategoryApproved(category)) {
-      this.eventDispatcher.dispatch(CategoryEvent.Approved, { category, initiator })
+      await this.eventDispatcher.dispatch(CategoryEvent.Approved, { category, initiator })
     }
 
     return category

@@ -68,7 +68,7 @@ export default class QuestionUpdater {
     question.updatedAt = new Date()
 
     await this.entityManager.save<Question>(question)
-    this.eventDispatcher.dispatch(QuestionEvent.Updated, { question })
+    await this.eventDispatcher.dispatch(QuestionEvent.Updated, { question })
 
     return question
   }

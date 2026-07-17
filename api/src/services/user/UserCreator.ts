@@ -50,7 +50,7 @@ export default class UserCreator {
     user.createdAt = new Date()
 
     await this.entityManager.save<User>(user)
-    this.eventDispatcher.dispatch(UserEvent.Created, { user })
+    await this.eventDispatcher.dispatch(UserEvent.Created, { user })
 
     return user
   }

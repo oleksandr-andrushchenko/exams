@@ -30,7 +30,7 @@ export default class ExamDeleter {
     exam.deletedAt = new Date()
 
     await this.entityManager.save<Exam>(exam)
-    this.eventDispatcher.dispatch(ExamEvent.Deleted, { exam, user: initiator })
+    await this.eventDispatcher.dispatch(ExamEvent.Deleted, { exam, user: initiator })
 
     return exam
   }

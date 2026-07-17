@@ -44,7 +44,7 @@ export default class QuestionRatingMarkCreator {
     ratingMark.createdAt = new Date()
 
     await this.entityManager.save<QuestionRatingMark>(ratingMark)
-    this.eventDispatcher.dispatch(QuestionEvent.Rated, { question, user: initiator })
+    await this.eventDispatcher.dispatch(QuestionEvent.Rated, { question, user: initiator })
 
     return question
   }

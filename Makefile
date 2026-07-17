@@ -14,6 +14,7 @@ endif
 
 BE_SERVICE = be
 FE_SERVICE = fe
+DB_SERVICE = postgres
 
 .PHONY: help
 help: ## Show this help
@@ -46,10 +47,14 @@ be: ## Open shell in Back-End Docker container
 fe: ## Open shell in Front-End Docker container
 	$(DC) exec $(FE_SERVICE) bash
 
+.PHONY: db
+db: ## Open PostgreSQL client for the local database
+	$(DC) exec $(DB_SERVICE) psql -U postgres -d examme
+
 .PHONY: tests
 tests: ## Run all API and front-end tests
-	@MONGO_PORT=$${MONGO_PORT:-27017} $(DC) exec -e NODE_ENV=test -e NODE_OPTIONS=--no-deprecation $(BE_SERVICE) npm run --silent test:functional
-	@MONGO_PORT=$${MONGO_PORT:-27017} $(DC) exec -e NODE_OPTIONS=--no-deprecation $(FE_SERVICE) npm run --silent test:dom
+	@POSTGRES_PORT=$${POSTGRES_PORT:-5432} $(DC) exec -e NODE_ENV=test -e NODE_OPTIONS=--no-deprecation $(BE_SERVICE) npm run --silent test:functional
+	@POSTGRES_PORT=$${POSTGRES_PORT:-5432} $(DC) exec -e NODE_OPTIONS=--no-deprecation $(FE_SERVICE) npm run --silent test:dom
 
 .PHONY: logs
 logs: ## Tail Docker containers logs

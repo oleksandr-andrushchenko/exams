@@ -24,7 +24,7 @@ export default class ClassValidatorValidator implements ValidatorInterface {
       const error = new ValidationError()
       error.property = 'id'
       error.value = id
-      error.constraints = {isMongoId: 'id must be a mongodb id'}
+      error.constraints = {isMongoId: 'id must be a 24-character hexadecimal object id'}
 
       throw new ValidatorError([ error ])
     }

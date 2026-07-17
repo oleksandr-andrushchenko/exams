@@ -1,6 +1,6 @@
 import { Inject, Service } from 'typedi'
 import ValidatorInterface from '../validator/ValidatorInterface'
-import { ObjectId } from 'mongodb'
+import { ObjectId } from 'bson'
 
 @Service()
 export default class IdNormalizer {

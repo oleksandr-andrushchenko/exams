@@ -2,7 +2,7 @@ import { Inject, Service } from 'typedi'
 import Category from '../../entities/category/Category'
 import CategoryRepository from '../../repositories/category/CategoryRepository'
 import CategoryNotFoundError from '../../errors/category/CategoryNotFoundError'
-import { ObjectId } from 'mongodb'
+import { ObjectId } from 'bson'
 import ValidatorInterface from '../validator/ValidatorInterface'
 
 @Service()

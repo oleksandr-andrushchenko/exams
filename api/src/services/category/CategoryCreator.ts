@@ -45,7 +45,7 @@ export default class CategoryCreator {
     category.createdAt = new Date()
 
     await this.entityManager.save<Category>(category)
-    this.eventDispatcher.dispatch(CategoryEvent.Created, { category })
+    await this.eventDispatcher.dispatch(CategoryEvent.Created, { category })
 
     return category
   }

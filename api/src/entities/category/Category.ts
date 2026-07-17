@@ -11,19 +11,19 @@ export default class Category extends Base {
   @Field()
   public name: string
 
-  @Column()
+  @Column({ nullable: true })
   @Field(_type => Int, { nullable: true })
   public questionCount?: number = 0
 
-  @Column()
+  @Column({ nullable: true })
   @Field(_type => Int, { nullable: true })
   public approvedQuestionCount?: number = 0
 
-  @Column()
+  @Column({ nullable: true })
   @Field(_type => Int, { nullable: true })
   public requiredScore?: number = 0
 
-  @Column(() => Rating)
+  @Column({ type: 'jsonb', nullable: true })
   public rating?: Rating
 
   @Field(_type => Boolean, { name: 'isApproved', nullable: true })

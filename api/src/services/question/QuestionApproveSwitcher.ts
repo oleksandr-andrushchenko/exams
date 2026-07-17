@@ -50,7 +50,7 @@ export default class QuestionApproveSwitcher {
       })
     }
 
-    this.eventDispatcher.dispatch(QuestionEvent.ApproveToggled, { question, initiator })
+    await this.eventDispatcher.dispatch(QuestionEvent.ApproveToggled, { question, initiator })
 
     return question
   }

@@ -117,7 +117,7 @@ type Mutation {
   updateUser(updateUser: UpdateUser!, userId: ID!): User!
 }
 
-"""Mongo object id scalar type"""
+"""Object ID scalar type"""
 scalar ObjectId
 
 type PaginatedActivityList {

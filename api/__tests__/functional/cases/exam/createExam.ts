@@ -3,7 +3,7 @@ import request from 'supertest'
 import User from '../../../../src/entities/user/User'
 import Exam from '../../../../src/entities/exam/Exam'
 import Category from '../../../../src/entities/category/Category'
-import { ObjectId } from 'mongodb'
+import { ObjectId } from 'bson'
 import ExamPermission from '../../../../src/enums/exam/ExamPermission'
 // @ts-ignore
 import { createExam } from '../../graphql/exam/createExam'

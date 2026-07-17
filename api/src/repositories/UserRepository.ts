@@ -1,10 +1,8 @@
 import User from '../entities/user/User'
 import Repository from '../decorators/Repository'
 import EntityRepository from './EntityRepository'
-import { Document } from 'typeorm/driver/mongodb/typings'
-import { UpdateResult } from 'typeorm/query-builder/result/UpdateResult'
 import { RatingMarkTargetConstructorType } from '../types/rating/RatingMarkTargetConstructorType'
-import { ObjectId } from 'mongodb'
+import { ObjectId } from 'bson'
 
 @Repository(User)
 export default class UserRepository extends EntityRepository<User> {
@@ -18,7 +16,7 @@ export default class UserRepository extends EntityRepository<User> {
     targetConstructor: RatingMarkTargetConstructorType,
     value: ObjectId[][],
     set: Partial<User> = {},
-  ): Promise<Document | UpdateResult> {
+  ): Promise<User> {
     return await this.updateOneByEntity(user, { [`${ targetConstructor.name.toLowerCase() }RatingMarks`]: value, ...set })
   }
 }

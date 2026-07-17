@@ -1,7 +1,7 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
 import User from '../../../../src/entities/user/User'
-import { ObjectId } from 'mongodb'
+import { ObjectId } from 'bson'
 import UserPermission from '../../../../src/enums/user/UserPermission'
 // @ts-ignore
 import { createUser } from '../../graphql/user/createUser'

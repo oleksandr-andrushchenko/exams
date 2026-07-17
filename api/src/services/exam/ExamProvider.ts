@@ -4,7 +4,7 @@ import ValidatorInterface from '../validator/ValidatorInterface'
 import ExamRepository from '../../repositories/ExamRepository'
 import Exam from '../../entities/exam/Exam'
 import ExamNotFoundError from '../../errors/exam/ExamNotFoundError'
-import { ObjectId } from 'mongodb'
+import { ObjectId } from 'bson'
 import ExamPermission from '../../enums/exam/ExamPermission'
 import AuthorizationVerifier from '../auth/AuthorizationVerifier'
 

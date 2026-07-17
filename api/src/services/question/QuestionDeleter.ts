@@ -41,7 +41,7 @@ export default class QuestionDeleter {
       updatedAt: new Date(),
     })
 
-    this.eventDispatcher.dispatch(QuestionEvent.Deleted, { question })
+    await this.eventDispatcher.dispatch(QuestionEvent.Deleted, { question })
 
     return question
   }

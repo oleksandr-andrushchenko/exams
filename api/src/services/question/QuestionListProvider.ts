@@ -1,5 +1,5 @@
 import { Inject, Service } from 'typedi'
-import { ObjectId } from 'mongodb'
+import { ObjectId } from 'bson'
 import ValidatorInterface from '../validator/ValidatorInterface'
 import Question from '../../entities/question/Question'
 import QuestionRepository from '../../repositories/question/QuestionRepository'

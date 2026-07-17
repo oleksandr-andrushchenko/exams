@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb'
+import { ObjectId } from 'bson'
 
 export default class QuestionNotFoundError extends Error {
 

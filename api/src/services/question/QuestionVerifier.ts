@@ -1,5 +1,5 @@
 import { Inject, Service } from 'typedi'
-import { ObjectId } from 'mongodb'
+import { ObjectId } from 'bson'
 import QuestionRepository from '../../repositories/question/QuestionRepository'
 import QuestionTitleTakenError from '../../errors/question/QuestionTitleTakenError'
 

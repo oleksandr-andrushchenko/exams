@@ -1,9 +1,9 @@
 import { GraphQLScalarType, Kind } from 'graphql'
-import { ObjectId } from 'mongodb'
+import { ObjectId } from 'bson'
 
 export const ObjectIdScalar = new GraphQLScalarType({
   name: 'ObjectId',
-  description: 'Mongo object id scalar type',
+  description: 'Object ID scalar type',
   serialize(value: unknown): string | null {
     if (value === null) {
       return null

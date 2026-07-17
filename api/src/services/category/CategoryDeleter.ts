@@ -41,7 +41,7 @@ export default class CategoryDeleter {
     category.deletedAt = new Date()
 
     await this.entityManager.save<Category>(category)
-    this.eventDispatcher.dispatch(CategoryEvent.Deleted, { category })
+    await this.eventDispatcher.dispatch(CategoryEvent.Deleted, { category })
 
     return category
   }

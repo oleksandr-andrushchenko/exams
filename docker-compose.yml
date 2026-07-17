@@ -3,6 +3,8 @@ services:
     build:
       context: ./api
       dockerfile: ../Dockerfile-be
+    depends_on:
+      - postgres
     volumes:
       - ./api:/usr/app
     env_file:
@@ -10,8 +12,9 @@ services:
     environment:
       NODE_ENV: development
       PORT: 8080
-      DATABASE_TYPE: mongodb
-      DATABASE_URL: mongodb://root:1111@mongo:27017/app?authSource=admin
+      DATABASE_TYPE: postgres
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/examme
+      DATABASE_SCHEMA: public
       CLIENT_URL: http://localhost:${FE_PORT}
     ports:
       - "${BE_PORT}:8080"
@@ -31,18 +34,17 @@ services:
     ports:
       - "${FE_PORT}:8081"
 
-  mongo:
-    image: mongo:latest
+  postgres:
+    image: postgres:17-alpine
     restart: always
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: 1111
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: examme
     volumes:
-      - mongo-data:/data/db
-    env_file:
-      - .env
+      - postgres-data:/var/lib/postgresql/data
     ports:
-      - "${MONGO_PORT}:27017"
+      - "${POSTGRES_PORT:-5432}:5432"
 
 volumes:
-  mongo-data:
+  postgres-data:

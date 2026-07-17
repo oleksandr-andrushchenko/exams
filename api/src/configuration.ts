@@ -49,9 +49,11 @@ export default {
     format: environment === 'development' ? 'dev' : 'tiny',
   },
   db: {
-    type: env.DATABASE_TYPE as 'mongodb',
+    type: env.DATABASE_TYPE as 'postgres',
     url: env.DATABASE_URL as string,
-    synchronize: false,
+    schema: env.DATABASE_SCHEMA || 'public',
+    dropSchema: environment === 'test',
+    synchronize: true,
     logging: environment === 'development',
   },
   jwt: {

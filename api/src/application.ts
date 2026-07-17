@@ -6,8 +6,7 @@ import express, { Application } from 'express'
 import LoggerInterface from './services/logger/LoggerInterface'
 import JwtTokenStrategyFactory from './services/token/strategy/JwtTokenStrategyFactory'
 import TokenStrategyInterface from './services/token/strategy/TokenStrategyInterface'
-import { MongoConnectionOptions } from 'typeorm/driver/mongodb/MongoConnectionOptions'
-import { MongoDriver } from 'typeorm/driver/mongodb/MongoDriver'
+import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions'
 import NullLogger from './services/logger/NullLogger'
 import ClassValidatorValidator from './services/validator/ClassValidatorValidator'
 import WinstonLogger from './services/logger/WinstonLogger'
@@ -47,7 +46,6 @@ Container.set('logger', logger)
 Container.set('validator', Container.get<ClassValidatorValidator>(ClassValidatorValidator))
 
 const projectDir = config.projectDir
-const mongoLogging = config.db.type === 'mongodb' && config.db.logging
 
 const connectionManager = new ConnectionManager()
 Container.set(ConnectionManager, connectionManager)
@@ -55,14 +53,15 @@ Container.set(ConnectionManager, connectionManager)
 const tokenStrategy: TokenStrategyInterface = Container.get<JwtTokenStrategyFactory>(JwtTokenStrategyFactory).create(config.jwt)
 Container.set('tokenStrategy', tokenStrategy)
 
-const dataSourceOptions: MongoConnectionOptions = {
+const dataSourceOptions: PostgresConnectionOptions = {
   type: config.db.type,
   url: config.db.url,
   synchronize: config.db.synchronize,
   logging: config.db.logging,
   entities,
   subscribers,
-  monitorCommands: mongoLogging,
+  schema: config.db.schema,
+  dropSchema: config.db.dropSchema,
 }
 
 const db = connectionManager.create(dataSourceOptions)
@@ -117,12 +116,6 @@ const prepareExpress = async (app: Application, apolloServer: ApolloServer): Pro
 const initializeDb = async (db: DataSource): Promise<void> => {
   await db.initialize()
 
-  if (mongoLogging) {
-    const conn = (db.driver as MongoDriver).queryRunner.databaseConnection
-    conn.on('commandStarted', (event) => logger.debug('commandStarted', event))
-    conn.on('commandSucceeded', (event) => logger.debug('commandSucceeded', event))
-    conn.on('commandFailed', (event) => logger.error('commandFailed', event))
-  }
 }
 
 export const serverUp = async (): Promise<void> => {

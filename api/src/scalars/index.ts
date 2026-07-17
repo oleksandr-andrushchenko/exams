@@ -1,6 +1,6 @@
 import { GraphQLTimestamp } from 'graphql-scalars'
 import { ObjectIdScalar } from './ObjectIdScalar'
-import { ObjectId } from 'mongodb'
+import { ObjectId } from 'bson'
 
 export const scalars = [
   { type: ObjectId, scalar: ObjectIdScalar },

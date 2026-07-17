@@ -10,7 +10,7 @@ import Category from '../../src/entities/category/Category'
 import Question from '../../src/entities/question/Question'
 import Exam from '../../src/entities/exam/Exam'
 import { ConnectionManager } from 'typeorm'
-import { ObjectId } from 'mongodb'
+import { ObjectId } from 'bson'
 import Token from '../../src/schema/auth/Token'
 import { Application } from 'express'
 import QuestionType from '../../src/entities/question/QuestionType'
@@ -100,7 +100,7 @@ export default class TestFramework {
         break
       case this.compare(entity, Category):
         object = new Category()
-        object.name = faker.lorem.word()
+        object.name = `${faker.lorem.word()}-${new ObjectId().toHexString().slice(-6)}`
         object.requiredScore = 'requiredScore' in options ? options.requiredScore : faker.number.int({
           min: 0,
           max: 100,

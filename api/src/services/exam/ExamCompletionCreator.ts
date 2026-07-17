@@ -57,6 +57,6 @@ export default class ExamCompletionCreator {
     exam.updatedAt = new Date()
 
     await this.entityManager.save<Exam>(exam)
-    this.eventDispatcher.dispatch(ExamEvent.Completed, { exam, user: initiator })
+    await this.eventDispatcher.dispatch(ExamEvent.Completed, { exam, user: initiator })
   }
 }

@@ -9,11 +9,12 @@ export default class Env {
   @IsPositive()
   public readonly PORT: number
 
-  @IsEnum([ 'mongodb' ])
+  @IsEnum([ 'postgres' ])
   public readonly DATABASE_TYPE: string
 
-  @IsUrl({ require_valid_protocol: false, host_whitelist: [ 'mongo' ] })
+  @IsUrl({ require_valid_protocol: false, host_whitelist: [ 'postgres' ] })
   public readonly DATABASE_URL: string
+  public readonly DATABASE_SCHEMA: string
 
   @IsUrl({ host_whitelist: [ 'localhost' ] })
   public readonly CLIENT_URL: string

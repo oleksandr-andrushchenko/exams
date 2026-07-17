@@ -17,7 +17,7 @@ export default class MeDeleter {
     initiator.deletedAt = new Date()
 
     await this.entityManager.save<User>(initiator)
-    this.eventDispatcher.dispatch(MeEvent.Deleted, { me: initiator })
+    await this.eventDispatcher.dispatch(MeEvent.Deleted, { me: initiator })
 
     return initiator
   }

@@ -1,7 +1,7 @@
 import { Field, Int, ObjectType } from 'type-graphql'
 import { Column } from 'typeorm'
 import { ObjectIdScalar } from '../../scalars/ObjectIdScalar'
-import { ObjectId } from 'mongodb'
+import { ObjectId } from 'bson'
 
 @ObjectType()
 export default class ExamQuestion {

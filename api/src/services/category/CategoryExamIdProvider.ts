@@ -1,7 +1,7 @@
 import { Service } from 'typedi'
 import Category from '../../entities/category/Category'
 import User from '../../entities/user/User'
-import { ObjectId } from 'mongodb'
+import { ObjectId } from 'bson'
 
 @Service()
 export default class CategoryExamIdProvider {

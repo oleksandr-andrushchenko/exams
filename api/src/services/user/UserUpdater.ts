@@ -55,7 +55,7 @@ export default class UserUpdater {
     user.updatedAt = new Date()
 
     await this.entityManager.save<User>(user)
-    this.eventDispatcher.dispatch(UserEvent.Updated, { user })
+    await this.eventDispatcher.dispatch(UserEvent.Updated, { user })
 
     return user
   }

@@ -61,7 +61,7 @@ export default class QuestionCreator {
     category.questionCount = await this.questionRepository.countByCategory(category) + 1
 
     await this.entityManager.save([ question, category ])
-    this.eventDispatcher.dispatch(QuestionEvent.Created, { question })
+    await this.eventDispatcher.dispatch(QuestionEvent.Created, { question })
 
     return question
   }

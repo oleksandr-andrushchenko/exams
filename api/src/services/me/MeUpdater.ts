@@ -38,7 +38,7 @@ export default class MeUpdater {
     initiator.updatedAt = new Date()
 
     await this.entityManager.save<User>(initiator)
-    this.eventDispatcher.dispatch(MeEvent.Updated, { me: initiator })
+    await this.eventDispatcher.dispatch(MeEvent.Updated, { me: initiator })
 
     return initiator
   }

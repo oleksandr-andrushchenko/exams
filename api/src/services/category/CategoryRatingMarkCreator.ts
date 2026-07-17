@@ -44,7 +44,7 @@ export default class CategoryRatingMarkCreator {
     ratingMark.createdAt = new Date()
 
     await this.entityManager.save<CategoryRatingMark>(ratingMark)
-    this.eventDispatcher.dispatch(CategoryEvent.Rated, { category, user: initiator })
+    await this.eventDispatcher.dispatch(CategoryEvent.Rated, { category, user: initiator })
 
     return category
   }

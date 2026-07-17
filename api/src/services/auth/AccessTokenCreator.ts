@@ -17,7 +17,7 @@ export default class AccessTokenCreator {
   public async createAccessToken(user: User): Promise<Token> {
     const token = await this.tokenService.generateAccessToken(user, this.tokenExpiresIn)
 
-    this.eventDispatcher.dispatch('authenticationCreated', { user })
+    await this.eventDispatcher.dispatch('authenticationCreated', { user })
 
     return token
   }

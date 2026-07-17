@@ -1,7 +1,7 @@
 import { Inject, Service } from 'typedi'
 import UserRepository from '../../repositories/UserRepository'
 import UserEmailTakenError from '../../errors/user/UserEmailTakenError'
-import { ObjectId } from 'mongodb'
+import { ObjectId } from 'bson'
 
 @Service()
 export default class UserVerifier {

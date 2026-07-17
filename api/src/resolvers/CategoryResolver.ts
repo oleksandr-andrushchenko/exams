@@ -20,7 +20,7 @@ import RateCategoryRequest from '../schema/category/RateCategoryRequest'
 import CategoryRatingMarkListProvider from '../services/category/CategoryRatingMarkListProvider'
 import RatingSchema from '../schema/rating/RatingSchema'
 import CategoryRatingProvider from '../services/category/CategoryRatingProvider'
-import { ObjectId } from 'mongodb'
+import { ObjectId } from 'bson'
 import CategoryExamIdProvider from '../services/category/CategoryExamIdProvider'
 
 @Service()

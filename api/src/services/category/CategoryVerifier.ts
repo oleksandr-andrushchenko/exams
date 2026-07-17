@@ -1,7 +1,7 @@
 import { Inject, Service } from 'typedi'
 import CategoryRepository from '../../repositories/category/CategoryRepository'
 import CategoryNameTakenError from '../../errors/category/CategoryNameTakenError'
-import { ObjectId } from 'mongodb'
+import { ObjectId } from 'bson'
 import Category from '../../entities/category/Category'
 import CategoryWithoutApprovedQuestionsError from '../../errors/category/CategoryWithoutApprovedQuestionsError'
 import CategoryApproveSwitcher from './CategoryApproveSwitcher'

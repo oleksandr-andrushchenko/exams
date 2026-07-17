@@ -50,7 +50,7 @@ export default class CategoryUpdater {
     category.updatedAt = new Date()
 
     await this.entityManager.save<Category>(category)
-    this.eventDispatcher.dispatch(CategoryEvent.Updated, { category })
+    await this.eventDispatcher.dispatch(CategoryEvent.Updated, { category })
 
     return category
   }
