@@ -1,235 +1,185 @@
-import { Params, useNavigate, useParams } from 'react-router-dom'
-import { Breadcrumbs, ButtonGroup, Checkbox, Input, Progress } from '@material-tailwind/react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { Breadcrumbs } from '@material-tailwind/react'
 import Route from '../enum/Route'
-import { ArrowLeftIcon, ArrowRightIcon, HomeIcon } from '@heroicons/react/24/solid'
-import { memo, ReactNode, useEffect, useState } from 'react'
+import { HomeIcon } from '@heroicons/react/24/solid'
+import { memo, useEffect, useState } from 'react'
 import useAuth from '../hooks/useAuth'
 import Spinner from '../components/Spinner'
-import ExamPermission from '../enum/exam/ExamPermission'
-import DeleteExam from '../components/exam/DeleteExam'
-import ExamQuestion from '../schema/exam/ExamQuestion'
-import { QuestionType } from '../schema/question/CreateQuestion'
-import CompleteExam from '../components/exam/CompleteExam'
-import { apiMutate, apiQuery } from '../api/apolloClient'
-import createExamQuestionAnswer from '../api/exam/createExamQuestionAnswer'
-import getExamQuestion from '../api/exam/getExamQuestion'
-import getCurrentExamQuestion from '../api/exam/getCurrentExamQuestion'
-import deleteExamQuestionAnswer from '../api/exam/deleteExamQuestionAnswer'
-import Error from '../components/Error'
-import Unauthenticated from './Unauthenticated'
-import Unauthorized from './Unauthorized'
 import Exam from '../schema/exam/Exam'
-import H1 from '../components/typography/H1'
+import Question from '../schema/question/Question'
+import DeleteExam from '../components/exam/DeleteExam'
+import AddQuestion from '../components/question/AddQuestion'
+import AddExam from '../components/exam/AddExam'
+import DeleteQuestion from '../components/question/DeleteQuestion'
+import { QuestionDifficulty, QuestionType } from '../schema/question/CreateQuestion'
+import AddExamSession from '../components/examSession/AddExamSession'
+import { apiQuery } from '../api/apolloClient'
+import getExamForExamPage from '../api/exam/getExamForExamPage'
+import Error from '../components/Error'
+import ExamPermission from '../enum/exam/ExamPermission'
+import QuestionPermission from '../enum/question/QuestionPermission'
+import Paginated from '../schema/pagination/Paginated'
+import Table from '../components/elements/Table'
+import getQuestionsForExamPage from '../api/exam/getQuestionsForExamPage'
 import Link from '../components/elements/Link'
-import H2 from '../components/typography/H2'
-import Button from '../components/elements/Button'
+import H1 from '../components/typography/H1'
 import InfoTable from '../components/elements/InfoTable'
-import YesNo from '../components/elements/YesNo'
+import createListFromEnum from '../utils/createListFromEnum'
+import { ApproveQuestion } from '../components/question/ApproveQuestion'
+import { ApproveExam } from '../components/exam/ApproveExam'
+import { default as YesNoEnum } from '../enum/YesNo'
+import canAddExamSession from '../services/examSessions/canAddExamSession'
+import CreatorBadge from '../components/badges/CreatorBadge'
+import { RateQuestion } from '../components/question/RateQuestion'
+import { RateExam } from '../components/exam/RateExam'
+import { Params } from '@remix-run/router/utils'
+import GetQuestions from '../schema/question/GetQuestions'
+import Buttons from '../components/elements/Buttons'
 
 const Exam = () => {
+  const [ tableKey, setTableKey ] = useState<number>(1)
+  const [ infoTableKey, setInfoTableKey ] = useState<number>(1)
+  const { authenticationToken, checkAuthorization } = useAuth()
   const { examId } = useParams<Params>() as { examId: string }
-  const [ questionNumber, setQuestionNumber ] = useState<number>()
-  const [ examQuestion, setExamQuestion ] = useState<ExamQuestion>()
-  const [ answering, setAnswering ] = useState<boolean>(false)
-  const [ clearing, setClearing ] = useState<boolean>(false)
+  const [ exam, setExam ] = useState<Exam>()
   const [ _, setLoading ] = useState<boolean>(true)
   const [ error, setError ] = useState<string>('')
-  const { authenticationToken, me, checkAuthorization } = useAuth()
   const navigate = useNavigate()
-  const exam = examQuestion?.exam
-  const category = exam?.category
 
-  const onPrevQuestionClick = () => setQuestionNumber(getQuestionNumber() - 1)
-  const onNextQuestionClick = () => setQuestionNumber(getQuestionNumber() + 1)
-  const onCompleted = (data: { createExamCompletion: Exam }) => setExamQuestion({
-    ...examQuestion,
-    ...{ exam: data.createExamCompletion },
-  })
-  const onDeleted = () => navigate(Route.Category.replace(':categoryId', examQuestion!.exam!.categoryId!), { replace: true })
-
-  const getQuestionNumber = (): number => {
-    if (questionNumber !== undefined) {
-      return questionNumber
-    }
-
-    if (examQuestion === undefined) {
-      return 0
-    }
-
-    return examQuestion.number ?? 0
+  const updateExam = (exam: Exam) => setExam(exam)
+  const refreshExam = () => apiQuery(
+    getExamForExamPage(examId),
+    (data: { exam: Exam }) => setExam(data.exam),
+    setError,
+    setLoading,
+  )
+  const refreshTable = () => {
+    setTableKey(Math.random())
   }
-  const showPrev = (): boolean => {
-    if (answering || clearing) {
-      return false
-    }
-
-    const questionNumber = getQuestionNumber()
-
-
-    return questionNumber > 0
+  const refreshInfoTable = () => {
+    setInfoTableKey(Math.random())
   }
-  const showNext = (): boolean => {
-    if (answering || clearing) {
-      return false
-    }
-
-    const questionNumber = getQuestionNumber()
-
-
-    return questionNumber < (examQuestion?.exam?.questionCount ?? 0) - 1
+  const updateExamAndRefreshInfoTable = (exam: Exam) => {
+    updateExam(exam)
+    refreshInfoTable()
   }
+  const onDelete = () => navigate(Route.Exams, { replace: true })
 
-  const createAnswer = (answer: number | string) => {
-    const transfer = examQuestion!.question!.type === QuestionType.CHOICE
-      ? { choice: answer as number }
-      : { answer: answer as string }
-
-    apiMutate(
-      createExamQuestionAnswer(examId, getQuestionNumber()!, transfer),
-      (data: { createExamQuestionAnswer: ExamQuestion }) => setExamQuestion(data.createExamQuestionAnswer),
-      setError,
-      setAnswering,
-    )
-  }
-
-  const clearAnswer = () => {
-    apiMutate(
-      deleteExamQuestionAnswer(examId, getQuestionNumber()!),
-      (data: { deleteExamQuestionAnswer: ExamQuestion }) => setExamQuestion(data.deleteExamQuestionAnswer),
-      setError,
-      setClearing,
-    )
+  const refreshExamAndTable = () => {
+    refreshExam()
+    refreshTable()
   }
 
   useEffect(() => {
-    if (questionNumber === undefined) {
-      apiQuery(
-        getCurrentExamQuestion(examId),
-        (data: { currentExamQuestion: ExamQuestion }) => setExamQuestion(data.currentExamQuestion),
-        setError,
-        setLoading,
-      )
-    } else {
-      apiQuery(
-        getExamQuestion(examId, questionNumber!),
-        (data: { examQuestion: ExamQuestion }) => setExamQuestion(data.examQuestion),
-        setError,
-        setLoading,
-      )
-    }
-  }, [ questionNumber ])
+    refreshExamAndTable()
+  }, [ authenticationToken ])
 
   useEffect(() => {
-    document.title = `Exam: ${ examQuestion?.exam?.category?.name || 'ExamMe' }`
-  }, [ examQuestion?.exam?.category?.name ])
+    document.title = exam?.name || 'ExamMe'
+  }, [ exam ])
 
-  if (!authenticationToken) {
-    return <Unauthenticated/>
-  }
+  return <>
+    <Breadcrumbs>
+      <Link icon={ HomeIcon } label="Home" to={ Route.Home }/>
+      <Link label="Exams" to={ Route.Exams }/>
+      { !exam ? <Spinner type="text"/> :
+        <Link label={ exam.name } to={ Route.Exam.replace(':examId', exam.id!) }/> }
+    </Breadcrumbs>
 
-  if (!me) {
-    return <Spinner/>
-  }
+    <H1
+      label={ exam?.name ?? <Spinner type="text"/> }
+      sup={ exam?.isCreator ? <CreatorBadge/> : '' }
+    />
 
-  if (examQuestion && !checkAuthorization(ExamPermission.Get, examQuestion?.exam)) {
-    return <Unauthorized/>
-  }
+    { exam
+      ? <RateExam
+        exam={ exam }
+        onChange={ updateExam }
+        readonly={ !checkAuthorization(ExamPermission.Rate) }
+        showAverageMark
+        showMarkCount
+      /> : <Spinner type="text"/> }
 
-  const layout = (header: string, body: ReactNode) => {
-    return <>
-      <Breadcrumbs>
-        <Link icon={ HomeIcon } label="Home" to={ Route.Home }/>
-        <Link label="Categories" to={ Route.Categories }/>
-        { !examQuestion ? <Spinner type="text"/> : <Link label={ examQuestion.exam!.category!.name }
-                                                         to={ Route.Category.replace(':categoryId', examQuestion.exam!.categoryId!) }/> }
-        <Link label="Exam" to={ Route.Exam.replace(':examId', examId) }/>
-      </Breadcrumbs>
+    { error && <Error text={ error }/> }
 
-      <H1 sub={ header }>Exam: { examQuestion ? examQuestion.exam!.category!.name : <Spinner type="text"/> }</H1>
+    <Buttons
+      className="mt-2"
+      buttons={ {
+        create: !exam ? <Spinner type="button"/> :
+          <AddQuestion exam={ exam } onSubmit={ refreshExamAndTable }/>,
 
-      { error && <Error text={ error }/> }
+        approve: !exam ? <Spinner type="button"/> : (checkAuthorization(ExamPermission.Approve) &&
+          <ApproveExam exam={ exam } onChange={ updateExamAndRefreshInfoTable }/>),
 
-      { body }
-    </>
-  }
+        update: checkAuthorization(ExamPermission.Update, exam) && (!exam ? <Spinner type="button"/> :
+          <AddExam exam={ exam } onSubmit={ updateExam }/>),
 
-  if (exam?.completedAt) {
-    const score = Math.floor(100 * (exam.correctAnswerCount ?? 0) / (exam.questionCount ?? 1))
-    const requiredScore = category?.requiredScore ?? 0
-    const passed = score > requiredScore
+        delete: checkAuthorization(ExamPermission.Delete, exam) && (!exam ? <Spinner type="button"/> :
+          <DeleteExam exam={ exam } onSubmit={ onDelete }/>),
 
-    return layout('Exam completed', (
-      <InfoTable
-        columns={ [ 'Completion date', 'Correct answers', 'Required score', 'Passed' ] }
-        source={ exam }
-        mapper={ (exam: Exam) => [
-          new Date(exam.completedAt!).toDateString(),
-          <>{ exam.correctAnswerCount }/{ exam?.questionCount } ({ score }%)</>,
-          <>{ requiredScore }%</>,
-          <YesNo yes={ passed }/>,
-        ] }
-      />
-    ))
-  }
+        examSession: !exam ? <Spinner type="button"/> : canAddExamSession(exam) && <AddExamSession exam={ exam }/>,
+      } }
+    />
 
-  return layout('Exam questions', <>
-    { !examQuestion ? <Spinner type="text" height="h-3"/> :
-      <Progress
-        value={ Math.floor(100 * (getQuestionNumber() + 1) / (examQuestion.exam?.questionCount ?? 1)) }
-        label="Steps"
-        size="sm"
-        className="mt-4"
-      /> }
+    <InfoTable
+      className="mt-4"
+      title="Exam info"
+      key2={ infoTableKey }
+      source={ exam }
+      columns={ [ 'Name', 'Questions', 'Required score', 'Rating', 'Approved' ] }
+      mapper={ (exam: Exam) => [
+        exam.name,
+        `${ exam.approvedQuestionCount ?? 0 }/${ exam.questionCount ?? 0 }`,
+        exam.requiredScore ?? 0,
+        <RateExam exam={ exam } readonly/>,
+        <ApproveExam exam={ exam } readonly/>,
+      ] }
+    />
 
-    { !examQuestion ? <Spinner type="text" height="h-4"/> :
-      <Progress
-        value={ Math.floor(100 * (examQuestion.exam?.answeredQuestionCount ?? 0) / (examQuestion.exam?.questionCount ?? 1)) }
-        label="Answered"
-        size="lg"
-        className="mt-4"
-      /> }
+    <Table
+      key2={ tableKey }
+      tabs={ {
+        // subscription: Object.values(YesNoEnum),
+        approved: Object.values(YesNoEnum),
+        // creator: authenticationToken ? Object.values(Creator) : '',
+      } }
+      filters={ {
+        difficulty: createListFromEnum(QuestionDifficulty),
+      } }
+      columns={ [ '#', 'Title', 'Choices', 'Difficulty', 'Approved', 'Rating', '' ] }
+      queryOptions={ (filter: GetQuestions) => getQuestionsForExamPage(examId, filter) }
+      queryData={ (data: { paginatedQuestions: Paginated<Question> }) => data.paginatedQuestions }
+      mapper={ (question: Question, index: number) => [
+        question.id,
+        index + 1,
+        <Link
+          label={ question.title }
+          sup={ question.isCreator ? <CreatorBadge/> : '' }
+          tooltip={ question.title }
+          to={ Route.Question.replace(':examId', question.examId!).replace(':questionId', question.id!) }
+        />,
+        question.type === QuestionType.CHOICE ? (question.choices || []).length : 'N/A',
+        question.difficulty,
+        <ApproveQuestion
+          question={ question }
+          readonly={ !checkAuthorization(QuestionPermission.Approve) }
+          onChange={ refreshExam }
+          iconButton
+        />,
+        <RateQuestion
+          question={ question }
+          readonly={ !checkAuthorization(QuestionPermission.Rate) }
+        />,
+        {
+          update: checkAuthorization(QuestionPermission.Update, question) &&
+            <AddQuestion question={ question } onSubmit={ refreshExamAndTable } iconButton/>,
 
-    { !examQuestion ? <Spinner type="text"/> :
-      <H2 className="min-h-8">Question #{ getQuestionNumber() + 1 }: { examQuestion.question!.title }</H2> }
-
-    <div className="flex flex-col gap-2 mt-4 min-h-48">
-      { !examQuestion ? <Spinner/> : (
-        examQuestion.question!.type === QuestionType.CHOICE
-          ? examQuestion!.choices!.map((choice: string, index) => (
-            <Checkbox
-              key={ `${ examQuestion.question!.id }-${ index }-${ examQuestion.choice }` }
-              name="choice"
-              defaultChecked={ index === examQuestion.choice }
-              onChange={ (e) => e.target.checked ? createAnswer(index) : clearAnswer() }
-              label={ choice }
-              disabled={ answering }
-            />
-          ))
-          : <Input
-            type="text"
-            name="answer"
-            size="lg"
-            label="Answer"
-            onChange={ (e) => createAnswer(e.target.value) }
-            disabled={ answering }
-          />
-      ) }
-    </div>
-
-    <div className="flex gap-1 items-center mt-4">
-      { examQuestion &&
-        <ButtonGroup variant="outlined">
-          <Button icon={ ArrowLeftIcon } label="Prev" onClick={ onPrevQuestionClick } disabled={ !showPrev() }/>
-          <Button icon={ ArrowRightIcon } label="Next" onClick={ onNextQuestionClick } disabled={ !showNext() }/>
-        </ButtonGroup> }
-
-      { examQuestion && checkAuthorization(ExamPermission.CreateCompletion, examQuestion.exam) &&
-        <CompleteExam exam={ examQuestion.exam! } onSubmit={ onCompleted }/> }
-
-      { examQuestion && checkAuthorization(ExamPermission.Delete, examQuestion.exam) &&
-        <DeleteExam exam={ examQuestion.exam! } onSubmit={ onDeleted }/> }
-    </div>
-  </>)
+          delete: checkAuthorization(QuestionPermission.Delete, question) &&
+            <DeleteQuestion question={ question } onSubmit={ refreshExamAndTable } iconButton/>,
+        },
+      ] }
+    />
+  </>
 }
 
 export default memo(Exam)

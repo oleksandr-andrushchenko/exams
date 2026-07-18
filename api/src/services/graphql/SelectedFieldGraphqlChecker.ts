@@ -6,10 +6,10 @@ import { SelectionNode } from 'graphql/language/ast'
 export default class SelectedFieldGraphqlChecker {
 
   /**
-   * Example operation:
+   * __EXAM_SESSIONPLE__ operation:
    *
-   * query PaginatedCategories($size: Int) {
-   *   paginatedCategories(size: $size) {
+   * query PaginatedExams($size: Int) {
+   *   paginatedExams(size: $size) {
    *     data {
    *       id
    *     }
@@ -20,11 +20,11 @@ export default class SelectedFieldGraphqlChecker {
    *   }
    * }
    *
-   * Example use:
+   * __EXAM_SESSIONPLE__ use:
    *
-   * checkSelectedField(info, ['PaginatedCategories', 'paginatedCategories', 'meta', 'nextCursor']) => TRUE
-   * checkSelectedField(info, ['paginatedCategories', 'meta']) => TRUE
-   * checkSelectedField(info, ['paginatedCategories', 'any']) => FALSE
+   * checkSelectedField(info, ['PaginatedExams', 'paginatedExams', 'meta', 'nextCursor']) => TRUE
+   * checkSelectedField(info, ['paginatedExams', 'meta']) => TRUE
+   * checkSelectedField(info, ['paginatedExams', 'any']) => FALSE
    * checkSelectedField(info, ['any']) => FALSE
    *
    * @param {GraphQLResolveInfo} info

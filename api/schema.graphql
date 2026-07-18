@@ -4,41 +4,25 @@
 # -----------------------------------------------
 
 type Activity {
-  categoryId: ObjectId
-  categoryName: String
   createdAt: Timestamp!
   event: String!
-  id: ObjectId!
-  ownerId: ObjectId
-  updatedAt: Timestamp
-}
-
-type Category {
-  approvedQuestionCount: Int
-  createdAt: Timestamp!
   examId: ObjectId
+  examName: String
   id: ObjectId!
-  isApproved: Boolean
-  isCreator: Boolean
-  isOwner: Boolean
-  name: String!
   ownerId: ObjectId
-  questionCount: Int
-  rating: RatingSchema
-  requiredScore: Int
   updatedAt: Timestamp
 }
 
-input CreateCategory {
+input CreateExam {
   name: String!
   requiredScore: Int = 0
 }
 
-input CreateExam {
-  categoryId: ID!
+input CreateExamSession {
+  examId: ID!
 }
 
-input CreateExamQuestionAnswer {
+input CreateExamSessionQuestionAnswer {
   answer: String
   choice: Int
 }
@@ -50,9 +34,9 @@ input CreateMe {
 }
 
 input CreateQuestion {
-  categoryId: ID!
   choices: [QuestionChoiceSchema!]
   difficulty: String!
+  examId: ID!
   title: String!
   type: String!
 }
@@ -70,12 +54,28 @@ input Credentials {
 }
 
 type Exam {
+  approvedQuestionCount: Int
+  createdAt: Timestamp!
+  examSessionId: ObjectId
+  id: ObjectId!
+  isApproved: Boolean
+  isCreator: Boolean
+  isOwner: Boolean
+  name: String!
+  ownerId: ObjectId
+  questionCount: Int
+  rating: RatingSchema
+  requiredScore: Int
+  updatedAt: Timestamp
+}
+
+type ExamSession {
   answeredQuestionCount: Int!
-  category: Category!
-  categoryId: ObjectId!
   completedAt: Timestamp
   correctAnswerCount: Int
   createdAt: Timestamp!
+  exam: Exam!
+  examId: ObjectId!
   id: ObjectId!
   ownerId: ObjectId
   questionCount: Int!
@@ -83,35 +83,35 @@ type Exam {
   updatedAt: Timestamp
 }
 
-type ExamQuestionSchema {
+type ExamSessionQuestionSchema {
   answer: String
   choice: Int
   choices: [String!]
-  exam: Exam
+  examSession: ExamSession
   number: Int
   question: Question
 }
 
 type Mutation {
   createAuthenticationToken(credentials: Credentials!): Token!
-  createCategory(createCategory: CreateCategory!): Category!
   createExam(createExam: CreateExam!): Exam!
-  createExamCompletion(examId: ID!): Exam!
-  createExamQuestionAnswer(createExamQuestionAnswer: CreateExamQuestionAnswer!, examId: ID!, question: Int!): ExamQuestionSchema!
+  createExamSession(createExamSession: CreateExamSession!): ExamSession!
+  createExamSessionCompletion(examSessionId: ID!): ExamSession!
+  createExamSessionQuestionAnswer(createExamSessionQuestionAnswer: CreateExamSessionQuestionAnswer!, examSessionId: ID!, question: Int!): ExamSessionQuestionSchema!
   createMe(createMe: CreateMe!): User!
   createQuestion(createQuestion: CreateQuestion!): Question!
   createUser(createUser: CreateUser!): User!
-  deleteCategory(categoryId: ID!): Boolean!
   deleteExam(examId: ID!): Boolean!
-  deleteExamQuestionAnswer(examId: ID!, question: Int!): ExamQuestionSchema!
+  deleteExamSession(examSessionId: ID!): Boolean!
+  deleteExamSessionQuestionAnswer(examSessionId: ID!, question: Int!): ExamSessionQuestionSchema!
   deleteMe: Boolean!
   deleteQuestion(questionId: ID!): Boolean!
   deleteUser(userId: ID!): Boolean!
-  rateCategory(categoryId: ID!, mark: Int!): Category!
+  rateExam(examId: ID!, mark: Int!): Exam!
   rateQuestion(mark: Int!, questionId: ID!): Question!
-  toggleCategoryApprove(categoryId: ID!): Category!
+  toggleExamApprove(examId: ID!): Exam!
   toggleQuestionApprove(questionId: ID!): Question!
-  updateCategory(categoryId: ID!, updateCategory: UpdateCategory!): Category!
+  updateExam(examId: ID!, updateExam: UpdateExam!): Exam!
   updateMe(updateMe: UpdateMe!): User!
   updateQuestion(questionId: ID!, updateQuestion: UpdateQuestion!): Question!
   updateUser(updateUser: UpdateUser!, userId: ID!): User!
@@ -125,8 +125,8 @@ type PaginatedActivityList {
   meta: PaginatedMetaSchema!
 }
 
-type PaginatedCategories {
-  data: [Category!]!
+type PaginatedExamSessions {
+  data: [ExamSession!]!
   meta: PaginatedMetaSchema!
 }
 
@@ -167,31 +167,31 @@ type PermissionSchema {
 
 type Query {
   activities(cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, size: Int = 20): [Activity!]!
-  categories(approved: String, creator: String, cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20, subscription: String): [Category!]!
-  category(categoryId: ID!): Category!
-  currentExamQuestion(examId: ID!): ExamQuestionSchema!
-  currentExams(categoryIds: [ID!]!): [Exam!]!
+  currentExamSessionQuestion(examSessionId: ID!): ExamSessionQuestionSchema!
+  currentExamSessions(examIds: [ID!]!): [ExamSession!]!
   exam(examId: ID!): Exam!
-  examQuestion(examId: ID!, question: Int!): ExamQuestionSchema!
-  exams(categoryId: ID, completion: Boolean, cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, size: Int = 20): [Exam!]!
+  examSession(examSessionId: ID!): ExamSession!
+  examSessionQuestion(examSessionId: ID!, question: Int!): ExamSessionQuestionSchema!
+  examSessions(completion: Boolean, cursor: String = "id", examId: ID, nextCursor: String, order: String = "desc", prevCursor: String, size: Int = 20): [ExamSession!]!
+  exams(approved: String, creator: String, cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20, subscription: String): [Exam!]!
   me: User!
   paginatedActivities(cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, size: Int = 20): PaginatedActivityList!
-  paginatedCategories(approved: String, creator: String, cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20, subscription: String): PaginatedCategories!
-  paginatedExams(categoryId: ID, completion: Boolean, cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, size: Int = 20): PaginatedExams!
-  paginatedQuestions(approved: String, category: ID, creator: String, cursor: String = "id", difficulty: String, nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20, subscription: String, type: String): PaginatedQuestions!
+  paginatedExamSessions(completion: Boolean, cursor: String = "id", examId: ID, nextCursor: String, order: String = "desc", prevCursor: String, size: Int = 20): PaginatedExamSessions!
+  paginatedExams(approved: String, creator: String, cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20, subscription: String): PaginatedExams!
+  paginatedQuestions(approved: String, creator: String, cursor: String = "id", difficulty: String, exam: ID, nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20, subscription: String, type: String): PaginatedQuestions!
   paginatedUsers(cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20): PaginatedUsers!
   permission: PermissionSchema!
   question(questionId: ID!): Question!
-  questions(approved: String, category: ID, creator: String, cursor: String = "id", difficulty: String, nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20, subscription: String, type: String): [Question!]!
+  questions(approved: String, creator: String, cursor: String = "id", difficulty: String, exam: ID, nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20, subscription: String, type: String): [Question!]!
   users(cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20): [User!]!
 }
 
 type Question {
-  category: Category!
-  categoryId: ObjectId!
   choices: [QuestionChoice!]
   createdAt: Timestamp!
   difficulty: String!
+  exam: Exam!
+  examId: ObjectId!
   id: ObjectId!
   isApproved: Boolean
   isCreator: Boolean
@@ -230,7 +230,7 @@ type Token {
   token: String!
 }
 
-input UpdateCategory {
+input UpdateExam {
   name: String
   requiredScore: Int
 }
@@ -242,9 +242,9 @@ input UpdateMe {
 }
 
 input UpdateQuestion {
-  categoryId: ID
   choices: [QuestionChoiceSchema!]
   difficulty: String
+  examId: ID
   title: String
   type: String
 }

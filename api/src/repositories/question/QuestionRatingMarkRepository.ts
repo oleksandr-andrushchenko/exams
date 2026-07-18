@@ -19,9 +19,9 @@ export default class QuestionRatingMarkRepository extends EntityRepository<Quest
     return await this.findBy({ creatorId: creator.id })
   }
 
-  public async findByCategoriesAndCreator(categories: Question[], creator: User): Promise<QuestionRatingMark[]> {
+  public async findByExamsAndCreator(exams: Question[], creator: User): Promise<QuestionRatingMark[]> {
     return await this.findBy({
-      questionId: { $in: categories.map(question => question.id) },
+      questionId: { $in: exams.map(question => question.id) },
       creatorId: creator.id,
     })
   }

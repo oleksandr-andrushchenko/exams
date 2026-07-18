@@ -7,9 +7,9 @@ export default function updateQuestion(questionId: string, updateQuestion: Updat
         mutation UpdateQuestion($questionId: ID!, $updateQuestion: UpdateQuestion!) {
             updateQuestion(questionId: $questionId, updateQuestion: $updateQuestion) {
                 id
-                categoryId
+                examId
                 title
-                category {
+                exam {
                     name
                 }
                 type

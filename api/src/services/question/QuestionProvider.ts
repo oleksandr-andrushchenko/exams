@@ -16,11 +16,11 @@ export default class QuestionProvider {
 
   /**
    * @param {ObjectId | string} id
-   * @param {ObjectId | string} categoryId
+   * @param {ObjectId | string} examId
    * @returns {Promise<Question>}
    * @throws {QuestionNotFoundError}
    */
-  public async getQuestion(id: ObjectId | string, categoryId: ObjectId | string = undefined): Promise<Question> {
+  public async getQuestion(id: ObjectId | string, examId: ObjectId | string = undefined): Promise<Question> {
     if (typeof id === 'string') {
       this.validator.validateId(id)
       id = new ObjectId(id)
@@ -28,7 +28,7 @@ export default class QuestionProvider {
 
     const question = await this.questionRepository.findOneById(id)
 
-    if (!question || (categoryId && question.categoryId.toString() !== categoryId.toString())) {
+    if (!question || (examId && question.examId.toString() !== examId.toString())) {
       throw new QuestionNotFoundError(id)
     }
 

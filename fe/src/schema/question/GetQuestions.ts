@@ -2,7 +2,7 @@ import Pagination from '../pagination/Pagination'
 import YesNo from '../../enum/YesNo'
 
 export default interface GetQuestions extends Pagination {
-  category?: string
+  exam?: string
   subscription?: YesNo
   approved?: YesNo
   search?: string

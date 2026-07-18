@@ -16,9 +16,9 @@ export default class Activity extends Base {
 
   @Column({ type: 'varchar', length: 24, nullable: true, transformer: ObjectIdTransformer })
   @Field(_type => ObjectIdScalar, { nullable: true })
-  public categoryId?: ObjectId
+  public examId?: ObjectId
 
   @Column({ nullable: true })
   @Field({ nullable: true })
-  public categoryName?: string
+  public examName?: string
 }

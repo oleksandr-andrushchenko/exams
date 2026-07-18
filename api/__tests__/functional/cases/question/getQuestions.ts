@@ -1,6 +1,6 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
-import Category from '../../../../src/entities/category/Category'
+import Exam from '../../../../src/entities/exam/Exam'
 import Question from '../../../../src/entities/question/Question'
 // @ts-ignore
 import { getQuestions } from '../../graphql/question/getQuestions'
@@ -14,7 +14,7 @@ const framework: TestFramework = globalThis.framework
 
 describe('Get questions', () => {
   test.each([
-    { case: 'invalid category', query: { category: 'any' } },
+    { case: 'invalid exam', query: { exam: 'any' } },
     { case: 'invalid subscription', query: { subscription: 'any' } },
     { case: 'invalid approved', query: { approved: 'any' } },
     { case: 'invalid difficulty', query: { difficulty: 'any' } },
@@ -33,34 +33,34 @@ describe('Get questions', () => {
     expect(res.status).toEqual(200)
     expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
   })
-  test('Empty by category', async () => {
+  test('Empty by exam', async () => {
     await framework.clear(Question)
-    const category = await framework.fixture<Category>(Category)
+    const exam = await framework.fixture<Exam>(Exam)
     const res = await request(framework.app).post('/')
-      .send(getQuestions({ category: category.id.toString() }))
+      .send(getQuestions({ exam: exam.id.toString() }))
 
     expect(res.status).toEqual(200)
     expect(res.body.data.questions).toEqual([])
   })
-  test('Not empty by category (ownership)', async () => {
+  test('Not empty by exam (ownership)', async () => {
     await framework.clear()
     const user = await framework.fixture<User>(User)
     const token = (await framework.auth(user)).token
-    const category = await framework.fixture<Category>(Category, { creatorId: user.id })
+    const exam = await framework.fixture<Exam>(Exam, { creatorId: user.id })
     const questions = await Promise.all([
-      framework.fixture<Question>(Question, { categoryId: category.id, creatorId: user.id }),
-      framework.fixture<Question>(Question, { categoryId: category.id, creatorId: user.id }),
+      framework.fixture<Question>(Question, { examId: exam.id, creatorId: user.id }),
+      framework.fixture<Question>(Question, { examId: exam.id, creatorId: user.id }),
     ])
     const fields = [
       'id',
       'title',
-      'categoryId',
+      'examId',
       'type',
       'difficulty',
       'choices {title correct explanation}',
     ]
     const res = await request(framework.app).post('/')
-      .send(getQuestions({ category: category.id.toString() }, fields))
+      .send(getQuestions({ exam: exam.id.toString() }, fields))
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
@@ -71,7 +71,7 @@ describe('Get questions', () => {
       .sort((a: Question, b: Question) => a.title.localeCompare(b.title))
       .forEach((question: Question, index: number) => {
         expect(body[index]).toMatchObject({
-          categoryId: question.categoryId.toString(),
+          examId: question.examId.toString(),
           type: question.type,
           difficulty: question.difficulty,
           title: question.title,

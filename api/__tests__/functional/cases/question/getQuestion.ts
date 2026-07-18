@@ -30,7 +30,7 @@ describe('Get question', () => {
     const token = (await framework.auth(user)).token
     const fields = [
       'id',
-      'categoryId',
+      'examId',
       'type',
       'difficulty',
       'title',
@@ -49,7 +49,7 @@ describe('Get question', () => {
       data: {
         question: {
           id: question.id.toString(),
-          categoryId: question.categoryId.toString(),
+          examId: question.examId.toString(),
           type: question.type,
           difficulty: question.difficulty,
           title: question.title,

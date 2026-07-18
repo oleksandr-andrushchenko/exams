@@ -4,7 +4,7 @@ export const getQuestions = (variables: GetQuestions = {}, fields: string[] = [ 
   return {
     query: `
       query GetQuestions(
-        $category: ID,
+        $exam: ID,
         $difficulty: String,
         $type: String,
         $prevCursor: String,
@@ -17,7 +17,7 @@ export const getQuestions = (variables: GetQuestions = {}, fields: string[] = [ 
         $search: String
       ) {
         questions(
-          category: $category,
+          exam: $exam,
           difficulty: $difficulty,
           type: $type,
           prevCursor: $prevCursor,

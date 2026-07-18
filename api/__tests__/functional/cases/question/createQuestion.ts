@@ -1,6 +1,6 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
-import Category from '../../../../src/entities/category/Category'
+import Exam from '../../../../src/entities/exam/Exam'
 import User from '../../../../src/entities/user/User'
 import { ObjectId } from 'bson'
 import Question from '../../../../src/entities/question/Question'
@@ -12,15 +12,15 @@ import CreateQuestion from '../../../../src/schema/question/CreateQuestion'
 import TestFramework from '../../TestFramework'
 import QuestionType from '../../../../src/entities/question/QuestionType'
 import QuestionDifficulty from '../../../../src/entities/question/QuestionDifficulty'
-import CategoryPermission from '../../../../src/enums/category/CategoryPermission'
+import ExamPermission from '../../../../src/enums/exam/ExamPermission'
 
 const framework: TestFramework = globalThis.framework
 
 describe('Create question', () => {
   test('Unauthorized', async () => {
-    const category = await framework.fixture<Category>(Category)
+    const exam = await framework.fixture<Exam>(Exam)
     const create = {
-      categoryId: category.id.toString(),
+      examId: exam.id.toString(),
       title: 'any',
       type: QuestionType.CHOICE,
       choices: [ { title: faker.lorem.sentences(3) }, { title: faker.lorem.sentences(3), correct: true } ],
@@ -32,12 +32,12 @@ describe('Create question', () => {
     expect(res.status).toEqual(200)
     expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
   })
-  test('Not found (category)', async () => {
-    const categoryId = await framework.fakeId()
+  test('Not found (exam)', async () => {
+    const examId = await framework.fakeId()
     const user = await framework.fixture<User>(User, { permissions: [ QuestionPermission.Create ] })
     const token = (await framework.auth(user)).token
     const create = {
-      categoryId: categoryId.toString(),
+      examId: examId.toString(),
       title: 'Any valid title',
       type: QuestionType.CHOICE,
       choices: [ { title: faker.lorem.sentences(3) }, { title: faker.lorem.sentences(3), correct: true } ],
@@ -138,10 +138,10 @@ describe('Create question', () => {
       body: createBadRequestBody('choices', [ { title: 'Any valid title', explanation: true } ]),
     },
   ])('Bad request ($case)', async ({ body, times = 1 }) => {
-    const category = await framework.fixture<Category>(Category)
+    const exam = await framework.fixture<Exam>(Exam)
     const user = await framework.fixture<User>(User, { permissions: [ QuestionPermission.Create ] })
     const token = (await framework.auth(user)).token
-    const create = { ...body, ...{ categoryId: category.id.toString() } } as CreateQuestion
+    const create = { ...body, ...{ examId: exam.id.toString() } } as CreateQuestion
     const res = await request(framework.app).post('/')
       .send(createQuestion({ createQuestion: create }))
       .auth(token, { type: 'bearer' })
@@ -151,14 +151,14 @@ describe('Create question', () => {
   })
   test.each([
     { case: 'no permissions', permissions: [] },
-    // { case: 'no add category question permission', permissions: [ QuestionPermission.Create ] },
-    // { case: 'no create question permission', permissions: [ CategoryPermission.AddQuestion ] },
+    // { case: 'no add exam question permission', permissions: [ QuestionPermission.Create ] },
+    // { case: 'no create question permission', permissions: [ ExamPermission.AddQuestion ] },
   ])('Forbidden ($case)', async ({ permissions }) => {
-    const category = await framework.fixture<Category>(Category)
+    const exam = await framework.fixture<Exam>(Exam)
     const user = await framework.fixture<User>(User, { permissions })
     const token = (await framework.auth(user)).token
     const create = {
-      categoryId: category.id.toString(),
+      examId: exam.id.toString(),
       title: faker.lorem.sentences(3),
       type: QuestionType.CHOICE,
       choices: [ { title: faker.lorem.sentences(3) }, { title: faker.lorem.sentences(3), correct: true } ],
@@ -174,10 +174,10 @@ describe('Create question', () => {
   test('Conflict', async () => {
     const user = await framework.fixture<User>(User)
     const token = (await framework.auth(user)).token
-    const category = await framework.fixture<Category>(Category, { ownerId: user.id })
+    const exam = await framework.fixture<Exam>(Exam, { ownerId: user.id })
     const question1 = await framework.fixture<Question>(Question)
     const create = {
-      categoryId: category.id.toString(),
+      examId: exam.id.toString(),
       title: question1.title,
       type: QuestionType.CHOICE,
       choices: [ { title: faker.lorem.sentences(3) }, { title: faker.lorem.sentences(3), correct: true } ],
@@ -191,14 +191,14 @@ describe('Create question', () => {
     expect(res.body).toMatchObject(framework.graphqlError('ConflictError'))
   })
   test.each([
-    { case: 'has category ownership', ownership: true },
+    { case: 'has exam ownership', ownership: true },
     { case: 'has permission', permission: true },
   ])('Created ($case)', async ({ ownership, permission }) => {
-    const user = await framework.fixture<User>(User, permission ? { permissions: [ QuestionPermission.Create, CategoryPermission.AddQuestion ] } : {})
+    const user = await framework.fixture<User>(User, permission ? { permissions: [ QuestionPermission.Create, ExamPermission.AddQuestion ] } : {})
     const token = (await framework.auth(user)).token
-    const category = await framework.fixture<Category>(Category, ownership ? { ownerId: user.id } : {})
+    const exam = await framework.fixture<Exam>(Exam, ownership ? { ownerId: user.id } : {})
     const create = {
-      categoryId: category.id.toString(),
+      examId: exam.id.toString(),
       title: faker.lorem.sentences(3),
       type: QuestionType.CHOICE,
       choices: [
@@ -219,7 +219,7 @@ describe('Create question', () => {
     }
     const fields = [
       'id',
-      'categoryId',
+      'examId',
       'type',
       'difficulty',
       'title',
@@ -240,10 +240,10 @@ describe('Create question', () => {
 
     const id = new ObjectId(res.body.data.createQuestion.id)
     const createdQuestion = await framework.load<Question>(Question, id)
-    expect(createdQuestion).toMatchObject({ ...create, ...{ categoryId: category.id } })
+    expect(createdQuestion).toMatchObject({ ...create, ...{ examId: exam.id } })
     expect(res.body.data.createQuestion).toEqual({
       id: createdQuestion.id.toString(),
-      categoryId: createdQuestion.categoryId.toString(),
+      examId: createdQuestion.examId.toString(),
       type: createdQuestion.type,
       difficulty: createdQuestion.difficulty,
       title: createdQuestion.title,

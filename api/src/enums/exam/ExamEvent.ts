@@ -2,7 +2,9 @@ enum ExamEvent {
   Created = 'examCreated',
   Updated = 'examUpdated',
   Deleted = 'examDeleted',
-  Completed = 'examCompleted',
+  ApproveToggled = 'examApproveToggled',
+  Approved = 'examApproved',
+  Rated = 'examRated',
 }
 
 export default ExamEvent

@@ -1,9 +1,6 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
-import User from '../../../../src/entities/user/User'
 import Exam from '../../../../src/entities/exam/Exam'
-import Category from '../../../../src/entities/category/Category'
-import ExamPermission from '../../../../src/enums/exam/ExamPermission'
 // @ts-ignore
 import { getExams } from '../../graphql/exam/getExams'
 import GetExams from '../../../../src/schema/exam/GetExams'
@@ -12,16 +9,16 @@ import TestFramework from '../../TestFramework'
 const framework: TestFramework = globalThis.framework
 
 describe('Get exams', () => {
-  test('Unauthorized', async () => {
-    const res = await request(framework.app).post('/')
-      .send(getExams())
+  test('Empty', async () => {
+    await framework.clear(Exam)
+    const res = await request(framework.app).post('/').send(getExams())
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
+    expect(res.body).toEqual({ data: { exams: [] } })
   })
   test.each([
-    { case: 'invalid category type', query: { categoryId: 1 } },
-    { case: 'invalid category', query: { categoryId: 'any' } },
+    { case: 'invalid subscription', query: { subscription: 'any' } },
+    { case: 'invalid approved', query: { approved: 'any' } },
     { case: 'invalid cursor type', query: { cursor: 1 } },
     { case: 'not allowed cursor', query: { cursor: 'name' } },
     { case: 'invalid size type', query: { size: 'any' } },
@@ -31,189 +28,254 @@ describe('Get exams', () => {
     { case: 'invalid order type', query: { order: 1 } },
     { case: 'not allowed order', query: { order: 'any' } },
   ])('Bad request ($case)', async ({ query }) => {
-    const user = await framework.fixture<User>(User)
-    const token = (await framework.auth(user)).token
-    const res = await request(framework.app).post('/')
-      .send(getExams(query as GetExams))
-      .auth(token, { type: 'bearer' })
+    const res = await request(framework.app).post('/').send(getExams(query as GetExams))
 
     expect(res.status).toEqual(200)
     expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
   })
-  test('Empty', async () => {
+  test.each([
+    { size: 1 },
+    { size: 2 },
+    { size: 3 },
+    { size: 4 },
+  ])('Cursor (id, id:asc, size: $size)', async ({ size }) => {
     await framework.clear(Exam)
-    const user = await framework.fixture<User>(User)
-    const token = (await framework.auth(user)).token
-    const res = await request(framework.app).post('/')
-      .send(getExams())
-      .auth(token, { type: 'bearer' })
-
-    expect(res.status).toEqual(200)
-    expect(res.body).toEqual({ data: { exams: [] } })
-  })
-  test('No filter (ownership)', async () => {
-    await framework.clear(Exam)
-    const user = await framework.fixture<User>(User)
-    const token = (await framework.auth(user)).token
-    const ownerId = user.id
-    const examOwnOptions = { ownerId }
     const exams = (await Promise.all([
-      framework.fixture<Exam>(Exam, examOwnOptions),
       framework.fixture<Exam>(Exam),
-      framework.fixture<Exam>(Exam, examOwnOptions),
+      framework.fixture<Exam>(Exam),
+      framework.fixture<Exam>(Exam),
     ])).sort((a: Exam, b: Exam) => a.id.toString().localeCompare(b.id.toString()))
 
-    const fields = [ 'id', 'categoryId', 'questionNumber', 'completedAt', 'createdAt', 'updatedAt', 'ownerId' ]
-    const res = await request(framework.app).post('/')
-      .send(getExams({}, fields))
-      .auth(token, { type: 'bearer' })
+    const query = { cursor: 'id', size, order: 'asc' }
+    const res = await request(framework.app).post('/').send(getExams(query as GetExams))
+
+    expect(res.status).toEqual(200)
+    const firstInStoragePosition = 0
+    const lastInStoragePosition = Math.min(exams.length, size) - 1
+    expect(res.body.data.exams).toHaveLength(lastInStoragePosition - firstInStoragePosition + 1)
+
+    const firstInBodyId = res.body.data.exams[0].id
+    const firstInStorageId = exams[firstInStoragePosition].id.toString()
+    expect(firstInBodyId).toEqual(firstInStorageId)
+    const lastInBodyId = res.body.data.exams[res.body.data.exams.length - 1].id
+    const lastInStorageId = exams[lastInStoragePosition].id.toString()
+    expect(lastInBodyId).toEqual(lastInStorageId)
+  })
+  test.each([
+    { size: 1 },
+    { size: 2 },
+    { size: 3 },
+    { size: 4 },
+  ])('Cursor (id, id:desc, size: $size)', async ({ size }) => {
+    await framework.clear(Exam)
+    const exams = (await Promise.all([
+      framework.fixture<Exam>(Exam),
+      framework.fixture<Exam>(Exam),
+      framework.fixture<Exam>(Exam),
+    ])).sort((a: Exam, b: Exam) => a.id.toString().localeCompare(b.id.toString()))
+
+    const query = { cursor: 'id', size, order: 'desc' }
+    const res = await request(framework.app).post('/').send(getExams(query as GetExams))
 
     expect(res.status).toEqual(200)
 
-    expect(res.body).toHaveProperty('data')
-    expect(res.body.data).toHaveProperty('exams')
-
-    const ownExams = exams.filter(exam => exam.ownerId.toString() === ownerId.toString())
-    expect(res.body.data.exams).toHaveLength(ownExams.length)
-
-    const resExams = res.body.data.exams.sort((a, b) => a.id.localeCompare(b.id))
-
-    for (const index in ownExams) {
-      expect(resExams[index]).toMatchObject({
-        id: ownExams[index].id.toString(),
-        categoryId: ownExams[index].categoryId.toString(),
-        questionNumber: ownExams[index].questionNumber,
-        completedAt: ownExams[index].completedAt?.getTime() ?? null,
-        ownerId: ownExams[index].ownerId.toString(),
-        createdAt: ownExams[index].createdAt.getTime(),
-        updatedAt: ownExams[index].updatedAt?.getTime() ?? null,
-      })
-      expect(resExams[index]).not.toHaveProperty([ 'questions', 'creatorId', 'deletedAt' ])
+    if (exams.length < 1) {
+      expect(res.body.data.exams).toHaveLength(0)
+      return
     }
+
+    const firstInStoragePosition = Math.max(0, exams.length - size)
+    const lastInStoragePosition = Math.max(0, exams.length - 1)
+    expect(res.body.data.exams).toHaveLength(lastInStoragePosition - firstInStoragePosition + 1)
+
+    const firstInBodyId = res.body.data.exams[0].id
+    const lastInStorageId = exams[lastInStoragePosition].id.toString()
+    expect(firstInBodyId).toEqual(lastInStorageId)
+    const firstInStorageId = exams[firstInStoragePosition].id.toString()
+    const lastInBodyId = res.body.data.exams[res.body.data.exams.length - 1].id
+    expect(lastInBodyId).toEqual(firstInStorageId)
   })
-  test('Category filter (ownership)', async () => {
+  test.each([
+    { prev: 0, size: 1 },
+    { prev: 0, size: 2 },
+    { prev: 1, size: 1 },
+    { prev: 1, size: 2 },
+    { prev: 1, size: 3 },
+    { prev: 1, size: 4 },
+    { prev: 2, size: 1 },
+    { prev: 2, size: 2 },
+    { prev: 2, size: 3 },
+  ])('Cursor (id, id:asc, prev: $prev, size: $size)', async ({ prev, size }) => {
     await framework.clear(Exam)
-    const category = await framework.fixture<Category>(Category)
-    const user = await framework.fixture<User>(User)
-    const token = (await framework.auth(user)).token
-    const ownerId = user.id
-    const examOwnOptions = { ownerId }
-    const examCategoryOptions = { categoryId: category.id }
     const exams = (await Promise.all([
-      framework.fixture<Exam>(Exam, examOwnOptions),
-      framework.fixture<Exam>(Exam, examCategoryOptions),
-      framework.fixture<Exam>(Exam, { ...examOwnOptions, ...examCategoryOptions }),
+      framework.fixture<Exam>(Exam),
+      framework.fixture<Exam>(Exam),
+      framework.fixture<Exam>(Exam),
     ])).sort((a: Exam, b: Exam) => a.id.toString().localeCompare(b.id.toString()))
 
-    const fields = [ 'id', 'categoryId', 'questionNumber', 'completedAt', 'createdAt', 'updatedAt', 'ownerId' ]
+    const prevCursor = exams[prev].id.toString()
+    const query = { cursor: 'id', size, order: 'asc' }
     const res = await request(framework.app).post('/')
-      .send(getExams({ categoryId: category.id.toString() }, fields))
-      .auth(token, { type: 'bearer' })
+      .send(getExams({ ...query, ...{ prevCursor } } as GetExams))
 
     expect(res.status).toEqual(200)
 
-    expect(res.body).toHaveProperty('data')
-    expect(res.body.data).toHaveProperty('exams')
-
-    const ownCategoryExams = exams
-      .filter(exam => exam.ownerId.toString() === ownerId.toString())
-      .filter(exam => exam.categoryId.toString() === category.id.toString())
-    expect(res.body.data.exams).toHaveLength(ownCategoryExams.length)
-
-    const resExams = res.body.data.exams.sort((a, b) => a.id.localeCompare(b.id))
-
-    for (const index in ownCategoryExams) {
-      expect(resExams[index]).toMatchObject({
-        id: ownCategoryExams[index].id.toString(),
-        categoryId: ownCategoryExams[index].categoryId.toString(),
-        questionNumber: ownCategoryExams[index].questionNumber,
-        completedAt: ownCategoryExams[index].completedAt?.getTime() ?? null,
-        ownerId: ownCategoryExams[index].ownerId.toString(),
-        createdAt: ownCategoryExams[index].createdAt.getTime(),
-        updatedAt: ownCategoryExams[index].updatedAt?.getTime() ?? null,
-      })
-      expect(resExams[index]).not.toHaveProperty([ 'questions', 'creatorId', 'deletedAt' ])
+    if (prev < 1) {
+      expect(res.body.data.exams).toHaveLength(0)
+      return
     }
+
+    const firstInStoragePosition = Math.max(0, prev - size)
+    const lastInStoragePosition = Math.max(0, prev - 1)
+    expect(res.body.data.exams).toHaveLength(lastInStoragePosition - firstInStoragePosition + 1)
+
+    const firstInBodyId = res.body.data.exams[0].id
+    const firstInStorageId = exams[firstInStoragePosition].id.toString()
+    expect(firstInBodyId).toEqual(firstInStorageId)
+    const lastInBodyId = res.body.data.exams[res.body.data.exams.length - 1].id
+    const lastInStorageId = exams[lastInStoragePosition].id.toString()
+    expect(lastInBodyId).toEqual(lastInStorageId)
   })
-  test('No filter (permission)', async () => {
+  test.each([
+    { next: 0, size: 1 },
+    { next: 0, size: 2 },
+    { next: 0, size: 3 },
+    { next: 1, size: 1 },
+    { next: 1, size: 2 },
+    { next: 1, size: 3 },
+    { next: 2, size: 1 },
+    { next: 2, size: 2 },
+    { next: 2, size: 3 },
+  ])('Cursor (id, id:asc, next: $next, size: $size)', async ({ next, size }) => {
     await framework.clear(Exam)
-    const user = await framework.fixture<User>(User, { permissions: [ ExamPermission.Get ] })
-    const token = (await framework.auth(user)).token
-    const ownerId = user.id
-    const examOwnOptions = { ownerId }
     const exams = (await Promise.all([
       framework.fixture<Exam>(Exam),
-      framework.fixture<Exam>(Exam, examOwnOptions),
+      framework.fixture<Exam>(Exam),
       framework.fixture<Exam>(Exam),
     ])).sort((a: Exam, b: Exam) => a.id.toString().localeCompare(b.id.toString()))
 
-    const fields = [ 'id', 'categoryId', 'questionNumber', 'completedAt', 'createdAt', 'updatedAt', 'ownerId' ]
+    const nextCursor = exams[next].id.toString()
+    const query = { cursor: 'id', size, order: 'asc' }
     const res = await request(framework.app).post('/')
-      .send(getExams({}, fields))
-      .auth(token, { type: 'bearer' })
+      .send(getExams({ ...query, ...{ nextCursor } } as GetExams))
 
     expect(res.status).toEqual(200)
 
-    expect(res.body).toHaveProperty('data')
-    expect(res.body.data).toHaveProperty('exams')
+    if (next + 1 > exams.length - 1) {
+      expect(res.body.data.exams).toHaveLength(0)
+      return
+    }
 
+    const firstInStoragePosition = Math.min(next + 1, exams.length - 1)
+    const lastInStoragePosition = Math.min(next + size, exams.length - 1)
+    expect(res.body.data.exams).toHaveLength(lastInStoragePosition - firstInStoragePosition + 1)
+
+    const firstInBodyId = res.body.data.exams[0].id
+    const firstInStorageId = exams[firstInStoragePosition].id.toString()
+    expect(firstInBodyId).toEqual(firstInStorageId)
+    const lastInBodyId = res.body.data.exams[res.body.data.exams.length - 1].id
+    const lastInStorageId = exams[lastInStoragePosition].id.toString()
+    expect(lastInBodyId).toEqual(lastInStorageId)
+  })
+  test.each([
+    { prev: 0, size: 1 },
+    { prev: 0, size: 2 },
+    { prev: 0, size: 3 },
+    { prev: 0, size: 4 },
+    { prev: 1, size: 1 },
+    { prev: 1, size: 2 },
+    { prev: 1, size: 3 },
+    { prev: 1, size: 4 },
+    { prev: 2, size: 1 },
+    { prev: 2, size: 2 },
+    { prev: 2, size: 3 },
+    { prev: 2, size: 4 },
+  ])('Cursor (id, id:desc, prev: $prev, size: $size)', async ({ prev, size }) => {
+    await framework.clear(Exam)
+    const exams = (await Promise.all([
+      framework.fixture<Exam>(Exam),
+      framework.fixture<Exam>(Exam),
+      framework.fixture<Exam>(Exam),
+    ])).sort((a: Exam, b: Exam) => a.id.toString().localeCompare(b.id.toString()))
+
+    const prevCursor = exams[prev].id.toString()
+    const query = { cursor: 'id', size, order: 'desc' }
+    const res = await request(framework.app).post('/')
+      .send(getExams({ ...query, ...{ prevCursor } } as GetExams))
+
+    expect(res.status).toEqual(200)
+
+    if (prev + 2 > exams.length) {
+      expect(res.body.data.exams).toHaveLength(0)
+      return
+    }
+
+    const firstInStoragePosition = Math.min(prev + 1, exams.length - 1)
+    const lastInStoragePosition = Math.min(prev + size, exams.length - 1)
+    expect(res.body.data.exams).toHaveLength(lastInStoragePosition - firstInStoragePosition + 1)
+
+    const firstInBodyId = res.body.data.exams[0].id
+    const lastInStorageId = exams[lastInStoragePosition].id.toString()
+    expect(firstInBodyId).toEqual(lastInStorageId)
+    const lastInBodyId = res.body.data.exams[res.body.data.exams.length - 1].id
+    const firstInStorageId = exams[firstInStoragePosition].id.toString()
+    expect(lastInBodyId).toEqual(firstInStorageId)
+  })
+  test.each([
+    { next: 0, size: 1 },
+    { next: 0, size: 2 },
+    { next: 0, size: 3 },
+    { next: 1, size: 1 },
+    { next: 1, size: 2 },
+    { next: 1, size: 3 },
+    { next: 2, size: 1 },
+    { next: 2, size: 2 },
+    { next: 2, size: 3 },
+  ])('Cursor (id, id:desc, next: $next, size: $size)', async ({ next, size }) => {
+    await framework.clear(Exam)
+    const exams = (await Promise.all([
+      framework.fixture<Exam>(Exam),
+      framework.fixture<Exam>(Exam),
+      framework.fixture<Exam>(Exam),
+    ])).sort((a: Exam, b: Exam) => a.id.toString().localeCompare(b.id.toString()))
+
+    const nextCursor = exams[next].id.toString()
+    const query = { cursor: 'id', size, order: 'desc' }
+    const res = await request(framework.app).post('/')
+      .send(getExams({ ...query, ...{ nextCursor } } as GetExams))
+
+    expect(res.status).toEqual(200)
+
+    if (next < 1) {
+      expect(res.body.data.exams).toHaveLength(0)
+      return
+    }
+
+    const firstInStoragePosition = Math.max(0, next - 1)
+    const lastInStoragePosition = Math.max(0, next - size)
+    expect(res.body.data.exams).toHaveLength(firstInStoragePosition - lastInStoragePosition + 1)
+
+    const firstInBodyId = res.body.data.exams[0].id
+    const firstInStorageId = exams[firstInStoragePosition].id.toString()
+    expect(firstInBodyId).toEqual(firstInStorageId)
+    const lastInBodyId = res.body.data.exams[res.body.data.exams.length - 1].id
+    const lastInStorageId = exams[lastInStoragePosition].id.toString()
+    expect(lastInBodyId).toEqual(lastInStorageId)
+  })
+  test('Not empty', async () => {
+    await framework.clear(Exam)
+    const exams = await Promise.all([
+      framework.fixture<Exam>(Exam),
+      framework.fixture<Exam>(Exam),
+    ])
+
+    const res = await request(framework.app).post('/').send(getExams({ size: 50 }, [ 'id', 'name' ]))
+
+    expect(res.status).toEqual(200)
     expect(res.body.data.exams).toHaveLength(exams.length)
-
-    const resExams = res.body.data.exams.sort((a, b) => a.id.localeCompare(b.id))
-
-    for (const index in exams) {
-      expect(resExams[index]).toMatchObject({
-        id: exams[index].id.toString(),
-        categoryId: exams[index].categoryId.toString(),
-        questionNumber: exams[index].questionNumber,
-        completedAt: exams[index].completedAt?.getTime() ?? null,
-        ownerId: exams[index].ownerId.toString(),
-        createdAt: exams[index].createdAt.getTime(),
-        updatedAt: exams[index].updatedAt?.getTime() ?? null,
-      })
-      expect(resExams[index]).not.toHaveProperty([ 'questions', 'creatorId', 'deletedAt' ])
-    }
-  })
-  test('Category filter (permission)', async () => {
-    await framework.clear(Exam)
-    const category = await framework.fixture<Category>(Category)
-    const user = await framework.fixture<User>(User, { permissions: [ ExamPermission.Get ] })
-    const token = (await framework.auth(user)).token
-    const ownerId = user.id
-    const examOwnOptions = { ownerId }
-    const examCategoryOptions = { categoryId: category.id }
-    const exams = (await Promise.all([
-      framework.fixture<Exam>(Exam),
-      framework.fixture<Exam>(Exam, examOwnOptions),
-      framework.fixture<Exam>(Exam, { ...examOwnOptions, ...examCategoryOptions }),
-    ])).sort((a: Exam, b: Exam) => a.id.toString().localeCompare(b.id.toString()))
-
-    const fields = [ 'id', 'categoryId', 'questionNumber', 'completedAt', 'createdAt', 'updatedAt', 'ownerId' ]
-    const res = await request(framework.app).post('/')
-      .send(getExams({ categoryId: category.id.toString() }, fields))
-      .auth(token, { type: 'bearer' })
-
-    expect(res.status).toEqual(200)
-
-    expect(res.body).toHaveProperty('data')
-    expect(res.body.data).toHaveProperty('exams')
-
-    const categoryExams = exams.filter(exam => exam.categoryId.toString() === category.id.toString())
-    expect(res.body.data.exams).toHaveLength(categoryExams.length)
-
-    const resExams = res.body.data.exams.sort((a, b) => a.id.localeCompare(b.id))
-
-    for (const index in categoryExams) {
-      expect(resExams[index]).toMatchObject({
-        id: categoryExams[index].id.toString(),
-        categoryId: categoryExams[index].categoryId.toString(),
-        questionNumber: categoryExams[index].questionNumber,
-        completedAt: categoryExams[index].completedAt?.getTime() ?? null,
-        ownerId: categoryExams[index].ownerId.toString(),
-        createdAt: categoryExams[index].createdAt.getTime(),
-        updatedAt: categoryExams[index].updatedAt?.getTime() ?? null,
-      })
-      expect(resExams[index]).not.toHaveProperty([ 'questions', 'creatorId', 'deletedAt' ])
-    }
+    const body = res.body.data.exams.sort((a, b) => a.name.localeCompare(b.name))
+    exams.sort((a, b) => a.name.localeCompare(b.name)).forEach((exam, index) => {
+      expect(body[index]).toMatchObject({ name: exam.name })
+    })
   })
 })

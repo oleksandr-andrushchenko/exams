@@ -1,3 +1,4 @@
 export default interface CreateExam {
-  categoryId: string
+  name: string
+  requiredScore?: number
 }

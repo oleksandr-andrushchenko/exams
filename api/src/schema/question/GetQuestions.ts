@@ -10,7 +10,7 @@ export default class GetQuestions extends PaginationSchema {
   @IsOptional()
   @IsMongoId()
   @Field(_type => ID, { nullable: true })
-  public category?: string
+  public exam?: string
 
   @IsOptional()
   @IsIn([ 'yes', 'no' ])

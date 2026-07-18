@@ -10,7 +10,7 @@ export default class CreateQuestion {
 
   @IsMongoId()
   @Field(_type => ID)
-  public readonly categoryId: string
+  public readonly examId: string
 
   @IsEnum(QuestionType)
   @Field()

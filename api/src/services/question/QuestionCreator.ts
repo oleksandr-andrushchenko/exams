@@ -4,7 +4,7 @@ import User from '../../entities/user/User'
 import ValidatorInterface from '../validator/ValidatorInterface'
 import Question from '../../entities/question/Question'
 import CreateQuestion from '../../schema/question/CreateQuestion'
-import CategoryProvider from '../category/CategoryProvider'
+import ExamProvider from '../exam/ExamProvider'
 import QuestionPermission from '../../enums/question/QuestionPermission'
 import QuestionType from '../../entities/question/QuestionType'
 import QuestionVerifier from './QuestionVerifier'
@@ -18,7 +18,7 @@ export default class QuestionCreator {
 
   public constructor(
     @InjectEntityManager() private readonly entityManager: EntityManagerInterface,
-    @Inject() private readonly categoryProvider: CategoryProvider,
+    @Inject() private readonly examProvider: ExamProvider,
     @Inject() private readonly questionVerifier: QuestionVerifier,
     @Inject() private readonly eventDispatcher: EventDispatcher,
     @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
@@ -31,7 +31,7 @@ export default class QuestionCreator {
    * @param {CreateQuestion} createQuestion
    * @param {User} initiator
    * @returns {Promise<Question>}
-   * @throws {CategoryNotFoundError}
+   * @throws {ExamNotFoundError}
    * @throws {AuthorizationFailedError}
    * @throws {QuestionTitleTakenError}
    */
@@ -39,14 +39,14 @@ export default class QuestionCreator {
     await this.validator.validate(createQuestion)
     await this.authorizationVerifier.verifyAuthorization(initiator, QuestionPermission.Create)
 
-    const category = await this.categoryProvider.getCategory(createQuestion.categoryId)
-    // await this.authorizationVerifier.verifyAuthorization(initiator, CategoryPermission.AddQuestion, category)
+    const exam = await this.examProvider.getExam(createQuestion.examId)
+    // await this.authorizationVerifier.verifyAuthorization(initiator, ExamPermission.AddQuestion, exam)
 
     const title = createQuestion.title
     await this.questionVerifier.verifyQuestionTitleNotExists(title)
 
     const question: Question = new Question()
-    question.categoryId = category.id
+    question.examId = exam.id
     question.type = createQuestion.type
     question.difficulty = createQuestion.difficulty
     question.title = title
@@ -58,9 +58,9 @@ export default class QuestionCreator {
     }
 
     question.createdAt = new Date()
-    category.questionCount = await this.questionRepository.countByCategory(category) + 1
+    exam.questionCount = await this.questionRepository.countByExam(exam) + 1
 
-    await this.entityManager.save([ question, category ])
+    await this.entityManager.save([ question, exam ])
     await this.eventDispatcher.dispatch(QuestionEvent.Created, { question })
 
     return question

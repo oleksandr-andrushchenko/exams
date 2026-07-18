@@ -28,11 +28,11 @@ export default class User extends Base {
   public permissions?: Permission[] = [ Permission.Regular ]
 
   @Column({ type: 'jsonb', nullable: true, transformer: ObjectIdJsonTransformer })
-  public categoryRatingMarks?: ObjectId[][]
+  public examRatingMarks?: ObjectId[][]
 
   @Column({ type: 'jsonb', nullable: true, transformer: ObjectIdJsonTransformer })
   public questionRatingMarks?: ObjectId[][]
 
   @Column({ type: 'jsonb', nullable: true, transformer: ObjectIdJsonTransformer })
-  public categoryExams?: { [key: string]: ObjectId }
+  public examExamSessions?: { [key: string]: ObjectId }
 }

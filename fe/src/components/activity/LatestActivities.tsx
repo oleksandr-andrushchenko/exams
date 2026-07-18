@@ -4,16 +4,16 @@ import Error from '../Error'
 import Spinner from '../Spinner'
 import getActivities from '../../api/activity/getActivities'
 import Activity from '../../schema/activity/Activity'
-import CategoryEvent from '../../enum/category/CategoryEvent'
-import CategoryCreatedActivity from './CategoryCreatedActivity'
-import CategoryApprovedActivity from './CategoryApprovedActivity'
+import ExamEvent from '../../enum/exam/ExamEvent'
+import ExamCreatedActivity from './ExamCreatedActivity'
+import ExamApprovedActivity from './ExamApprovedActivity'
 
 interface Props extends ComponentProps<any> {
 }
 
 const renderers: Record<string, (activity: Activity) => JSX.Element> = {
-  [CategoryEvent.Created]: (activity: Activity) => <CategoryCreatedActivity activity={ activity }/>,
-  [CategoryEvent.Approved]: (activity: Activity) => <CategoryApprovedActivity activity={ activity }/>,
+  [ExamEvent.Created]: (activity: Activity) => <ExamCreatedActivity activity={ activity }/>,
+  [ExamEvent.Approved]: (activity: Activity) => <ExamApprovedActivity activity={ activity }/>,
 }
 
 const LatestActivities = ({}: Props) => {

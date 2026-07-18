@@ -18,7 +18,7 @@ export default class ActivityListProvider {
   /**
    * @param {ActivityQuery} activityQuery
    * @param {boolean} meta
-   * @returns {Promise<Category[] | PaginatedCategories>}
+   * @returns {Promise<Exam[] | PaginatedExams>}
    * @throws {ValidatorError}
    */
   public async getActivities(

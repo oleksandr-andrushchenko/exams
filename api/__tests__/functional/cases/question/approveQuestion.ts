@@ -6,7 +6,7 @@ import QuestionPermission from '../../../../src/enums/question/QuestionPermissio
 // @ts-ignore
 import { toggleQuestionApprove } from '../../graphql/question/toggleQuestionApprove'
 import TestFramework from '../../TestFramework'
-import Category from '../../../../src/entities/category/Category'
+import Exam from '../../../../src/entities/exam/Exam'
 
 const framework: TestFramework = globalThis.framework
 
@@ -67,13 +67,13 @@ describe('Approve question', () => {
   })
   test('Approved', async () => {
     await framework.clear(Question)
-    const category = await framework.fixture<Category>(Category)
+    const exam = await framework.fixture<Exam>(Exam)
     await Promise.all([
-      framework.fixture<Question>(Question, { categoryId: category.id, ownerId: undefined }),
-      framework.fixture<Question>(Question, { categoryId: category.id, ownerId: undefined }),
-      framework.fixture<Question>(Question, { categoryId: category.id }),
+      framework.fixture<Question>(Question, { examId: exam.id, ownerId: undefined }),
+      framework.fixture<Question>(Question, { examId: exam.id, ownerId: undefined }),
+      framework.fixture<Question>(Question, { examId: exam.id }),
     ])
-    const question = await framework.fixture<Question>(Question, { categoryId: category.id })
+    const question = await framework.fixture<Question>(Question, { examId: exam.id })
     const user = await framework.fixture<User>(User, { permissions: [ QuestionPermission.Approve ] })
     const token = (await framework.auth(user)).token
     const questionId = question.id.toString()
@@ -87,19 +87,19 @@ describe('Approve question', () => {
     const updatedQuestion = await framework.load<Question>(Question, question.id)
     expect(updatedQuestion).not.toHaveProperty('ownerId')
 
-    const updatedCategory = await framework.load<Category>(Category, category.id)
-    expect(updatedCategory).toHaveProperty('approvedQuestionCount')
-    expect(updatedCategory.approvedQuestionCount).toEqual(3)
+    const updatedExam = await framework.load<Exam>(Exam, exam.id)
+    expect(updatedExam).toHaveProperty('approvedQuestionCount')
+    expect(updatedExam.approvedQuestionCount).toEqual(3)
   })
   test('Un-approved', async () => {
     await framework.clear(Question)
-    const category = await framework.fixture<Category>(Category)
+    const exam = await framework.fixture<Exam>(Exam)
     await Promise.all([
-      framework.fixture<Question>(Question, { categoryId: category.id, ownerId: undefined }),
-      framework.fixture<Question>(Question, { categoryId: category.id, ownerId: undefined }),
-      framework.fixture<Question>(Question, { categoryId: category.id }),
+      framework.fixture<Question>(Question, { examId: exam.id, ownerId: undefined }),
+      framework.fixture<Question>(Question, { examId: exam.id, ownerId: undefined }),
+      framework.fixture<Question>(Question, { examId: exam.id }),
     ])
-    const question = await framework.fixture<Question>(Question, { categoryId: category.id, ownerId: undefined })
+    const question = await framework.fixture<Question>(Question, { examId: exam.id, ownerId: undefined })
     const user = await framework.fixture<User>(User, { permissions: [ QuestionPermission.Approve ] })
     const token = (await framework.auth(user)).token
     const questionId = question.id.toString()
@@ -121,8 +121,8 @@ describe('Approve question', () => {
     expect(updatedQuestion).toHaveProperty('ownerId')
     expect(updatedQuestion.ownerId.toString()).toEqual(question.creatorId.toString())
 
-    const updatedCategory = await framework.load<Category>(Category, category.id)
-    expect(updatedCategory).toHaveProperty('approvedQuestionCount')
-    expect(updatedCategory.approvedQuestionCount).toEqual(2)
+    const updatedExam = await framework.load<Exam>(Exam, exam.id)
+    expect(updatedExam).toHaveProperty('approvedQuestionCount')
+    expect(updatedExam.approvedQuestionCount).toEqual(2)
   })
 })

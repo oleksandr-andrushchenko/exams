@@ -9,8 +9,8 @@ import { updateQuestion } from '../../graphql/question/updateQuestion'
 import UpdateQuestion from '../../../../src/schema/question/UpdateQuestion'
 import TestFramework from '../../TestFramework'
 import QuestionType from '../../../../src/entities/question/QuestionType'
-import CategoryPermission from '../../../../src/enums/category/CategoryPermission'
-import Category from '../../../../src/entities/category/Category'
+import ExamPermission from '../../../../src/enums/exam/ExamPermission'
+import Exam from '../../../../src/entities/exam/Exam'
 
 const framework: TestFramework = globalThis.framework
 
@@ -44,15 +44,15 @@ describe('Update question', () => {
     expect(res.status).toEqual(200)
     expect(res.body).toMatchObject(framework.graphqlError('NotFoundError'))
   })
-  test('Not found (category)', async () => {
-    const categoryId = await framework.fakeId()
+  test('Not found (exam)', async () => {
+    const examId = await framework.fakeId()
     const user = await framework.fixture<User>(User, { permissions: [ QuestionPermission.Update ] })
     const token = (await framework.auth(user)).token
     const question = await framework.fixture<Question>(Question, { type: QuestionType.CHOICE })
     const res = await request(framework.app).post('/')
       .send(updateQuestion({
         questionId: question.id.toString(),
-        updateQuestion: { categoryId: categoryId.toString() },
+        updateQuestion: { examId: examId.toString() },
       }))
       .auth(token, { type: 'bearer' })
 
@@ -60,12 +60,12 @@ describe('Update question', () => {
     expect(res.body).toMatchObject(framework.graphqlError('NotFoundError'))
   })
   test.each([
-    { case: 'category id as object', body: { categoryId: {} } },
-    { case: 'category id as number', body: { categoryId: 123 } },
-    { case: 'category id as null', body: { categoryId: null } },
-    { case: 'category id as string', body: { categoryId: 'f656d857000000000000000' } },
-    { case: 'category id as invalid mongo id', body: { categoryId: 'zzzzzzzzzzzzzzzzzzzzzzzz' } },
-    { case: 'category id as boolean', body: { categoryId: false } },
+    { case: 'exam id as object', body: { examId: {} } },
+    { case: 'exam id as number', body: { examId: 123 } },
+    { case: 'exam id as null', body: { examId: null } },
+    { case: 'exam id as string', body: { examId: 'f656d857000000000000000' } },
+    { case: 'exam id as invalid mongo id', body: { examId: 'zzzzzzzzzzzzzzzzzzzzzzzz' } },
+    { case: 'exam id as boolean', body: { examId: false } },
 
     { case: 'type as object', body: { type: {} } },
     { case: 'type as number', body: { type: 123 } },
@@ -125,17 +125,17 @@ describe('Update question', () => {
   })
   test.each([
     { case: 'no permissions', permissions: [] },
-    // { case: 'no add category question permission', permissions: [ QuestionPermission.Update ] },
-    // { case: 'no update question permission', permissions: [ CategoryPermission.AddQuestion ] },
+    // { case: 'no add exam question permission', permissions: [ QuestionPermission.Update ] },
+    // { case: 'no update question permission', permissions: [ ExamPermission.AddQuestion ] },
   ])('Forbidden ($case)', async ({ permissions }) => {
     const user = await framework.fixture<User>(User, { permissions })
     const question = await framework.fixture<Question>(Question)
-    const category = await framework.fixture<Category>(Category)
+    const exam = await framework.fixture<Exam>(Exam)
     const token = (await framework.auth(user)).token
     const res = await request(framework.app).post('/')
       .send(updateQuestion({
         questionId: question.id.toString(),
-        updateQuestion: { categoryId: category.id.toString() },
+        updateQuestion: { examId: exam.id.toString() },
       }))
       .auth(token, { type: 'bearer' })
 
@@ -193,7 +193,7 @@ describe('Update question', () => {
 
     // check if others remains to be the same
     expect(updatedQuestion).toMatchObject({
-      categoryId: question.categoryId,
+      examId: question.examId,
       type: question.type,
       difficulty: question.difficulty,
       choices: question.choices,

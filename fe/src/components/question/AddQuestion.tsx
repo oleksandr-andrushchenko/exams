@@ -2,7 +2,7 @@ import { Card, CardBody, Dialog } from '@material-tailwind/react'
 import { ComponentProps, memo, useEffect, useState } from 'react'
 import CreateQuestion, { QuestionChoice, QuestionDifficulty, QuestionType } from '../../schema/question/CreateQuestion'
 import Question from '../../schema/question/Question'
-import Category from '../../schema/category/Category'
+import Exam from '../../schema/exam/Exam'
 import { apiMutate, apiQuery } from '../../api/apolloClient'
 import createQuestion from '../../api/question/createQuestion'
 import updateQuestion from '../../api/question/updateQuestion'
@@ -22,11 +22,11 @@ import useAuth from '../../hooks/useAuth'
 import Auth from '../Auth'
 import QuestionPermission from '../../enum/question/QuestionPermission'
 import H3 from '../typography/H3'
-import AddCategory from '../category/AddCategory'
-import getCategoriesForSelect from '../../api/category/getCategoriesForSelect'
+import AddExam from '../exam/AddExam'
+import getExamsForSelect from '../../api/exam/getExamsForSelect'
 
 interface Props extends ComponentProps<any> {
-  category?: Category
+  exam?: Exam
   question?: Question
   onSubmit?: (question: Question) => void
   iconButton?: boolean
@@ -35,29 +35,29 @@ interface Props extends ComponentProps<any> {
 interface Form {
   title: string
   type: QuestionType
-  categoryId: string
+  examId: string
   difficulty: QuestionDifficulty | ''
   choices: QuestionChoice[]
 }
 
-const AddQuestion = ({ category, question, onSubmit, iconButton = false }: Props) => {
+const AddQuestion = ({ exam, question, onSubmit, iconButton = false }: Props) => {
   const [ open, setOpen ] = useState<boolean>(false)
-  const [ categories, setCategories ] = useState<Category[]>()
+  const [ exams, setExams ] = useState<Exam[]>()
   const handleOpen = () => setOpen(!open)
   const [ _, setLoading ] = useState<boolean>(true)
   const [ error, setError ] = useState<string>('')
   const { authenticationToken, checkAuthorization } = useAuth()
 
-  const refreshCategories = () => apiQuery(
-    getCategoriesForSelect(),
-    (data: { categories: Category[] }) => setCategories(data.categories),
+  const refreshExams = () => apiQuery(
+    getExamsForSelect(),
+    (data: { exams: Exam[] }) => setExams(data.exams),
     setError,
     setLoading,
   )
 
   useEffect(() => {
-    if (!category && !question) {
-      refreshCategories()
+    if (!exam && !question) {
+      refreshExams()
     }
   }, [])
 
@@ -96,7 +96,7 @@ const AddQuestion = ({ category, question, onSubmit, iconButton = false }: Props
             initialValues={ {
               title: question?.title || '',
               type: question?.type || QuestionType.CHOICE,
-              categoryId: question?.categoryId || '',
+              examId: question?.examId || '',
               difficulty: question?.difficulty || '',
               choices: question?.choices || [ new QuestionChoice() ],
             } }
@@ -106,14 +106,14 @@ const AddQuestion = ({ category, question, onSubmit, iconButton = false }: Props
                 .max(300, 'Title cannot exceed 300 characters')
                 .matches(/^[a-zA-Z]/, 'Title must start with a letter')
                 .required('Title is required'),
-              categoryId: category || question ? yup.string().optional() : yup.lazy(_ => {
-                if (categories) {
+              examId: exam || question ? yup.string().optional() : yup.lazy(_ => {
+                if (exams) {
                   return yup.string()
-                    .oneOf(categories.map(category => category.id))
-                    .required('Category is required')
+                    .oneOf(exams.map(exam => exam.id))
+                    .required('Exam is required')
                 }
 
-                return yup.string().required('Category is required')
+                return yup.string().required('Exam is required')
               }),
               type: yup.string()
                 .oneOf(Object.values(QuestionType))
@@ -151,7 +151,7 @@ const AddQuestion = ({ category, question, onSubmit, iconButton = false }: Props
               setError('')
 
               const transfer = {
-                categoryId: category?.id || question?.categoryId || values.categoryId || '',
+                examId: exam?.id || question?.examId || values.examId || '',
                 title: values.title,
                 type: values.type,
                 difficulty: values.difficulty,
@@ -187,12 +187,12 @@ const AddQuestion = ({ category, question, onSubmit, iconButton = false }: Props
             } }>
             { ({ values, isSubmitting }) => (
               <Form className="flex flex-col gap-6">
-                { !category && !question && (!categories ? <Spinner type="button"/> : (
+                { !exam && !question && (!exams ? <Spinner type="button"/> : (
                   <FormikSelect
-                    name="categoryId"
-                    label="Category"
-                    options={ categories.map(category => ({ value: category.id, label: category.name })) }
-                    append={ <AddCategory onSubmit={ refreshCategories }/> }
+                    name="examId"
+                    label="Exam"
+                    options={ exams.map(exam => ({ value: exam.id, label: exam.name })) }
+                    append={ <AddExam onSubmit={ refreshExams }/> }
                   />
                 )) }
 

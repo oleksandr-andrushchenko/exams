@@ -1,21 +1,21 @@
 import QuestionSubscriber from './QuestionSubscriber'
 import UserSubscriber from './UserSubscriber'
-import CategoryCreatedEventSubscriber from './category/CategoryCreatedEventSubscriber'
-import CategoryApprovedEventSubscriber from './category/CategoryApprovedEventSubscriber'
-import CategoryRatedEventSubscriber from './category/CategoryRatedEventSubscriber'
-import QuestionRatedEventSubscriber from './question/QuestionRatedEventSubscriber'
 import ExamCreatedEventSubscriber from './exam/ExamCreatedEventSubscriber'
-import ExamCompletedEventSubscriber from './exam/ExamCompletedEventSubscriber'
-import ExamDeletedEventSubscriber from './exam/ExamDeletedEventSubscriber'
+import ExamApprovedEventSubscriber from './exam/ExamApprovedEventSubscriber'
+import ExamRatedEventSubscriber from './exam/ExamRatedEventSubscriber'
+import QuestionRatedEventSubscriber from './question/QuestionRatedEventSubscriber'
+import ExamSessionCreatedEventSubscriber from './examSession/ExamSessionCreatedEventSubscriber'
+import ExamSessionCompletedEventSubscriber from './examSession/ExamSessionCompletedEventSubscriber'
+import ExamSessionDeletedEventSubscriber from './examSession/ExamSessionDeletedEventSubscriber'
 
 export default [
-  CategoryCreatedEventSubscriber,
-  CategoryApprovedEventSubscriber,
-  CategoryRatedEventSubscriber,
-  QuestionRatedEventSubscriber,
   ExamCreatedEventSubscriber,
-  ExamCompletedEventSubscriber,
-  ExamDeletedEventSubscriber,
+  ExamApprovedEventSubscriber,
+  ExamRatedEventSubscriber,
+  QuestionRatedEventSubscriber,
+  ExamSessionCreatedEventSubscriber,
+  ExamSessionCompletedEventSubscriber,
+  ExamSessionDeletedEventSubscriber,
 ]
 
 export const subscribers = [

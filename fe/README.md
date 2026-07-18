@@ -12,10 +12,10 @@
 
 # TODO
 
-* Copy category/question
-* Question page UI (same as in exam without selection option + comments + question statistic)
+* Copy exam/question
+* Question page UI (same as in examSession without selection option + comments + question statistic)
 * Multi choice answers? Not supported yet but can be created?
-* Completed exams page
+* Completed examSessions page
 * Subscriptions
 * Auto next on create question answer
 * Real ratings

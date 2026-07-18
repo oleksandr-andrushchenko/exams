@@ -1,16 +1,16 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Layout from './Layout'
 import Home from '../pages/Home'
-import Categories from '../pages/Categories'
+import Exams from '../pages/Exams'
 import ThemeProvider from './ThemeProvider'
-import Category from '../pages/Category'
+import Exam from '../pages/Exam'
 import NotFound from '../pages/NotFound'
 import Terms from '../pages/Terms'
 import { AuthenticationProvider } from '../hooks/useAuth'
 import { default as Path } from '../enum/Route'
 import Question from '../pages/Question'
 import Questions from '../pages/Questions'
-import Exam from '../pages/Exam'
+import ExamSession from '../pages/ExamSession'
 import RequireAuthentication from './RequireAuthentication'
 import { ApolloProvider } from '@apollo/client'
 import apolloClient from '../api/apolloClient'
@@ -25,12 +25,12 @@ import { HomeIcon } from '@heroicons/react/24/solid'
 const routes = <Routes>
   <Route element={ <Layout/> }>
     <Route path={ Path.Home } element={ <Home/> }/>
-    <Route path={ Path.Categories } element={ <Categories/> }/>
-    <Route path={ Path.Category } element={ <Category/> }/>
+    <Route path={ Path.Exams } element={ <Exams/> }/>
+    <Route path={ Path.Exam } element={ <Exam/> }/>
     <Route path={ Path.Questions } element={ <Questions/> }/>
     <Route path={ Path.Question } element={ <Question/> }/>
     <Route element={ <RequireAuthentication/> }>
-      <Route path={ Path.Exam } element={ <Exam/> }/>
+      <Route path={ Path.ExamSession } element={ <ExamSession/> }/>
     </Route>
     <Route path={ Path.Login } element={ <><Breadcrumbs><Link icon={ HomeIcon } label="Home" to={ Path.Home }/></Breadcrumbs><Login/></> }/>
     <Route path={ Path.Register } element={ <><Breadcrumbs><Link icon={ HomeIcon } label="Home" to={ Path.Home }/></Breadcrumbs><Register/></> }/>

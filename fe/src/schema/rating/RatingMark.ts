@@ -1,5 +1,5 @@
 export default interface RatingMark {
-  categoryId: string
+  examId: string
   questionId: string
   mark?: number
 }

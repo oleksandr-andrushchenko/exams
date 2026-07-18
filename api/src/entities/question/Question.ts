@@ -16,7 +16,7 @@ export default class Question extends Base {
 
   @Column({ type: 'varchar', length: 24, transformer: ObjectIdTransformer })
   @Field(_type => ObjectIdScalar)
-  public categoryId: ObjectId
+  public examId: ObjectId
 
   @Column({ type: 'enum', enum: QuestionType })
   @Field()

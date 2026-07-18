@@ -1,11 +1,11 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
-import Category from '../../../../src/entities/category/Category'
+import Exam from '../../../../src/entities/exam/Exam'
 import TestFramework from '../../TestFramework'
 // @ts-ignore
 import { getActivities } from '../../graphql/activity/getActivities'
 import Activity from '../../../../src/entities/activity/Activity'
-import CategoryEvent from '../../../../src/enums/category/CategoryEvent'
+import ExamEvent from '../../../../src/enums/exam/ExamEvent'
 
 const framework: TestFramework = globalThis.framework
 
@@ -19,12 +19,12 @@ describe('Get activities', () => {
   })
   test('Not empty', async () => {
     await framework.clear(Activity)
-    const category = await framework.fixture<Category>(Category)
+    const exam = await framework.fixture<Exam>(Exam)
     const activities = await Promise.all([
-      framework.fixture<Activity>(Activity, { category, event: CategoryEvent.Created }),
-      framework.fixture<Activity>(Activity, { category, event: CategoryEvent.Approved }),
+      framework.fixture<Activity>(Activity, { exam, event: ExamEvent.Created }),
+      framework.fixture<Activity>(Activity, { exam, event: ExamEvent.Approved }),
     ])
-    const fields = [ 'id', 'event', 'categoryId', 'categoryName' ]
+    const fields = [ 'id', 'event', 'examId', 'examName' ]
     const res = await request(framework.app).post('/')
       .send(getActivities({}, fields))
 
@@ -38,8 +38,8 @@ describe('Get activities', () => {
         expect(body[index]).toMatchObject({
           id: activity.id.toString(),
           event: activity.event,
-          categoryId: activity.categoryId.toString(),
-          categoryName: activity.categoryName,
+          examId: activity.examId.toString(),
+          examName: activity.examName,
         })
       })
   })

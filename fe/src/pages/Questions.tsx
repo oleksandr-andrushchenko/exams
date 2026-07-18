@@ -8,13 +8,13 @@ import Question from '../schema/question/Question'
 import AddQuestion from '../components/question/AddQuestion'
 import DeleteQuestion from '../components/question/DeleteQuestion'
 import Paginated from '../schema/pagination/Paginated'
-import Category from '../schema/category/Category'
+import Exam from '../schema/exam/Exam'
 import { apiQuery } from '../api/apolloClient'
 import getQuestionsForQuestionsPage from '../api/question/getQuestionsForQuestionsPage'
 import QuestionPermission from '../enum/question/QuestionPermission'
 import { ListIcon } from '../registry/icons'
 import Table from '../components/elements/Table'
-import getCategoriesForSelect from '../api/category/getCategoriesForSelect'
+import getExamsForSelect from '../api/exam/getExamsForSelect'
 import Error from '../components/Error'
 import { QuestionDifficulty, QuestionType } from '../schema/question/CreateQuestion'
 import H1 from '../components/typography/H1'
@@ -30,15 +30,15 @@ const Questions = () => {
   const [ tableKey, setTableKey ] = useState<number>(2)
   const refresh = () => setTableKey(Math.random())
   const { authenticationToken, checkAuthorization } = useAuth()
-  const [ categories, setCategories ] = useState<Category[]>()
+  const [ exams, setExams ] = useState<Exam[]>()
   const [ _, setLoading ] = useState<boolean>(true)
   const [ error, setError ] = useState<string>('')
 
   useEffect(() => {
     apiQuery(
-      // todo: search box instead of whole categories list (or categories of page questions - add GetCategories.categoryIds support)
-      getCategoriesForSelect(),
-      (data: { categories: Category[] }) => setCategories(data.categories),
+      // todo: search box instead of whole exams list (or exams of page questions - add GetExams.examIds support)
+      getExamsForSelect(),
+      (data: { exams: Exam[] }) => setExams(data.exams),
       setError,
       setLoading,
     )
@@ -52,7 +52,7 @@ const Questions = () => {
     document.title = 'Questions'
   }, [])
 
-  const getCategory = (id: string): Category => (categories || []).filter((category: Category): boolean => category.id === id)[0]
+  const getExam = (id: string): Exam => (exams || []).filter((exam: Exam): boolean => exam.id === id)[0]
 
   return <>
     <Breadcrumbs>
@@ -75,10 +75,10 @@ const Questions = () => {
         // creator: authenticationToken ? Object.values(Creator) : '',
       } }
       filters={ {
-        category: createListFromObjects(categories || [], 'id', 'name'),
+        exam: createListFromObjects(exams || [], 'id', 'name'),
         difficulty: createListFromEnum(QuestionDifficulty),
       } }
-      columns={ [ '#', 'Title', 'Category', 'Choices', 'Difficulty', 'Approved', 'Rating', '' ] }
+      columns={ [ '#', 'Title', 'Exam', 'Choices', 'Difficulty', 'Approved', 'Rating', '' ] }
       queryOptions={ (filter) => getQuestionsForQuestionsPage(filter) }
       queryData={ (data: { paginatedQuestions: Paginated<Question> }) => data.paginatedQuestions }
       mapper={ (question: Question, index: number) => [
@@ -88,10 +88,10 @@ const Questions = () => {
           label={ question.title }
           sup={ question.isCreator ? <CreatorBadge/> : '' }
           tooltip={ question.title }
-          to={ Route.Question.replace(':categoryId', question.categoryId!).replace(':questionId', question.id!) }
+          to={ Route.Question.replace(':examId', question.examId!).replace(':questionId', question.id!) }
         />,
-        !categories ? <Spinner/> : <Tooltip
-          content={ getCategory(question.categoryId!).name }>{ getCategory(question.categoryId!).name }</Tooltip>,
+        !exams ? <Spinner/> : <Tooltip
+          content={ getExam(question.examId!).name }>{ getExam(question.examId!).name }</Tooltip>,
         question.type === QuestionType.CHOICE ? (question.choices || []).length : 'N/A',
         question.difficulty,
         <ApproveQuestion question={ question } readonly={ !checkAuthorization(QuestionPermission.Approve) }

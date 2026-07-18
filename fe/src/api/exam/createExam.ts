@@ -7,7 +7,11 @@ export default function createExam(createExam: CreateExam): any {
         mutation CreateExam($createExam: CreateExam!) {
             createExam(createExam: $createExam) {
                 id
-                ownerId
+                name
+                isApproved
+                isOwner
+                isCreator
+                rating {averageMark markCount mark}
             }
         }
     `,

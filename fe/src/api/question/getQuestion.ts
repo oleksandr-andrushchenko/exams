@@ -6,9 +6,9 @@ export default function getQuestion(questionId: string): any {
         query GetQuestion($questionId: ID!) {
             question(questionId: $questionId) {
                 id
-                categoryId
+                examId
                 title
-                category {
+                exam {
                     name
                 }
                 type

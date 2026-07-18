@@ -1,15 +1,17 @@
-import Category from '../category/Category'
+import Rating from '../rating/Rating'
 
 export default interface Exam {
   id?: string
-  categoryId?: string
-  category?: Category
-  questionNumber?: number
+  name?: string
   questionCount?: number
-  correctAnswerCount?: number
-  answeredQuestionCount?: number
-  completedAt?: number
-  ownerId?: string
+  approvedQuestionCount?: number
+  requiredScore?: number
+  voters?: number
+  rating?: Rating
+  isApproved?: boolean
+  isOwner?: boolean
+  isCreator?: boolean
+  examSessionId?: string
   createdAt?: number
   updatedAt?: number
 }

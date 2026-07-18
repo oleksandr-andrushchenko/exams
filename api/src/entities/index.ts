@@ -1,17 +1,17 @@
-import Category from './category/Category'
 import Exam from './exam/Exam'
+import ExamSession from './examSession/ExamSession'
 import Question from './question/Question'
 import User from './user/User'
 import Activity from './activity/Activity'
-import CategoryRatingMark from './category/CategoryRatingMark'
+import ExamRatingMark from './exam/ExamRatingMark'
 import QuestionRatingMark from './question/QuestionRatingMark'
 
 export const entities = [
-  Category,
   Exam,
+  ExamSession,
   Question,
   User,
   Activity,
-  CategoryRatingMark,
+  ExamRatingMark,
   QuestionRatingMark,
 ]

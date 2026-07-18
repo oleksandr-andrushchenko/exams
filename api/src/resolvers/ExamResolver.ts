@@ -1,67 +1,63 @@
 import { Inject, Service } from 'typedi'
-import Exam from '../entities/exam/Exam'
-import User from '../entities/user/User'
-import CreateExam from '../schema/exam/CreateExam'
 import ExamProvider from '../services/exam/ExamProvider'
-import GetExam from '../schema/exam/GetExam'
-import ExamQuestionSchema from '../schema/exam/ExamQuestionSchema'
-import CreateExamQuestionAnswer from '../schema/exam/CreateExamQuestionAnswer'
-import GetExamQuestion from '../schema/exam/GetExamQuestion'
-import ValidatorInterface from '../services/validator/ValidatorInterface'
-import GetExams from '../schema/exam/GetExams'
 import { Arg, Args, Authorized, Ctx, FieldResolver, Mutation, Query, Resolver, Root } from 'type-graphql'
+import Exam from '../entities/exam/Exam'
+import GetExams from '../schema/exam/GetExams'
+import GetExam from '../schema/exam/GetExam'
+import CreateExam from '../schema/exam/CreateExam'
+import User from '../entities/user/User'
+import UpdateExam from '../schema/exam/UpdateExam'
+import ValidatorInterface from '../services/validator/ValidatorInterface'
 import PaginatedExams from '../schema/exam/PaginatedExams'
-import Category from '../entities/category/Category'
-import CategoryProvider from '../services/category/CategoryProvider'
-import ExamCreator from '../services/exam/ExamCreator'
 import ExamDeleter from '../services/exam/ExamDeleter'
-import ExamQuestionAnswerDeleter from '../services/exam/ExamQuestionAnswerDeleter'
-import ExamQuestionAnswerCreator from '../services/exam/ExamQuestionAnswerCreator'
-import ExamCompletionCreator from '../services/exam/ExamCompletionCreator'
-import ExamLastRequestedQuestionNumberSetter from '../services/exam/ExamLastRequestedQuestionNumberSetter'
-import ExamQuestionProvider from '../services/exam/ExamQuestionProvider'
+import ExamCreator from '../services/exam/ExamCreator'
+import ExamUpdater from '../services/exam/ExamUpdater'
 import ExamListProvider from '../services/exam/ExamListProvider'
-import GetCurrentExams from '../schema/exam/GetCurrentExams'
-import CurrentExamListProvider from '../services/exam/CurrentExamListProvider'
-import CategoryListProvider from '../services/category/CategoryListProvider'
+import ExamApproveSwitcher from '../services/exam/ExamApproveSwitcher'
+import ExamRepository from '../repositories/exam/ExamRepository'
+import ExamRatingMarkCreator from '../services/exam/ExamRatingMarkCreator'
+import RateExamRequest from '../schema/exam/RateExamRequest'
+import ExamRatingMarkListProvider from '../services/exam/ExamRatingMarkListProvider'
+import RatingSchema from '../schema/rating/RatingSchema'
+import ExamRatingProvider from '../services/exam/ExamRatingProvider'
+import { ObjectId } from 'bson'
+import ExamExamSessionIdProvider from '../services/exam/ExamExamSessionIdProvider'
 
 @Service()
 @Resolver(Exam)
 export class ExamResolver {
 
   public constructor(
-    @Inject() private readonly examCreator: ExamCreator,
-    @Inject() private readonly examDeleter: ExamDeleter,
-    @Inject() private readonly examLastRequestedQuestionNumberSetter: ExamLastRequestedQuestionNumberSetter,
-    @Inject() private readonly examQuestionAnswerCreator: ExamQuestionAnswerCreator,
-    @Inject() private readonly examQuestionProvider: ExamQuestionProvider,
-    @Inject() private readonly examQuestionAnswerDeleter: ExamQuestionAnswerDeleter,
-    @Inject() private readonly examCompletionCreator: ExamCompletionCreator,
     @Inject() private readonly examProvider: ExamProvider,
     @Inject() private readonly examListProvider: ExamListProvider,
-    @Inject() private readonly categoryProvider: CategoryProvider,
-    @Inject() private readonly currentExamListProvider: CurrentExamListProvider,
+    @Inject() private readonly examCreator: ExamCreator,
+    @Inject() private readonly examUpdater: ExamUpdater,
+    @Inject() private readonly examDeleter: ExamDeleter,
+    @Inject() private readonly examRepository: ExamRepository,
+    @Inject() private readonly examApproveSwitcher: ExamApproveSwitcher,
     @Inject('validator') private readonly validator: ValidatorInterface,
-    @Inject() private readonly categoryListProvider: CategoryListProvider,
+    @Inject() private readonly examRatingMarkCreator: ExamRatingMarkCreator,
+    @Inject() private readonly examRatingMarkLinkProvider: ExamRatingMarkListProvider,
+    @Inject() private readonly examRatingProvider: ExamRatingProvider,
+    @Inject() private readonly examExamSessionIdProvider: ExamExamSessionIdProvider,
   ) {
   }
 
-  @Authorized()
-  @Mutation(_returns => Exam)
-  public async createExam(
-    @Arg('createExam') exam: CreateExam,
-    @Ctx('user') user: User,
+  @Query(_returns => Exam, { name: 'exam' })
+  public async getExam(
+    @Args() getExam: GetExam,
   ): Promise<Exam> {
-    return await this.examCreator.createExam(exam, user)
+    await this.validator.validate(getExam)
+
+    return await this.examProvider.getExam(getExam.examId)
   }
 
-  @Authorized()
   @Query(_returns => [ Exam ], { name: 'exams' })
   public async getExams(
     @Args() getExams: GetExams,
     @Ctx('user') user: User,
   ): Promise<Exam[]> {
-    return await this.examListProvider.getExams(getExams, user) as Exam[]
+    return await this.examListProvider.getExams(getExams, false, user) as Exam[]
   }
 
   @Query(_returns => PaginatedExams, { name: 'paginatedExams' })
@@ -69,86 +65,41 @@ export class ExamResolver {
     @Args() getExams: GetExams,
     @Ctx('user') user: User,
   ): Promise<PaginatedExams> {
-    return await this.examListProvider.getExams(getExams, user, true) as PaginatedExams
-  }
-
-  @Authorized()
-  @Query(_returns => Exam, { name: 'exam' })
-  public async getExam(
-    @Args() getExam: GetExam,
-    @Ctx('user') user: User,
-  ): Promise<Exam> {
-    await this.validator.validate(getExam)
-
-    return await this.examProvider.getExam(getExam.examId, user)
-  }
-
-  @Authorized()
-  @Query(_returns => ExamQuestionSchema, { name: 'examQuestion' })
-  public async getExamQuestion(
-    @Args() getExamQuestion: GetExamQuestion,
-    @Ctx('user') user: User,
-  ): Promise<ExamQuestionSchema> {
-    await this.validator.validate(getExamQuestion)
-    const exam = await this.examProvider.getExam(getExamQuestion.examId, user)
-
-    const examQuestion = await this.examQuestionProvider.getExamQuestion(exam, getExamQuestion.question, user)
-    await this.examLastRequestedQuestionNumberSetter.setExamLastRequestedQuestionNumber(exam, getExamQuestion.question, user)
-
-    return examQuestion
-  }
-
-  @Authorized()
-  @Query(_returns => ExamQuestionSchema, { name: 'currentExamQuestion' })
-  public async getCurrentExamQuestion(
-    @Args() getExam: GetExam,
-    @Ctx('user') user: User,
-  ): Promise<ExamQuestionSchema> {
-    await this.validator.validate(getExam)
-    const exam = await this.examProvider.getExam(getExam.examId, user)
-
-    return await this.examQuestionProvider.getExamQuestion(exam, exam.questionNumber, user)
-  }
-
-  @Authorized()
-  @Mutation(_returns => ExamQuestionSchema)
-  public async createExamQuestionAnswer(
-    @Args() getExamQuestion: GetExamQuestion,
-    @Arg('createExamQuestionAnswer') createExamQuestionAnswer: CreateExamQuestionAnswer,
-    @Ctx('user') user: User,
-  ): Promise<ExamQuestionSchema> {
-    await this.validator.validate(getExamQuestion)
-    const exam = await this.examProvider.getExam(getExamQuestion.examId, user)
-
-    await this.examQuestionAnswerCreator.createExamQuestionAnswer(exam, getExamQuestion.question, createExamQuestionAnswer, user)
-
-    return this.examQuestionProvider.getExamQuestion(exam, getExamQuestion.question, user)
-  }
-
-  @Authorized()
-  @Mutation(_returns => ExamQuestionSchema)
-  public async deleteExamQuestionAnswer(
-    @Args() getExamQuestion: GetExamQuestion,
-    @Ctx('user') user: User,
-  ): Promise<ExamQuestionSchema> {
-    await this.validator.validate(getExamQuestion)
-    const exam = await this.examProvider.getExam(getExamQuestion.examId, user)
-
-    await this.examQuestionAnswerDeleter.deleteExamQuestionAnswer(exam, getExamQuestion.question, user)
-
-    return this.examQuestionProvider.getExamQuestion(exam, getExamQuestion.question, user)
+    return await this.examListProvider.getExams(getExams, true, user) as PaginatedExams
   }
 
   @Authorized()
   @Mutation(_returns => Exam)
-  public async createExamCompletion(
+  public async createExam(
+    @Arg('createExam') createExam: CreateExam,
+    @Ctx('user') user: User,
+  ): Promise<Exam> {
+    return await this.examCreator.createExam(createExam, user)
+  }
+
+  @Authorized()
+  @Mutation(_returns => Exam)
+  public async updateExam(
+    @Args() getExam: GetExam,
+    @Arg('updateExam') updateExam: UpdateExam,
+    @Ctx('user') user: User,
+  ): Promise<Exam> {
+    await this.validator.validate(getExam)
+    const exam = await this.examProvider.getExam(getExam.examId)
+
+    return await this.examUpdater.updateExam(exam, updateExam, user)
+  }
+
+  @Authorized()
+  @Mutation(_returns => Exam)
+  public async toggleExamApprove(
     @Args() getExam: GetExam,
     @Ctx('user') user: User,
   ): Promise<Exam> {
     await this.validator.validate(getExam)
-    const exam = await this.examProvider.getExam(getExam.examId, user)
+    const exam = await this.examProvider.getExam(getExam.examId)
 
-    await this.examCompletionCreator.createExamCompletion(exam, user)
+    await this.examApproveSwitcher.toggleExamApprove(exam, user)
 
     return exam
   }
@@ -160,29 +111,59 @@ export class ExamResolver {
     @Ctx('user') user: User,
   ): Promise<boolean> {
     await this.validator.validate(getExam)
-    const exam = await this.examProvider.getExam(getExam.examId, user)
+    const exam = await this.examProvider.getExam(getExam.examId)
 
     await this.examDeleter.deleteExam(exam, user)
 
     return true
   }
 
-  @FieldResolver(_returns => Category, { name: 'category' })
-  public async getExamCategory(
+  @Authorized()
+  @FieldResolver(_returns => Boolean, { name: 'isOwner', nullable: true })
+  public async getIsAuthorizedUserExamOwner(
     @Root() exam: Exam,
-  ): Promise<Category> {
-    return await this.categoryProvider.getCategory(exam.categoryId)
+    @Ctx('user') user: User,
+  ): Promise<boolean> {
+    return user && user.id.toString() === exam?.ownerId?.toString()
   }
 
   @Authorized()
-  @Query(_returns => [ Exam ], { name: 'currentExams' })
-  public async getCurrentExams(
-    @Args() getCurrentExams: GetCurrentExams,
+  @FieldResolver(_returns => Boolean, { name: 'isCreator', nullable: true })
+  public async getIsAuthorizedUserExamCreator(
+    @Root() exam: Exam,
     @Ctx('user') user: User,
-  ): Promise<Exam[]> {
-    await this.validator.validate(getCurrentExams)
-    const categories = await this.categoryListProvider.getCategoriesByIds(getCurrentExams.categoryIds)
+  ): Promise<boolean> {
+    return user && user.id.toString() === exam.creatorId.toString()
+  }
 
-    return await this.currentExamListProvider.getCurrentExams(categories, user)
+  @Authorized()
+  @Mutation(_returns => Exam)
+  public async rateExam(
+    @Args() rateExamRequest: RateExamRequest,
+    @Ctx('user') user: User,
+  ): Promise<Exam> {
+    await this.validator.validate(rateExamRequest)
+    const exam = await this.examProvider.getExam(rateExamRequest.examId)
+
+    await this.examRatingMarkCreator.createExamRatingMark(exam, rateExamRequest.mark, user)
+
+    return exam
+  }
+
+  @FieldResolver(_returns => RatingSchema, { name: 'rating', nullable: true })
+  public async getExamRating(
+    @Root() exam: Exam,
+    @Ctx('user') user: User,
+  ): Promise<RatingSchema> {
+    return this.examRatingProvider.getExamRating(exam, user)
+  }
+
+  @Authorized()
+  @FieldResolver(_returns => ObjectId, { name: 'examSessionId', nullable: true })
+  public async getAuthorizedUserExamExamSessionId(
+    @Root() exam: Exam,
+    @Ctx('user') user: User,
+  ): Promise<ObjectId> {
+    return this.examExamSessionIdProvider.getExamExamSessionId(exam, user)
   }
 }

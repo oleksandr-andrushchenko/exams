@@ -16,7 +16,7 @@ export enum QuestionDifficulty {
 }
 
 export default interface CreateQuestion {
-  categoryId: string
+  examId: string
   title: string
   type: QuestionType
   choices?: QuestionChoice[]

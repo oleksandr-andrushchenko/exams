@@ -1,7 +1,7 @@
 import Repository from '../../decorators/Repository'
 import Question from '../../entities/question/Question'
 import EntityRepository from '../EntityRepository'
-import Category from '../../entities/category/Category'
+import Exam from '../../entities/exam/Exam'
 
 @Repository(Question)
 export default class QuestionRepository extends EntityRepository<Question> {
@@ -10,15 +10,15 @@ export default class QuestionRepository extends EntityRepository<Question> {
     return await this.findOneBy({ title })
   }
 
-  public async countByCategory(category: Category): Promise<number> {
-    return await this.countBy({ categoryId: category.id })
+  public async countByExam(exam: Exam): Promise<number> {
+    return await this.countBy({ examId: exam.id })
   }
 
-  public async findByCategoryWithoutOwner(category: Category): Promise<Question[]> {
-    return await this.findBy({ categoryId: category.id, ownerId: { $exists: false } })
+  public async findByExamWithoutOwner(exam: Exam): Promise<Question[]> {
+    return await this.findBy({ examId: exam.id, ownerId: { $exists: false } })
   }
 
-  public async countByCategoryWithoutOwner(category: Category): Promise<number> {
-    return await this.countBy({ categoryId: category.id, ownerId: { $exists: false } })
+  public async countByExamWithoutOwner(exam: Exam): Promise<number> {
+    return await this.countBy({ examId: exam.id, ownerId: { $exists: false } })
   }
 }

@@ -1,8 +1,8 @@
 // @ts-ignore
-import { CategoryEvent } from './category/CategoryEvent'
+import { ExamEvent } from './exam/ExamEvent'
 import QuestionEvent from './question/QuestionEvent'
-import ExamEvent from './exam/ExamEvent'
+import ExamSessionEvent from './examSession/ExamSessionEvent'
 import UserEvent from './user/UserEvent'
 import MeEvent from './me/MeEvent'
 
-export type Event = CategoryEvent | QuestionEvent | ExamEvent | UserEvent | MeEvent
+export type Event = ExamEvent | QuestionEvent | ExamSessionEvent | UserEvent | MeEvent

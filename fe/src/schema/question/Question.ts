@@ -1,11 +1,11 @@
 import { QuestionChoice, QuestionDifficulty, QuestionType } from './CreateQuestion'
-import Category from '../category/Category'
+import Exam from '../exam/Exam'
 import Rating from '../rating/Rating'
 
 export default interface Question {
   id?: string
-  categoryId?: string
-  category?: Category
+  examId?: string
+  exam?: Exam
   title?: string
   type?: QuestionType
   choices?: QuestionChoice[]

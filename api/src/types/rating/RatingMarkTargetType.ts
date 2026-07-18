@@ -1,4 +1,4 @@
-import Category from '../../entities/category/Category'
+import Exam from '../../entities/exam/Exam'
 import Question from '../../entities/question/Question'
 
-export type RatingMarkTargetType = Category | Question
+export type RatingMarkTargetType = Exam | Question

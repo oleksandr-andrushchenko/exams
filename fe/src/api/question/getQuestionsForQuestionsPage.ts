@@ -13,7 +13,7 @@ export default function getQuestionsForQuestionsPage(filter: GetQuestions = {}):
             $subscription: String,
             $approved: String,
             $creator: String,
-            $category: ID,
+            $exam: ID,
             $search: String,
             $difficulty: String,
             $type: String
@@ -27,14 +27,14 @@ export default function getQuestionsForQuestionsPage(filter: GetQuestions = {}):
                 subscription: $subscription,
                 approved: $approved,
                 creator: $creator,
-                category: $category,
+                exam: $exam,
                 search: $search,
                 difficulty: $difficulty,
                 type: $type
             ) {
                 data {
                     id
-                    categoryId
+                    examId
                     title
                     type
                     choices {

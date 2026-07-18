@@ -34,8 +34,8 @@ export default class QuestionListProvider {
     const cursor = new Cursor<Question>(getQuestions, this.questionRepository)
     const where: Partial<Record<keyof Question, any>> = {}
 
-    if ('category' in getQuestions) {
-      where.categoryId = new ObjectId(getQuestions.category)
+    if ('exam' in getQuestions) {
+      where.examId = new ObjectId(getQuestions.exam)
     }
 
     if ('subscription' in getQuestions) {

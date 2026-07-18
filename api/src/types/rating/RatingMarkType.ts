@@ -1,1 +1,1 @@
-export type RatingMarkType = 'category' | 'question'
+export type RatingMarkType = 'exam' | 'question'

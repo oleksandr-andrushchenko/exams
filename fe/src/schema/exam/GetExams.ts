@@ -1,6 +1,8 @@
 import Pagination from '../pagination/Pagination'
+import YesNo from '../../enum/YesNo'
 
 export default interface GetExams extends Pagination {
-  categoryId?: string
-  completion?: boolean
+  subscription?: YesNo
+  approved?: YesNo
+  search?: string
 }

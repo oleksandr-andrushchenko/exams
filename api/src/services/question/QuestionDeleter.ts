@@ -1,11 +1,11 @@
 import { Inject, Service } from 'typedi'
 import User from '../../entities/user/User'
 import Question from '../../entities/question/Question'
-import CategoryProvider from '../category/CategoryProvider'
+import ExamProvider from '../exam/ExamProvider'
 import QuestionPermission from '../../enums/question/QuestionPermission'
 import AuthorizationVerifier from '../auth/AuthorizationVerifier'
 import QuestionRepository from '../../repositories/question/QuestionRepository'
-import CategoryRepository from '../../repositories/category/CategoryRepository'
+import ExamRepository from '../../repositories/exam/ExamRepository'
 import EventDispatcher from '../event/EventDispatcher'
 import QuestionEvent from '../../enums/question/QuestionEvent'
 
@@ -13,10 +13,10 @@ import QuestionEvent from '../../enums/question/QuestionEvent'
 export default class QuestionDeleter {
 
   public constructor(
-    @Inject() private readonly categoryProvider: CategoryProvider,
+    @Inject() private readonly examProvider: ExamProvider,
     @Inject() private readonly eventDispatcher: EventDispatcher,
     @Inject() private readonly questionRepository: QuestionRepository,
-    @Inject() private readonly categoryRepository: CategoryRepository,
+    @Inject() private readonly examRepository: ExamRepository,
     @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
   ) {
   }
@@ -31,12 +31,12 @@ export default class QuestionDeleter {
   public async deleteQuestion(question: Question, initiator: User): Promise<Question> {
     await this.authorizationVerifier.verifyAuthorization(initiator, QuestionPermission.Delete, question)
 
-    const category = await this.categoryProvider.getCategory(question.categoryId.toString())
+    const exam = await this.examProvider.getExam(question.examId.toString())
 
     await this.questionRepository.updateOneByEntity(question, { deletedAt: new Date() })
 
-    const newQuestionCount = Math.max(0, await this.questionRepository.countByCategory(category) - 1)
-    await this.categoryRepository.updateOneByEntity(category, {
+    const newQuestionCount = Math.max(0, await this.questionRepository.countByExam(exam) - 1)
+    await this.examRepository.updateOneByEntity(exam, {
       questionCount: newQuestionCount === 0 ? undefined : newQuestionCount,
       updatedAt: new Date(),
     })

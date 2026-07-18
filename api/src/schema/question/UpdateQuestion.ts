@@ -8,10 +8,10 @@ import QuestionDifficulty from '../../entities/question/QuestionDifficulty'
 @InputType()
 export default class UpdateQuestion {
 
-  @ValidateIf(target => 'categoryId' in target)
+  @ValidateIf(target => 'examId' in target)
   @IsMongoId()
   @Field(_type => ID, { nullable: true })
-  public readonly categoryId?: string
+  public readonly examId?: string
 
   @ValidateIf(target => 'type' in target)
   @IsEnum(QuestionType)

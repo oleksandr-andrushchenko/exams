@@ -14,7 +14,7 @@ import Text from './typography/Text'
 
 const NavBar = () => {
   const [ links, setLinks ] = useState<Record<string, { name: string, href: Route }>>({
-    categories: { name: 'Categories', href: Route.Categories },
+    exams: { name: 'Exams', href: Route.Exams },
     questions: { name: 'Questions', href: Route.Questions },
   })
   const [ openNav, setOpenNav ] = useState<boolean>(false)

@@ -9,8 +9,8 @@ import GetQuestions from '../schema/question/GetQuestions'
 import CreateQuestion from '../schema/question/CreateQuestion'
 import UpdateQuestion from '../schema/question/UpdateQuestion'
 import PaginatedQuestions from '../schema/question/PaginatedQuestions'
-import Category from '../entities/category/Category'
-import CategoryProvider from '../services/category/CategoryProvider'
+import Exam from '../entities/exam/Exam'
+import ExamProvider from '../services/exam/ExamProvider'
 import QuestionDeleter from '../services/question/QuestionDeleter'
 import QuestionCreator from '../services/question/QuestionCreator'
 import QuestionUpdater from '../services/question/QuestionUpdater'
@@ -31,7 +31,7 @@ export class QuestionResolver {
     @Inject() private readonly questionCreator: QuestionCreator,
     @Inject() private readonly questionUpdater: QuestionUpdater,
     @Inject() private readonly questionDeleter: QuestionDeleter,
-    @Inject() private readonly categoryProvider: CategoryProvider,
+    @Inject() private readonly examProvider: ExamProvider,
     @Inject() private readonly questionApproveSwitcher: QuestionApproveSwitcher,
     @Inject('validator') private readonly validator: ValidatorInterface,
     @Inject() private readonly questionRatingMarkCreator: QuestionRatingMarkCreator,
@@ -114,11 +114,11 @@ export class QuestionResolver {
     return question
   }
 
-  @FieldResolver(_returns => Category, { name: 'category' })
-  public async getQuestionCategory(
+  @FieldResolver(_returns => Exam, { name: 'exam' })
+  public async getQuestionExam(
     @Root() question: Question,
-  ): Promise<Category> {
-    return await this.categoryProvider.getCategory(question.categoryId)
+  ): Promise<Exam> {
+    return await this.examProvider.getExam(question.examId)
   }
 
   @Authorized()

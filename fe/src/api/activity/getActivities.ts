@@ -19,8 +19,8 @@ export default function getActivities(query: ActivityQuery = {}): any {
                 order: $order
             ) {
                 event
-                categoryId
-                categoryName
+                examId
+                examName
             }
         }
     `,

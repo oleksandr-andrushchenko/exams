@@ -8,9 +8,9 @@ export default function toggleQuestionApprove(questionId: string): any {
                 questionId: $questionId
             ) {
                 id
-                categoryId
+                examId
                 title
-                category {
+                exam {
                     name
                 }
                 type

@@ -16,8 +16,9 @@ const DeleteExam = ({ exam, onSubmit, iconButton = false }: Props) => {
       mutateOptionsFn={ () => deleteExam(exam.id!) }
       iconFn={ DeleteIcon }
       labelFn={ (isSubmitting) => isSubmitting ? 'Deleting Exam...' : 'Delete Exam' }
-      title={ `Are you sure you want to delete "${ exam.category!.name }" exam?` }
-      body={ <>This will delete "{ exam.category!.name }" exam permanently.<br/>You cannot undo this action.</> }
+      title={ `Are you sure you want to delete "${ exam.name }" exam?` }
+      body={ <>This will delete "{ exam.name }" exam and all its questions [ { exam.questionCount ?? 0 } ]
+        permanently.<br/>You cannot undo this action.</> }
       onSubmit={ onSubmit }
       iconButton={ iconButton }
     />

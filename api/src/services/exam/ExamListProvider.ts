@@ -1,63 +1,66 @@
 import { Inject, Service } from 'typedi'
-import User from '../../entities/user/User'
+import Exam from '../../entities/exam/Exam'
+import ExamRepository from '../../repositories/exam/ExamRepository'
 import ValidatorInterface from '../validator/ValidatorInterface'
 import Cursor from '../../models/Cursor'
-import ExamRepository from '../../repositories/ExamRepository'
-import Exam from '../../entities/exam/Exam'
-import { ObjectId } from 'bson'
-import AuthorizationFailedError from '../../errors/auth/AuthorizationFailedError'
 import GetExams from '../../schema/exam/GetExams'
-import ExamPermission from '../../enums/exam/ExamPermission'
 import PaginatedExams from '../../schema/exam/PaginatedExams'
-import AuthorizationVerifier from '../auth/AuthorizationVerifier'
+import User from '../../entities/user/User'
+import IdNormalizer from '../normalizers/IdNormalizer'
 
 @Service()
 export default class ExamListProvider {
 
   public constructor(
     @Inject() private readonly examRepository: ExamRepository,
-    @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
     @Inject('validator') private readonly validator: ValidatorInterface,
+    @Inject() private readonly idNormalizer: IdNormalizer,
   ) {
   }
 
   /**
    * @param {GetExams} getExams
-   * @param {User} initiator
    * @param {boolean} meta
+   * @param {User} initiator
    * @returns {Promise<Exam[] | PaginatedExams>}
    * @throws {ValidatorError}
    */
   public async getExams(
     getExams: GetExams,
-    initiator: User,
     meta: boolean = false,
+    initiator?: User,
   ): Promise<Exam[] | PaginatedExams> {
     await this.validator.validate(getExams)
 
     const cursor = new Cursor<Exam>(getExams, this.examRepository)
-    const where = {}
+    const where: Partial<Record<keyof Exam, any>> = {}
 
-    try {
-      await this.authorizationVerifier.verifyAuthorization(initiator, ExamPermission.Get)
-    } catch (error) {
-      if (error instanceof AuthorizationFailedError) {
-        where['ownerId'] = initiator.id
+    if ('subscription' in getExams) {
+      where['subscription'] = { $exists: getExams.subscription === 'yes' }
+    }
+
+    if ('approved' in getExams) {
+      where.ownerId = { $exists: getExams.approved !== 'yes' }
+    }
+
+    if ('search' in getExams) {
+      where.name = { $regex: getExams.search, $options: 'i' }
+    }
+
+    if ('creator' in getExams && initiator) {
+      if (getExams.creator === 'i') {
+        where.creatorId = initiator.id
       } else {
-        throw error
+        where.creatorId = { $ne: initiator.id }
       }
     }
 
-    // where['ownerId'] = initiator.id
-
-    if ('categoryId' in getExams) {
-      where['categoryId'] = new ObjectId(getExams.categoryId)
-    }
-
-    if ('completion' in getExams) {
-      where['completedAt'] = { $exists: getExams.completion }
-    }
-
     return await cursor.getPaginated({ where, meta })
+  }
+
+  public async getExamsByIds(examIds: string[]): Promise<Exam[]> {
+    const ids = examIds.map(examId => this.idNormalizer.normalizeId(examId))
+
+    return await this.examRepository.findByIds(ids)
   }
 }

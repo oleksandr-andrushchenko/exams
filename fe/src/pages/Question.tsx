@@ -44,7 +44,7 @@ const Question = () => {
     updateQuestion(question)
     refreshInfoTable()
   }
-  const onDelete = () => navigate(Route.Category.replace(':categoryId', question!.categoryId!), { replace: true })
+  const onDelete = () => navigate(Route.Exam.replace(':examId', question!.examId!), { replace: true })
 
   useEffect(() => {
     document.title = question?.title || 'ExamMe'
@@ -54,9 +54,9 @@ const Question = () => {
   return <>
     <Breadcrumbs>
       <Link icon={ HomeIcon } label="Home" to={ Route.Home }/>
-      <Link label="Categories" to={ Route.Categories }/>
+      <Link label="Exams" to={ Route.Exams }/>
       { !question ? <Spinner type="text"/> :
-        <Link label={ question.category!.name } to={ Route.Category.replace(':categoryId', question.categoryId!) }/> }
+        <Link label={ question.exam!.name } to={ Route.Exam.replace(':examId', question.examId!) }/> }
       { !question ? <Spinner type="text"/> :
         <Link label={ question.title } to={ Route.Question.replace(':questionId', question.id!) }/> }
     </Breadcrumbs>
@@ -95,11 +95,11 @@ const Question = () => {
       className="mt-4"
       title="Question info"
       key2={ infoTableKey }
-      columns={ [ 'Title', 'Category', 'Type', 'Choices', 'Difficulty', 'Rating', 'Approved' ] }
+      columns={ [ 'Title', 'Exam', 'Type', 'Choices', 'Difficulty', 'Rating', 'Approved' ] }
       source={ question }
       mapper={ (question: Question) => [
         question.title,
-        question.category!.name,
+        question.exam!.name,
         question.type,
         question.type === QuestionType.CHOICE ? (question.choices || []).map((choice: QuestionChoice, index) => (
           <Checkbox key={ `${ question.id }-${ index }` } name="choice" label={ choice.title } disabled={ true }/>

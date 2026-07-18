@@ -3,7 +3,7 @@ import InjectEntityManager, { EntityManagerInterface } from '../../decorators/In
 import User from '../../entities/user/User'
 import ValidatorInterface from '../validator/ValidatorInterface'
 import Question from '../../entities/question/Question'
-import CategoryProvider from '../category/CategoryProvider'
+import ExamProvider from '../exam/ExamProvider'
 import UpdateQuestion from '../../schema/question/UpdateQuestion'
 import QuestionPermission from '../../enums/question/QuestionPermission'
 import QuestionType from '../../entities/question/QuestionType'
@@ -17,7 +17,7 @@ export default class QuestionUpdater {
 
   public constructor(
     @InjectEntityManager() private readonly entityManager: EntityManagerInterface,
-    @Inject() private readonly categoryProvider: CategoryProvider,
+    @Inject() private readonly examProvider: ExamProvider,
     @Inject() private readonly questionVerifier: QuestionVerifier,
     @Inject() private readonly eventDispatcher: EventDispatcher,
     @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
@@ -31,7 +31,7 @@ export default class QuestionUpdater {
    * @param {User} initiator
    * @returns {Promise<Question>}
    * @throws {QuestionNotFoundError}
-   * @throws {CategoryNotFoundError}
+   * @throws {ExamNotFoundError}
    * @throws {AuthorizationFailedError}
    * @throws {QuestionTitleTakenError}
    */
@@ -39,10 +39,10 @@ export default class QuestionUpdater {
     await this.validator.validate(updateQuestion)
     await this.authorizationVerifier.verifyAuthorization(initiator, QuestionPermission.Update, question)
 
-    if ('categoryId' in updateQuestion) {
-      const category = await this.categoryProvider.getCategory(updateQuestion.categoryId)
-      // await this.authorizationVerifier.verifyAuthorization(initiator, CategoryPermission.AddQuestion, category)
-      question.categoryId = category.id
+    if ('examId' in updateQuestion) {
+      const exam = await this.examProvider.getExam(updateQuestion.examId)
+      // await this.authorizationVerifier.verifyAuthorization(initiator, ExamPermission.AddQuestion, exam)
+      question.examId = exam.id
     }
 
     if ('title' in updateQuestion) {

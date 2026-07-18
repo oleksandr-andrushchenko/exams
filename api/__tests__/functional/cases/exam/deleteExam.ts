@@ -1,7 +1,7 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
-import User from '../../../../src/entities/user/User'
 import Exam from '../../../../src/entities/exam/Exam'
+import User from '../../../../src/entities/user/User'
 import ExamPermission from '../../../../src/enums/exam/ExamPermission'
 // @ts-ignore
 import { deleteExam } from '../../graphql/exam/deleteExam'
@@ -19,7 +19,7 @@ describe('Delete exam', () => {
     expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
   })
   test('Bad request (invalid id)', async () => {
-    const user = await framework.fixture<User>(User, { permissions: [ ExamPermission.Get, ExamPermission.Delete ] })
+    const user = await framework.fixture<User>(User, { permissions: [ ExamPermission.Delete ] })
     const token = (await framework.auth(user)).token
     const res = await request(framework.app).post('/')
       .send(deleteExam({ examId: 'invalid' }))
@@ -29,7 +29,7 @@ describe('Delete exam', () => {
     expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
   })
   test('Not found', async () => {
-    const user = await framework.fixture<User>(User, { permissions: [ ExamPermission.Get, ExamPermission.Delete ] })
+    const user = await framework.fixture<User>(User, { permissions: [ ExamPermission.Delete ] })
     const token = (await framework.auth(user)).token
     const id = await framework.fakeId()
     const res = await request(framework.app).post('/')
@@ -52,7 +52,7 @@ describe('Delete exam', () => {
   })
   test('Deleted (has ownership)', async () => {
     const exam = await framework.fixture<Exam>(Exam)
-    const user = await framework.load<User>(User, exam.ownerId)
+    const user = await framework.load<User>(User, exam.creatorId)
     const token = (await framework.auth(user)).token
     const res = await request(framework.app).post('/')
       .send(deleteExam({ examId: exam.id.toString() }))
@@ -64,7 +64,7 @@ describe('Delete exam', () => {
   })
   test('Deleted (has permission)', async () => {
     const exam = await framework.fixture<Exam>(Exam)
-    const user = await framework.fixture<User>(User, { permissions: [ ExamPermission.Get, ExamPermission.Delete ] })
+    const user = await framework.fixture<User>(User, { permissions: [ ExamPermission.Delete ] })
     const token = (await framework.auth(user)).token
     const res = await request(framework.app).post('/')
       .send(deleteExam({ examId: exam.id.toString() }))
