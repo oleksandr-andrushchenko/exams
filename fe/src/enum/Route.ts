@@ -9,6 +9,7 @@ enum Route {
   Register = '/register',
   Terms = '/terms-and-conditions',
   Users = '/users',
+  User = '/users/:userId',
 }
 
 export default Route

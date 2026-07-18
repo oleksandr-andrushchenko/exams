@@ -42,7 +42,7 @@ const Users = () => {
       mapper={ (user: User, index: number) => [
         user.id,
         index + 1,
-        user.name,
+        <Link label={ user.name || 'Unnamed user' } to={ Route.User.replace(':userId', user.id!) }/>,
         {
           update: checkAuthorization(UserPermission.Update, user) &&
             <AddUser user={ user } onSubmit={ refresh } iconButton/>,

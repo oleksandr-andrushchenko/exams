@@ -183,6 +183,7 @@ type Query {
   permission: PermissionSchema!
   question(questionId: ID!): Question!
   questions(approved: String, creator: String, cursor: String = "id", difficulty: String, exam: ID, nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20, subscription: String, type: String): [Question!]!
+  user(userId: ID!): User!
   users(cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20): [User!]!
 }
 

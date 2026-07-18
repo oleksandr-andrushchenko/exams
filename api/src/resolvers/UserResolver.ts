@@ -63,6 +63,15 @@ export class UserResolver {
     return await this.userListProvider.getUsers(getUsers, true) as PaginatedUsers
   }
 
+  @Query(_returns => User, { name: 'user' })
+  public async getUser(
+    @Args() getUser: GetUser,
+  ): Promise<User> {
+    await this.validator.validate(getUser)
+
+    return await this.userProvider.getUser(getUser.userId)
+  }
+
   @Authorized()
   @Mutation(_returns => Boolean)
   public async deleteUser(
