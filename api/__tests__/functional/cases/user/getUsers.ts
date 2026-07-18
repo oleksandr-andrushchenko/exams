@@ -8,21 +8,23 @@ import UserPermission from '../../../../src/enums/user/UserPermission'
 import GetUsers from '../../../../src/schema/user/GetUsers'
 
 const framework: TestFramework = globalThis.framework
-
 describe('Get users', () => {
-  test('Unauthorized', async () => {
+  test('Public', async () => {
+    await framework.clear()
+    await framework.fixture<User>(User)
     const res = await request(framework.app).post('/').send(getUsers())
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
+    expect(res.body.data.users).toHaveLength(1)
   })
-  test('Forbidden', async () => {
+  test('Public for authenticated users without list permission', async () => {
+    await framework.clear()
     const user = await framework.fixture<User>(User)
     const token = (await framework.auth(user)).token
     const res = await request(framework.app).post('/').send(getUsers()).auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('ForbiddenError'))
+    expect(res.body.data.users).toHaveLength(1)
   })
   test.each([
     { case: 'invalid cursor type', query: { cursor: 1 } },

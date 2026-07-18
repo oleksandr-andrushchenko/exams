@@ -15,7 +15,6 @@ import RequireAuthentication from './RequireAuthentication'
 import { ApolloProvider } from '@apollo/client'
 import apolloClient from '../api/apolloClient'
 import Users from '../pages/Users'
-import UserPermission from '../enum/users/UserPermission'
 import Login from './Login'
 import Register from './Register'
 import Link from './elements/Link'
@@ -35,9 +34,7 @@ const routes = <Routes>
     <Route path={ Path.Login } element={ <><Breadcrumbs><Link icon={ HomeIcon } label="Home" to={ Path.Home }/></Breadcrumbs><Login/></> }/>
     <Route path={ Path.Register } element={ <><Breadcrumbs><Link icon={ HomeIcon } label="Home" to={ Path.Home }/></Breadcrumbs><Register/></> }/>
     <Route path={ Path.Terms } element={ <Terms/> }/>
-    <Route element={ <RequireAuthentication permission={ UserPermission.Get }/> }>
-      <Route path={ Path.Users } element={ <Users/> }/>
-    </Route>
+    <Route path={ Path.Users } element={ <Users/> }/>
     <Route path="*" element={ <NotFound/> }/>
   </Route>
 </Routes>

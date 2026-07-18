@@ -49,22 +49,18 @@ export class UserResolver {
     return await this.userUpdater.updateUser(user, updateUser, currentUser)
   }
 
-  @Authorized()
   @Query(_returns => [ User ], { name: 'users' })
   public async getUsers(
     @Args() getUsers: GetUsers,
-    @Ctx('user') currentUser: User,
   ): Promise<User[]> {
-    return await this.userListProvider.getUsers(getUsers, false, currentUser) as User[]
+    return await this.userListProvider.getUsers(getUsers, false) as User[]
   }
 
-  @Authorized()
   @Query(_returns => PaginatedUsers, { name: 'paginatedUsers' })
   public async getPaginatedUsers(
     @Args() getUsers: GetUsers,
-    @Ctx('user') currentUser: User,
   ): Promise<PaginatedUsers> {
-    return await this.userListProvider.getUsers(getUsers, true, currentUser) as PaginatedUsers
+    return await this.userListProvider.getUsers(getUsers, true) as PaginatedUsers
   }
 
   @Authorized()

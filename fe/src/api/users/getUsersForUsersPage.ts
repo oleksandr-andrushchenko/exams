@@ -11,8 +11,6 @@ export default function getUsersForUsersPage(filter: GetUsers = {}): any {
                     createdAt
                     updatedAt
                     name
-                    email
-                    permissions
                 }
                 meta {
                     prevCursor

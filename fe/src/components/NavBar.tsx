@@ -5,7 +5,6 @@ import useAuth from '../hooks/useAuth'
 import Route from '../enum/Route'
 import Spinner from './Spinner'
 import Auth from './Auth'
-import UserPermission from '../enum/users/UserPermission'
 import { FolderPlus as LogoIcon } from 'react-bootstrap-icons'
 import Link from './elements/Link'
 import Button from './elements/Button'
@@ -13,12 +12,13 @@ import IconButton from './elements/IconButton'
 import Text from './typography/Text'
 
 const NavBar = () => {
-  const [ links, setLinks ] = useState<Record<string, { name: string, href: Route }>>({
-    exams: { name: 'Exams', href: Route.Exams },
-    questions: { name: 'Questions', href: Route.Questions },
-  })
+  const links = [
+    { name: 'Exams', href: Route.Exams },
+    { name: 'Questions', href: Route.Questions },
+    { name: 'Users', href: Route.Users },
+  ]
   const [ openNav, setOpenNav ] = useState<boolean>(false)
-  const { authenticationToken, me, setAuthenticationToken, checkAuthorization } = useAuth()
+  const { authenticationToken, me, setAuthenticationToken } = useAuth()
 
   useEffect(() => {
     window.addEventListener(
@@ -27,19 +27,8 @@ const NavBar = () => {
     )
   }, [])
 
-  useEffect(() => {
-    setLinks(currentLinks => {
-      const defaultLinks = { ...currentLinks }
-      delete defaultLinks.users
-
-      return me && checkAuthorization(UserPermission.Get)
-        ? { ...defaultLinks, users: { name: 'Users', href: Route.Users } }
-        : defaultLinks
-    })
-  }, [ authenticationToken, me ])
-
   const navList = <ul className="mt-2 mb-4 flex flex-col gap-2 lg:mb-0 lg:mt-0 lg:flex-row lg:items-center lg:gap-3">
-    { Object.values(links).map(({ name, href }) => {
+    { links.map(({ name, href }) => {
       return <Typography as="li" key={ href } variant="small" color="blue-gray" className="p-1 font-normal">
         <Link label={ name } to={ href } className="flex items-center"/>
       </Typography>

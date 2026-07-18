@@ -1,4 +1,4 @@
-import { Breadcrumbs, Chip } from '@material-tailwind/react'
+import { Breadcrumbs } from '@material-tailwind/react'
 import Route from '../enum/Route'
 import useAuth from '../hooks/useAuth'
 import { HomeIcon } from '@heroicons/react/24/solid'
@@ -11,8 +11,6 @@ import AddUser from '../components/users/AddUser'
 import { ListIcon } from '../registry/icons'
 import H1 from '../components/typography/H1'
 import DeleteUser from '../components/users/DeleteUser'
-import Permission from '../enum/Permission'
-import Rating from '../components/Rating'
 import Table from '../components/elements/Table'
 import Link from '../components/elements/Link'
 
@@ -38,23 +36,13 @@ const Users = () => {
       buttons={ {
         create: checkAuthorization(UserPermission.Create) && <AddUser onSubmit={ refresh }/>,
       } }
-      columns={ [ '#', 'Name', 'Email', 'Permissions', 'Rating', '' ] }
+      columns={ [ '#', 'Name', '' ] }
       queryOptions={ (filter) => getUsersForUsersPage(filter) }
       queryData={ (data: { paginatedUsers: Paginated<User> }) => data.paginatedUsers }
       mapper={ (user: User, index: number) => [
         user.id,
         index + 1,
         user.name,
-        user.email,
-        user.permissions?.map(permission => (
-          <Chip
-            key={ permission }
-            value={ permission }
-            color={ [ Permission.All, Permission.Root ].includes(permission as any) ? 'green' : 'blue' }
-            className="mr-1 mb-1"
-          />
-        )),
-        <Rating readonly/>,
         {
           update: checkAuthorization(UserPermission.Update, user) &&
             <AddUser user={ user } onSubmit={ refresh } iconButton/>,
