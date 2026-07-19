@@ -21,8 +21,10 @@ import { default as YesNoEnum } from '../enum/YesNo'
 import canAddExamSession from '../services/examSessions/canAddExamSession'
 import CreatorBadge from '../components/badges/CreatorBadge'
 import { RateExam } from '../components/exam/RateExam'
+import ExamTags from '../components/examTag/ExamTags'
 
-const Exams = () => {
+const Exams = ({ tagSlug }: { tagSlug?: string }) => {
+  const tagName = tagSlug?.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(' ')
   const [ tableKey, setTableKey ] = useState<number>(0)
   const refresh = () => setTableKey(Math.random())
   const { authenticationToken, checkAuthorization } = useAuth()
@@ -33,16 +35,17 @@ const Exams = () => {
   }, [ authenticationToken ])
 
   useEffect(() => {
-    document.title = 'Exams'
-  }, [])
+    document.title = tagName ? tagName + ' Exams' : 'Exams'
+  }, [ tagName ])
 
   return <>
     <Breadcrumbs>
       <Link icon={ HomeIcon } label="Home" to={ Route.Home }/>
       <Link label="Exams" to={ Route.Exams }/>
+      { tagSlug && <Link label={ tagName } to={ Route.ExamTag.replace(':tagSlug', tagSlug) }/> }
     </Breadcrumbs>
 
-    <H1 icon={ ListIcon } label="Exams" sub="Exams info"/>
+    <H1 icon={ ListIcon } label={ tagName ? 'Exams tagged ' + tagName : 'Exams' } sub={ tagName ? 'All exams with the ' + tagName + ' tag' : 'Exams info' }/>
 
     <Table
       key2={ tableKey }
@@ -55,8 +58,8 @@ const Exams = () => {
         approved: Object.values(YesNoEnum),
         // creator: authenticationToken ? Object.values(Creator) : '',
       } }
-      columns={ [ '#', 'Name', 'Questions', 'Required score', 'Approved', 'Rating', '' ] }
-      queryOptions={ (filter) => getExamsForExamsPage(filter) }
+      columns={ [ '#', 'Name', 'Tags', 'Questions', 'Required score', 'Approved', 'Rating', '' ] }
+      queryOptions={ (filter) => getExamsForExamsPage({ ...filter, tag: tagSlug }) }
       queryData={ (data: { paginatedExams: Paginated<Exam> }) => data.paginatedExams }
       mapper={ (exam: Exam, index: number) => [
         exam.id,
@@ -67,6 +70,7 @@ const Exams = () => {
           tooltip={ exam.name }
           to={ Route.Exam.replace(':examId', exam.id!) }
         />,
+        <ExamTags tags={ exam.tags }/>,
         `${ exam.approvedQuestionCount ?? 0 }/${ exam.questionCount ?? 0 }`,
         exam.requiredScore ?? 0,
         <ApproveExam exam={ exam } readonly={ !checkAuthorization(ExamPermission.Approve) }

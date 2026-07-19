@@ -1,7 +1,8 @@
-import { Column, Entity } from 'typeorm'
+import { Column, Entity, JoinTable, ManyToMany } from 'typeorm'
 import { Field, Int, ObjectType } from 'type-graphql'
 import Base from '../Base'
 import Rating from '../rating/Rating'
+import ExamTag from '../examTag/ExamTag'
 
 @ObjectType()
 @Entity({ name: 'exams' })
@@ -25,6 +26,14 @@ export default class Exam extends Base {
 
   @Column({ type: 'jsonb', nullable: true })
   public rating?: Rating
+
+  @ManyToMany(_type => ExamTag, tag => tag.exams)
+  @JoinTable({
+    name: 'examExamTags',
+    joinColumn: { name: 'examId' },
+    inverseJoinColumn: { name: 'examTagId' },
+  })
+  public tags: ExamTag[]
 
   @Field(_type => Boolean, { name: 'isApproved', nullable: true })
   public getIsApproved(): boolean {

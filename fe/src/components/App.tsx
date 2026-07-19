@@ -16,6 +16,7 @@ import { ApolloProvider } from '@apollo/client'
 import apolloClient from '../api/apolloClient'
 import Users from '../pages/Users'
 import User from '../pages/User'
+import ExamTag from '../pages/ExamTag'
 import Login from './Login'
 import Register from './Register'
 import Link from './elements/Link'
@@ -27,6 +28,7 @@ const routes = <Routes>
     <Route path={ Path.Home } element={ <Home/> }/>
     <Route path={ Path.Exams } element={ <Exams/> }/>
     <Route path={ Path.Exam } element={ <Exam/> }/>
+    <Route path={ Path.ExamTag } element={ <ExamTag/> }/>
     <Route path={ Path.Questions } element={ <Questions/> }/>
     <Route path={ Path.Question } element={ <Question/> }/>
     <Route element={ <RequireAuthentication/> }>

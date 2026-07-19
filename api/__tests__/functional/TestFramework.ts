@@ -27,6 +27,8 @@ import ExamRatingMark from '../../src/entities/exam/ExamRatingMark'
 import QuestionRatingMark from '../../src/entities/question/QuestionRatingMark'
 import ExamRatingMarkRepository from '../../src/repositories/exam/ExamRatingMarkRepository'
 import QuestionRatingMarkRepository from '../../src/repositories/question/QuestionRatingMarkRepository'
+import ExamTag from '../../src/entities/examTag/ExamTag'
+import ExamTagRepository from '../../src/repositories/examTag/ExamTagRepository'
 
 export default class TestFramework {
   public app: Application
@@ -50,8 +52,12 @@ export default class TestFramework {
     await this._serverDown()
   }
 
-  public async clear(_entity: any | any[] = [ User, Exam, Question, ExamSession, ExamRatingMark, QuestionRatingMark ]): Promise<void> {
+  public async clear(_entity: any | any[] = [ User, Exam, Question, ExamSession, ExamRatingMark, QuestionRatingMark, ExamTag ]): Promise<void> {
     _entity = Array.isArray(_entity) ? _entity : [ _entity ]
+
+    if (_entity.some(entity => this.compare(entity, Exam) || this.compare(entity, ExamTag))) {
+      await this.container.get<ConnectionManager>(ConnectionManager).get('default').manager.query('DELETE FROM "examExamTags"')
+    }
 
     for (const entity of _entity) {
       switch (true) {
@@ -59,7 +65,7 @@ export default class TestFramework {
           await this.container.get<UserRepository>(UserRepository).clear()
           break
         case this.compare(entity, Exam):
-          await this.container.get<ExamRepository>(ExamRepository).clear()
+          await this.container.get<ConnectionManager>(ConnectionManager).get('default').manager.query('DELETE FROM exams')
           break
         case this.compare(entity, Question):
           await this.container.get<QuestionRepository>(QuestionRepository).clear()
@@ -75,6 +81,9 @@ export default class TestFramework {
           break
         case this.compare(entity, QuestionRatingMark):
           await this.container.get<QuestionRatingMarkRepository>(QuestionRatingMarkRepository).clear()
+          break
+        case this.compare(entity, ExamTag):
+          await this.container.get<ConnectionManager>(ConnectionManager).get('default').manager.query('DELETE FROM "examTags"')
           break
         default:
           throw new Error(`Clear: Unknown "${ entity.toString() }" type passed`)
@@ -215,6 +224,13 @@ export default class TestFramework {
         object.creatorId = 'creatorId' in options ? options.creatorId : (await this.fixture(User) as User).id
 
         break
+      case this.compare(entity, ExamTag):
+        object = new ExamTag()
+        object.name = 'name' in options ? options.name : faker.lorem.word()
+        object.slug = 'slug' in options ? options.slug : object.name.toLowerCase()
+        object.rating = 'rating' in options ? options.rating : 0
+
+        break
       default:
         throw new Error(`Fixture: Unknown "${ entity.toString() }" type passed`)
     }
@@ -238,7 +254,7 @@ export default class TestFramework {
     return object
   }
 
-  public repo<Entity>(entity: any): EntityRepository<Entity> {
+  public repo<Entity>(entity: any): any {
     switch (true) {
       case this.compare(entity, User):
         return this.container.get<UserRepository>(UserRepository) as any
@@ -254,6 +270,8 @@ export default class TestFramework {
         return this.container.get<ExamRatingMarkRepository>(ExamRatingMarkRepository) as any
       case this.compare(entity, QuestionRatingMark):
         return this.container.get<QuestionRatingMarkRepository>(QuestionRatingMarkRepository) as any
+      case this.compare(entity, ExamTag):
+        return this.container.get<ExamTagRepository>(ExamTagRepository) as any
       default:
         throw new Error(`Repo: Unknown "${ entity.toString() }" type passed`)
     }

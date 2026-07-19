@@ -5,6 +5,7 @@ import User from './user/User'
 import Activity from './activity/Activity'
 import ExamRatingMark from './exam/ExamRatingMark'
 import QuestionRatingMark from './question/QuestionRatingMark'
+import ExamTag from './examTag/ExamTag'
 
 export const entities = [
   Exam,
@@ -14,4 +15,5 @@ export const entities = [
   Activity,
   ExamRatingMark,
   QuestionRatingMark,
+  ExamTag,
 ]

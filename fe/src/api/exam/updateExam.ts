@@ -20,6 +20,7 @@ export default function updateExam(examId: string, updateExam: UpdateExam): any 
                     mark
                 }
                 examSessionId
+                tags {id name slug rating examsCount imageFilename}
             }
         }
     `,

@@ -16,6 +16,7 @@ import useAuth from '../../hooks/useAuth'
 import Auth from '../Auth'
 import ExamPermission from '../../enum/exam/ExamPermission'
 import H3 from '../typography/H3'
+import FormikTagAutocomplete from '../formik/FormikTagAutocomplete'
 
 interface Props extends ComponentProps<any> {
   exam?: Exam
@@ -26,6 +27,7 @@ interface Props extends ComponentProps<any> {
 interface Form {
   name: string
   requiredScore: number
+  tags: string[]
 }
 
 const AddExam = ({ exam, onSubmit, iconButton = false }: Props) => {
@@ -69,6 +71,7 @@ const AddExam = ({ exam, onSubmit, iconButton = false }: Props) => {
             initialValues={ {
               name: exam?.name || '',
               requiredScore: exam?.requiredScore || 0,
+              tags: exam?.tags?.map(tag => tag.name) || [],
             } }
             validationSchema={ yup.object({
               name: yup.string()
@@ -80,6 +83,7 @@ const AddExam = ({ exam, onSubmit, iconButton = false }: Props) => {
                 .min(0, 'Score must be at least 0')
                 .max(100, 'Score cannot exceed 100')
                 .optional(),
+              tags: yup.array().of(yup.string().trim().max(50)).max(10),
             }) }
             onSubmit={ (values, { setSubmitting }: FormikHelpers<Form>) => {
               setError('')
@@ -87,6 +91,7 @@ const AddExam = ({ exam, onSubmit, iconButton = false }: Props) => {
               const transfer = {
                 name: values.name,
                 requiredScore: values.requiredScore,
+                tags: values.tags,
               }
               const callback = (exam: Exam) => {
                 setOpen(false)
@@ -114,6 +119,7 @@ const AddExam = ({ exam, onSubmit, iconButton = false }: Props) => {
 
                 <FormikTextarea name="name" label="Name"/>
                 <FormikInput name="requiredScore" type="number" label="Required score"/>
+                <FormikTagAutocomplete name="tags" label="Tags"/>
 
                 { error && <Error text={ error }/> }
 

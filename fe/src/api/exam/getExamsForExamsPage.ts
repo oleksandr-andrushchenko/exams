@@ -16,6 +16,7 @@ export const examQuery = gql`{
         mark
     }
     examSessionId
+    tags {id name slug rating examsCount imageFilename}
 }`
 
 export default function getExamsForExamsPage(filter: GetExams = {}): any {
@@ -31,7 +32,8 @@ export default function getExamsForExamsPage(filter: GetExams = {}): any {
             $subscription: String,
             $approved: String,
             $creator: String,
-            $search: String
+            $search: String,
+            $tag: String
         ) {
             paginatedExams(
                 size: $size,
@@ -42,7 +44,8 @@ export default function getExamsForExamsPage(filter: GetExams = {}): any {
                 subscription: $subscription,
                 approved: $approved,
                 creator: $creator,
-                search: $search
+                search: $search,
+                tag: $tag
             ) {
                 data ${examQuery}
                 meta {

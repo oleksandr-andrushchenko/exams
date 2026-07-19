@@ -11,7 +11,8 @@ export const getExams = (variables: GetExams = {}, fields: string[] = [ 'id' ]) 
         $order: String,
         $subscription: String,
         $approved: String,
-        $search: String
+        $search: String,
+        $tag: String
       ) {
         exams(
           prevCursor: $prevCursor,
@@ -21,7 +22,8 @@ export const getExams = (variables: GetExams = {}, fields: string[] = [ 'id' ]) 
           order: $order,
           subscription: $subscription,
           approved: $approved,
-          search: $search
+          search: $search,
+          tag: $tag
         ) {
           ${ fields.join('\r') }
         }

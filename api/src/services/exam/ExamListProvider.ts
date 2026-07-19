@@ -7,6 +7,7 @@ import GetExams from '../../schema/exam/GetExams'
 import PaginatedExams from '../../schema/exam/PaginatedExams'
 import User from '../../entities/user/User'
 import IdNormalizer from '../normalizers/IdNormalizer'
+import ExamTagRepository from '../../repositories/examTag/ExamTagRepository'
 
 @Service()
 export default class ExamListProvider {
@@ -15,6 +16,7 @@ export default class ExamListProvider {
     @Inject() private readonly examRepository: ExamRepository,
     @Inject('validator') private readonly validator: ValidatorInterface,
     @Inject() private readonly idNormalizer: IdNormalizer,
+    @Inject() private readonly examTagRepository: ExamTagRepository,
   ) {
   }
 
@@ -45,6 +47,11 @@ export default class ExamListProvider {
 
     if ('search' in getExams) {
       where.name = { $regex: getExams.search, $options: 'i' }
+    }
+
+    if (getExams.tag) {
+      const examIds = await this.examTagRepository.findExamIdsBySlug(getExams.tag)
+      where.id = { $in: examIds.map(id => this.idNormalizer.normalizeId(id)) }
     }
 
     if ('creator' in getExams && initiator) {

@@ -19,6 +19,7 @@ export default function getExamForExamPage(examId: string): any {
                     mark
                 }
                 examSessionId
+                tags {id name slug rating examsCount imageFilename}
             }
         }
     `,

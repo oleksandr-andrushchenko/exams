@@ -22,6 +22,8 @@ import RatingSchema from '../schema/rating/RatingSchema'
 import ExamRatingProvider from '../services/exam/ExamRatingProvider'
 import { ObjectId } from 'bson'
 import ExamExamSessionIdProvider from '../services/exam/ExamExamSessionIdProvider'
+import ExamTag from '../entities/examTag/ExamTag'
+import ExamTagRepository from '../repositories/examTag/ExamTagRepository'
 
 @Service()
 @Resolver(Exam)
@@ -40,6 +42,7 @@ export class ExamResolver {
     @Inject() private readonly examRatingMarkLinkProvider: ExamRatingMarkListProvider,
     @Inject() private readonly examRatingProvider: ExamRatingProvider,
     @Inject() private readonly examExamSessionIdProvider: ExamExamSessionIdProvider,
+    @Inject() private readonly examTagRepository: ExamTagRepository,
   ) {
   }
 
@@ -156,6 +159,11 @@ export class ExamResolver {
     @Ctx('user') user: User,
   ): Promise<RatingSchema> {
     return this.examRatingProvider.getExamRating(exam, user)
+  }
+
+  @FieldResolver(_returns => [ ExamTag ], { name: 'tags' })
+  public getTags(@Root() exam: Exam): Promise<ExamTag[]> {
+    return this.examTagRepository.findForExam(exam)
   }
 
   @Authorized()

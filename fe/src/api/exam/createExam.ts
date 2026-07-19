@@ -12,6 +12,7 @@ export default function createExam(createExam: CreateExam): any {
                 isOwner
                 isCreator
                 rating {averageMark markCount mark}
+                tags {id name slug rating examsCount imageFilename}
             }
         }
     `,

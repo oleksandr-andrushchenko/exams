@@ -1,4 +1,4 @@
-import { IsNumber, Length, Max, Min, ValidateIf } from 'class-validator'
+import { ArrayMaxSize, ArrayUnique, IsArray, IsNumber, IsString, Length, Matches, Max, Min, ValidateIf } from 'class-validator'
 import { Field, InputType, Int } from 'type-graphql'
 
 @InputType()
@@ -15,4 +15,14 @@ export default class UpdateExam {
   @IsNumber({ maxDecimalPlaces: 0 })
   @Field(_type => Int, { nullable: true })
   public readonly requiredScore?: number
+
+  @ValidateIf(target => 'tags' in target)
+  @IsArray()
+  @ArrayMaxSize(10)
+  @ArrayUnique()
+  @IsString({ each: true })
+  @Length(1, 50, { each: true })
+  @Matches(/\S/, { each: true })
+  @Field(_type => [ String ], { nullable: true })
+  public readonly tags?: string[]
 }

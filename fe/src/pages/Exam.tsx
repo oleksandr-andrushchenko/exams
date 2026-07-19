@@ -29,6 +29,7 @@ import { ApproveQuestion } from '../components/question/ApproveQuestion'
 import { ApproveExam } from '../components/exam/ApproveExam'
 import { default as YesNoEnum } from '../enum/YesNo'
 import canAddExamSession from '../services/examSessions/canAddExamSession'
+import ExamTags from '../components/examTag/ExamTags'
 import CreatorBadge from '../components/badges/CreatorBadge'
 import { RateQuestion } from '../components/question/RateQuestion'
 import { RateExam } from '../components/exam/RateExam'
@@ -126,9 +127,10 @@ const Exam = () => {
       title="Exam info"
       key2={ infoTableKey }
       source={ exam }
-      columns={ [ 'Name', 'Questions', 'Required score', 'Rating', 'Approved' ] }
+      columns={ [ 'Name', 'Tags', 'Questions', 'Required score', 'Rating', 'Approved' ] }
       mapper={ (exam: Exam) => [
         exam.name,
+        <ExamTags tags={ exam.tags }/>,
         `${ exam.approvedQuestionCount ?? 0 }/${ exam.questionCount ?? 0 }`,
         exam.requiredScore ?? 0,
         <RateExam exam={ exam } readonly/>,

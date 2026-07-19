@@ -9,49 +9,40 @@ import ExamVerifier from './ExamVerifier'
 import AuthorizationVerifier from '../auth/AuthorizationVerifier'
 import EventDispatcher from '../event/EventDispatcher'
 import ExamEvent from '../../enums/exam/ExamEvent'
+import ExamTagManager from '../examTag/ExamTagManager'
 
 @Service()
 export default class ExamUpdater {
-
   public constructor(
     @InjectEntityManager() private readonly entityManager: EntityManagerInterface,
     @Inject() private readonly examVerifier: ExamVerifier,
+    @Inject() private readonly examTagManager: ExamTagManager,
     @Inject() private readonly eventDispatcher: EventDispatcher,
     @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
     @Inject('validator') private readonly validator: ValidatorInterface,
-  ) {
-  }
+  ) {}
 
-  /**
-   * @param {Exam} exam
-   * @param {UpdateExam} updateExam
-   * @param {User} initiator
-   * @returns {Promise<Exam>}
-   * @throws {ExamNotFoundError}
-   * @throws {AuthorizationFailedError}
-   * @throws {ExamNameTakenError}
-   */
   public async updateExam(exam: Exam, updateExam: UpdateExam, initiator: User): Promise<Exam> {
     await this.validator.validate(updateExam)
-
     await this.authorizationVerifier.verifyAuthorization(initiator, ExamPermission.Update, exam)
 
     if ('name' in updateExam) {
-      const name = updateExam.name
-      await this.examVerifier.verifyExamNameNotExists(name, exam.id)
-
-      exam.name = name
+      await this.examVerifier.verifyExamNameNotExists(updateExam.name, exam.id)
+      exam.name = updateExam.name
     }
-
-    if ('requiredScore' in updateExam) {
-      exam.requiredScore = updateExam.requiredScore
-    }
+    if ('requiredScore' in updateExam) exam.requiredScore = updateExam.requiredScore
 
     exam.updatedAt = new Date()
+    await this.entityManager.save(exam)
+    const persistedExam = await this.entityManager.getRepository(Exam).findOneByOrFail({ name: exam.name })
+    const [ row ] = await this.entityManager.query('SELECT id FROM exams WHERE name = $1', [ exam.name ])
+    const examId = row.id
+    if ('tags' in updateExam) {
+      const tags = await this.examTagManager.resolve(updateExam.tags, this.entityManager)
+      await this.examTagManager.attach(examId, tags, this.entityManager)
+    }
 
-    await this.entityManager.save<Exam>(exam)
-    await this.eventDispatcher.dispatch(ExamEvent.Updated, { exam })
-
-    return exam
+    await this.eventDispatcher.dispatch(ExamEvent.Updated, { exam: persistedExam })
+    return persistedExam
   }
 }

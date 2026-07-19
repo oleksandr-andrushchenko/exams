@@ -16,6 +16,7 @@ type Activity {
 input CreateExam {
   name: String!
   requiredScore: Int = 0
+  tags: [String!] = []
 }
 
 input CreateExamSession {
@@ -66,6 +67,7 @@ type Exam {
   questionCount: Int
   rating: RatingSchema
   requiredScore: Int
+  tags: [ExamTag!]!
   updatedAt: Timestamp
 }
 
@@ -90,6 +92,15 @@ type ExamSessionQuestionSchema {
   examSession: ExamSession
   number: Int
   question: Question
+}
+
+type ExamTag {
+  examsCount: Int!
+  id: ID!
+  imageFilename: String
+  name: String!
+  rating: Int!
+  slug: String!
 }
 
 type Mutation {
@@ -173,11 +184,12 @@ type Query {
   examSession(examSessionId: ID!): ExamSession!
   examSessionQuestion(examSessionId: ID!, question: Int!): ExamSessionQuestionSchema!
   examSessions(completion: Boolean, cursor: String = "id", examId: ID, nextCursor: String, order: String = "desc", prevCursor: String, size: Int = 20): [ExamSession!]!
-  exams(approved: String, creator: String, cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20, subscription: String): [Exam!]!
+  examTags(search: String, size: Int = 20): [ExamTag!]!
+  exams(approved: String, creator: String, cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20, subscription: String, tag: String): [Exam!]!
   me: User!
   paginatedActivities(cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, size: Int = 20): PaginatedActivityList!
   paginatedExamSessions(completion: Boolean, cursor: String = "id", examId: ID, nextCursor: String, order: String = "desc", prevCursor: String, size: Int = 20): PaginatedExamSessions!
-  paginatedExams(approved: String, creator: String, cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20, subscription: String): PaginatedExams!
+  paginatedExams(approved: String, creator: String, cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20, subscription: String, tag: String): PaginatedExams!
   paginatedQuestions(approved: String, creator: String, cursor: String = "id", difficulty: String, exam: ID, nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20, subscription: String, type: String): PaginatedQuestions!
   paginatedUsers(cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20): PaginatedUsers!
   permission: PermissionSchema!
@@ -234,6 +246,7 @@ type Token {
 input UpdateExam {
   name: String
   requiredScore: Int
+  tags: [String!]
 }
 
 input UpdateMe {

@@ -1,4 +1,5 @@
 import Rating from '../rating/Rating'
+import ExamTag from '../examTag/ExamTag'
 
 export default interface Exam {
   id?: string
@@ -8,6 +9,7 @@ export default interface Exam {
   requiredScore?: number
   voters?: number
   rating?: Rating
+  tags?: ExamTag[]
   isApproved?: boolean
   isOwner?: boolean
   isCreator?: boolean
