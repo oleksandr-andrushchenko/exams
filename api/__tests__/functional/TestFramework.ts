@@ -315,13 +315,13 @@ export default class TestFramework {
     await this.clear([ User, Exam, Question, ExamSession, Activity, ExamRatingMark, QuestionRatingMark, ExamTag ])
 
     const regular = await this.fixture<User>(User, {
-      name: 'Demo Learner', email: 'learner@examme.test', password: 'learner', permissions: [ Permission.Regular ],
+      name: 'Demo Learner', email: 'learner@examme.test', password: 'Learner123!', permissions: [ Permission.Regular ],
     })
     const admin = await this.fixture<User>(User, {
-      name: 'Demo Administrator', email: 'admin@examme.test', password: 'admin', permissions: [ Permission.All ],
+      name: 'Demo Administrator', email: 'admin@examme.test', password: 'Admin123!', permissions: [ Permission.All ],
     })
     const root = await this.fixture<User>(User, {
-      name: 'Demo Root', email: 'root@examme.test', password: 'root', permissions: [ Permission.Root ],
+      name: 'Demo Root', email: 'root@examme.test', password: 'Root123!', permissions: [ Permission.Root ],
     })
 
     const tagData = [

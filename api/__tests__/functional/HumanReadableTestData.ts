@@ -45,7 +45,7 @@ export const nextUserCredentials = (permissions: Permission[] = [ Permission.Reg
   const index = nextIndex(`user-${ role }`)
   return {
     email: `${ role }${ index }@examme.test`,
-    password: `${ role }${ index }`,
+    password: `${ role.charAt(0).toUpperCase()}${ role.slice(1) }1234!${ index }`,
   }
 }
 
