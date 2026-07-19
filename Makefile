@@ -54,7 +54,12 @@ db: ## Open PostgreSQL client for the local database
 .PHONY: tests
 tests: ## Run all API and front-end tests
 	@POSTGRES_PORT=$${POSTGRES_PORT:-5432} $(DC) exec -e NODE_ENV=test -e NODE_OPTIONS=--no-deprecation $(BE_SERVICE) npm run --silent test:functional
+	@$(DC) exec -e NODE_ENV=test -e NODE_OPTIONS=--no-deprecation $(BE_SERVICE) npm run --silent seed:test
 	@POSTGRES_PORT=$${POSTGRES_PORT:-5432} $(DC) exec -e NODE_OPTIONS=--no-deprecation $(FE_SERVICE) npm run --silent test:dom
+.PHONY: seed
+seed: ## Rebuild readable local demo data
+	@$(DC) exec -e NODE_ENV=test -e NODE_OPTIONS=--no-deprecation $(BE_SERVICE) npm run --silent seed:test
+
 
 .PHONY: logs
 logs: ## Tail Docker containers logs

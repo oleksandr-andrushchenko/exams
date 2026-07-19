@@ -5,7 +5,7 @@ import { Field, InputType, Int } from 'type-graphql'
 export default class UpdateExam {
 
   @ValidateIf(target => 'name' in target)
-  @Length(3, 30)
+  @Length(3, 100)
   @Field({ nullable: true })
   public readonly name?: string
 

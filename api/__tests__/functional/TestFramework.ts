@@ -5,6 +5,7 @@ import QuestionRepository from '../../src/repositories/question/QuestionReposito
 import ExamSessionRepository from '../../src/repositories/ExamSessionRepository'
 import User from '../../src/entities/user/User'
 import { faker } from '@faker-js/faker'
+import { defaultChoices, nextExamName, nextQuestionTitle, nextPerson, nextTagName, nextUserCredentials, slugify } from './HumanReadableTestData'
 import Permission from '../../src/enums/Permission'
 import Exam from '../../src/entities/exam/Exam'
 import Question from '../../src/entities/question/Question'
@@ -27,6 +28,7 @@ import ExamRatingMark from '../../src/entities/exam/ExamRatingMark'
 import QuestionRatingMark from '../../src/entities/question/QuestionRatingMark'
 import ExamRatingMarkRepository from '../../src/repositories/exam/ExamRatingMarkRepository'
 import QuestionRatingMarkRepository from '../../src/repositories/question/QuestionRatingMarkRepository'
+import config from '../../src/configuration'
 import ExamTag from '../../src/entities/examTag/ExamTag'
 import ExamTagRepository from '../../src/repositories/examTag/ExamTagRepository'
 
@@ -52,7 +54,7 @@ export default class TestFramework {
     await this._serverDown()
   }
 
-  public async clear(_entity: any | any[] = [ User, Exam, Question, ExamSession, ExamRatingMark, QuestionRatingMark, ExamTag ]): Promise<void> {
+  public async clear(_entity: any | any[] = [ User, Exam, Question, ExamSession, Activity, ExamRatingMark, QuestionRatingMark, ExamTag ]): Promise<void> {
     _entity = Array.isArray(_entity) ? _entity : [ _entity ]
 
     if (_entity.some(entity => this.compare(entity, Exam) || this.compare(entity, ExamTag))) {
@@ -101,20 +103,21 @@ export default class TestFramework {
     switch (true) {
       case this.compare(entity, User):
         object = new User()
-        object.name = faker.person.fullName()
-        object.email = faker.internet.email()
-        object.password = 'password' in options ? options.password : faker.internet.password()
         object.permissions = 'permissions' in options ? options.permissions : [ Permission.Regular ]
+        object.name = 'name' in options ? options.name : nextPerson()
+        const credentials = nextUserCredentials(object.permissions)
+        object.email = 'email' in options ? options.email : credentials.email
+        object.password = 'password' in options ? options.password : credentials.password
 
         break
       case this.compare(entity, Exam):
         object = new Exam()
-        object.name = `${faker.lorem.word()}-${new ObjectId().toHexString().slice(-6)}`
+        object.name = 'name' in options ? options.name : nextExamName()
         object.requiredScore = 'requiredScore' in options ? options.requiredScore : faker.number.int({
           min: 0,
           max: 100,
         })
-        object.questionCount = 'questionCount' in options ? options.questionCount : faker.number.int({ min: 2, max: 5 })
+        object.questionCount = 'questionCount' in options ? options.questionCount : 3
         object.approvedQuestionCount = 'approvedQuestionCount' in options ? options.approvedQuestionCount : faker.number.int({
           min: 0,
           max: 2,
@@ -122,7 +125,8 @@ export default class TestFramework {
         object.creatorId = 'creatorId' in options ? options.creatorId : (await this.fixture(User) as User).id
         object.ownerId = 'ownerId' in options ? options.ownerId : object.creatorId
 
-        if (faker.datatype.boolean()) {
+        if ('rating' in options) object.rating = options.rating
+        if (!('rating' in options) && faker.datatype.boolean()) {
           const rating = new Rating()
           rating.averageMark = faker.number.int({ min: 1, max: 5 })
           rating.markCount = faker.number.int({ min: 1, max: 10 })
@@ -134,33 +138,21 @@ export default class TestFramework {
         object = new Question()
         object.examId = 'examId' in options ? options.examId : (await this.fixture(Exam) as Exam).id
         object.type = 'type' in options ? options.type : faker.helpers.enumValue(QuestionType)
-        object.difficulty = faker.helpers.enumValue(QuestionDifficulty)
-        object.title = faker.lorem.sentences(3)
+        object.difficulty = 'difficulty' in options ? options.difficulty : QuestionDifficulty.MODERATE
+        object.title = 'title' in options ? options.title : nextQuestionTitle()
         object.creatorId = 'creatorId' in options ? options.creatorId : (await this.fixture(User) as User).id
         object.ownerId = 'ownerId' in options ? options.ownerId : object.creatorId
 
         if (object.type === QuestionType.CHOICE) {
-          const choices = []
-
-          for (let i = 0, max = faker.number.int({ min: 1, max: 3 }); i < max; i++) {
-            const choice = new QuestionChoice()
-            choice.title = faker.lorem.word()
-
-            if (faker.datatype.boolean()) {
-              choice.correct = true
-            }
-
-            if (faker.datatype.boolean()) {
-              choice.explanation = faker.lorem.sentence()
-            }
-
-            choices.push(choice)
-          }
-
-          object.choices = choices
+          object.choices = ((('choices' in options ? options.choices : defaultChoices()) as any[])).map(choice => {
+            const item = new QuestionChoice()
+            Object.assign(item, choice)
+            return item
+          })
         }
 
-        if (faker.datatype.boolean()) {
+        if ('rating' in options) object.rating = options.rating
+        if (!('rating' in options) && faker.datatype.boolean()) {
           const rating = new Rating()
           rating.averageMark = faker.number.int({ min: 1, max: 5 })
           rating.markCount = faker.number.int({ min: 1, max: 10 })
@@ -177,7 +169,7 @@ export default class TestFramework {
         const questions = []
 
         for (let i = 0, max = faker.number.int({ min: 1, max: 3 }); i < max; i++) {
-          const question = await this.fixture(Question, { examId: object.examId }) as Question
+          const question = await this.fixture(Question, { examId: object.examId, creatorId: object.creatorId, ownerId: object.ownerId }) as Question
           const examSessionQuestion = new ExamSessionQuestion()
           examSessionQuestion.questionId = question.id
 
@@ -226,8 +218,8 @@ export default class TestFramework {
         break
       case this.compare(entity, ExamTag):
         object = new ExamTag()
-        object.name = 'name' in options ? options.name : faker.lorem.word()
-        object.slug = 'slug' in options ? options.slug : object.name.toLowerCase()
+        object.name = 'name' in options ? options.name : nextTagName()
+        object.slug = 'slug' in options ? options.slug : slugify(object.name)
         object.rating = 'rating' in options ? options.rating : 0
 
         break
@@ -311,6 +303,85 @@ export default class TestFramework {
     const tokenCreator: AccessTokenCreator = this.container.get<AccessTokenCreator>(AccessTokenCreator)
 
     return await tokenCreator.createAccessToken(user)
+  }
+
+  public async seedDemoData(): Promise<void> {
+    const seedManager = this.container.get<ConnectionManager>(ConnectionManager).get('default').manager
+    for (const schema of [...new Set([ config.db.schema, 'public', 'test' ])]) {
+      for (const table of ['examExamTags', 'examRatingMarks', 'questionRatingMarks', 'activities', 'examSessions', 'questions', 'exams', 'examTags', 'users']) {
+      await seedManager.query('DELETE FROM "' + schema + '"."' + table + '"')
+      }
+    }
+    await this.clear([ User, Exam, Question, ExamSession, Activity, ExamRatingMark, QuestionRatingMark, ExamTag ])
+
+    const regular = await this.fixture<User>(User, {
+      name: 'Demo Learner', email: 'learner@examme.test', password: 'learner', permissions: [ Permission.Regular ],
+    })
+    const admin = await this.fixture<User>(User, {
+      name: 'Demo Administrator', email: 'admin@examme.test', password: 'admin', permissions: [ Permission.All ],
+    })
+    const root = await this.fixture<User>(User, {
+      name: 'Demo Root', email: 'root@examme.test', password: 'root', permissions: [ Permission.Root ],
+    })
+
+    const tagData = [
+      [ 'AWS', 'aws' ], [ 'Cloud Architecture', 'cloud-architecture' ], [ 'Cloud Security', 'cloud-security' ],
+      [ 'DevOps', 'devops' ], [ 'Kubernetes', 'kubernetes' ], [ 'Microsoft Azure', 'microsoft-azure' ],
+    ]
+    const tags = await Promise.all(tagData.map(([ name, slug ], index) => this.fixture<ExamTag>(ExamTag, {
+      name, slug, rating: 5 - (index % 3), imageFilename: undefined,
+    })))
+
+    const examData = [
+      [ 'AWS Certified Developer Associate', 70, [ 'aws', 'devops' ] ],
+      [ 'AWS Certified Solutions Architect Professional', 75, [ 'aws', 'cloud-architecture', 'cloud-security' ] ],
+      [ 'AWS Certified SysOps Administrator Associate', 72, [ 'aws', 'devops', 'cloud-security' ] ],
+      [ 'Certified Kubernetes Administrator', 70, [ 'kubernetes', 'devops', 'cloud-architecture' ] ],
+      [ 'Microsoft Azure Administrator Associate', 68, [ 'microsoft-azure', 'cloud-architecture' ] ],
+    ] as const
+    const exams: Exam[] = []
+    for (const [ name, requiredScore ] of examData) {
+      exams.push(await this.fixture<Exam>(Exam, {
+        name, requiredScore, questionCount: 3, approvedQuestionCount: 2,
+        creatorId: admin.id, ownerId: undefined, rating: { averageMark: 4.5, markCount: 12 },
+      }))
+    }
+
+    const questionTitles = [
+      'Which service is best suited for durable object storage?',
+      'Which design provides high availability across failure domains?',
+      'Which identity approach follows the principle of least privilege?',
+    ]
+    const questions: Question[] = []
+    for (const exam of exams) {
+      for (const title of questionTitles) {
+        questions.push(await this.fixture<Question>(Question, {
+          examId: exam.id, creatorId: admin.id, ownerId: undefined,
+          title: `${ title } (${ exam.name })`, difficulty: QuestionDifficulty.MODERATE,
+          choices: defaultChoices(), rating: { averageMark: 4, markCount: 8 },
+        }))
+      }
+    }
+
+    for (let index = 0; index < exams.length; index++) {
+      const exam = exams[index]
+      await this.fixture<ExamSession>(ExamSession, { examId: exam.id, creatorId: regular.id, ownerId: regular.id, completed: index % 2 === 0 })
+      await this.fixture<Activity>(Activity, { exam: exam, event: index % 2 === 0 ? ExamEvent.Created : ExamEvent.Approved })
+      await this.fixture<ExamRatingMark>(ExamRatingMark, { examId: exam.id, creatorId: regular.id, mark: 4 })
+      await this.fixture<QuestionRatingMark>(QuestionRatingMark, { questionId: questions[index * 3].id, creatorId: regular.id, mark: 5 })
+    }
+
+    const manager = this.container.get<ConnectionManager>(ConnectionManager).get('default').manager
+    for (const [ name, _requiredScore, slugs ] of examData) {
+      const [ examRow ] = await manager.query('SELECT id FROM exams WHERE name = $1', [ name ])
+      for (const slug of slugs) {
+        const [ tagRow ] = await manager.query('SELECT id FROM "examTags" WHERE slug = $1', [ slug ])
+        await manager.query('INSERT INTO "examExamTags" ("examId", "examTagId") VALUES ($1, $2)', [ examRow.id, tagRow.id ])
+      }
+    }
+
+    void root
+    void tags
   }
 
   public async fakeId(): Promise<ObjectId> {
