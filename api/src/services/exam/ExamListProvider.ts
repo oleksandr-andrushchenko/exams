@@ -49,6 +49,10 @@ export default class ExamListProvider {
       where.name = { $regex: getExams.search, $options: 'i' }
     }
 
+    if (getExams.userId) {
+      where.creatorId = this.idNormalizer.normalizeId(getExams.userId)
+    }
+
     if (getExams.tag) {
       const examIds = await this.examTagRepository.findExamIdsBySlug(getExams.tag)
       where.id = { $in: examIds.map(id => this.idNormalizer.normalizeId(id)) }

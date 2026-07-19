@@ -1,9 +1,14 @@
 import PaginationSchema from '../pagination/PaginationSchema'
-import { IsIn, IsOptional, IsString, Matches } from 'class-validator'
-import { ArgsType, Field } from 'type-graphql'
+import { IsIn, IsMongoId, IsOptional, IsString, Matches } from 'class-validator'
+import { ArgsType, Field, ID } from 'type-graphql'
 
 @ArgsType()
 export default class GetExams extends PaginationSchema {
+
+  @IsOptional()
+  @IsMongoId()
+  @Field(_type => ID, { nullable: true })
+  public readonly userId?: string
 
   @IsOptional()
   @IsIn([ 'yes', 'no' ])

@@ -216,4 +216,19 @@ describe('Get examSessions', () => {
       expect(resExamSessions[index]).not.toHaveProperty([ 'questions', 'creatorId', 'deletedAt' ])
     }
   })
+  test('Public profile sessions', async () => {
+    await framework.clear(ExamSession)
+    const user = await framework.fixture<User>(User)
+    const exam = await framework.fixture<Exam>(Exam)
+    const session = await framework.fixture<ExamSession>(ExamSession, { examId: exam.id, ownerId: user.id })
+    const res = await request(framework.app).post('/').send({
+      query: `query($userId: ID!) { paginatedExamSessions(userId: $userId) { data { id examId exam { id name } } } }`,
+      variables: { userId: user.id.toString() },
+    })
+
+    expect(res.body.data.paginatedExamSessions.data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: session.id.toString(), examId: exam.id.toString(), exam: { id: exam.id.toString(), name: exam.name } }),
+    ]))
+  })
+
 })

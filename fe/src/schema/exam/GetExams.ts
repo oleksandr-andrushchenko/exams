@@ -6,4 +6,5 @@ export default interface GetExams extends Pagination {
   approved?: YesNo
   search?: string
   tag?: string
+  userId?: string
 }

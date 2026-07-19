@@ -64,6 +64,14 @@ export class ExamSessionResolver {
     return await this.examSessionListProvider.getExamSessions(getExamSessions, user) as ExamSession[]
   }
 
+  @Query(_returns => [ ExamSession ], { name: 'userExamSessions' })
+  public async getUserExamSessions(
+    @Args() getExamSessions: GetExamSessions,
+  ): Promise<ExamSession[]> {
+    if (!getExamSessions.userId) return []
+    return await this.examSessionListProvider.getExamSessions(getExamSessions, undefined, false) as ExamSession[]
+  }
+
   @Query(_returns => PaginatedExamSessions, { name: 'paginatedExamSessions' })
   public async getPaginatedExamSessions(
     @Args() getExamSessions: GetExamSessions,

@@ -4,9 +4,16 @@ import { memo, useEffect, useState } from 'react'
 import { Params, useParams } from 'react-router-dom'
 import { apiQuery } from '../api/apolloClient'
 import getUserForUserPage from '../api/users/getUserForUserPage'
+import getExamsForExamsPage from '../api/exam/getExamsForExamsPage'
+import getExamSessionsForUserPage from '../api/examSession/getExamSessionsForUserPage'
 import Error from '../components/Error'
 import Spinner from '../components/Spinner'
 import InfoTable from '../components/elements/InfoTable'
+import Table from '../components/elements/Table'
+import H2 from '../components/typography/H2'
+import Paginated from '../schema/pagination/Paginated'
+import Exam from '../schema/exam/Exam'
+import ExamSession from '../schema/examSession/ExamSession'
 import Link from '../components/elements/Link'
 import H1 from '../components/typography/H1'
 import Route from '../enum/Route'
@@ -52,6 +59,41 @@ const User = () => {
         profile.updatedAt ? new Date(profile.updatedAt).toDateString() : 'N/A',
       ] }
     /> }
+
+    { user && <>
+      <H2 label="Exams"/>
+      <Table
+        key2={ userId }
+        columns={ [ '#', 'Name', 'Tags', 'Questions', 'Required score', 'Rating' ] }
+        queryOptions={ filter => getExamsForExamsPage({ ...filter, userId }) }
+        queryData={ (data: { paginatedExams: Paginated<Exam> }) => data.paginatedExams }
+        mapper={ (exam: Exam, index: number) => [
+          exam.id,
+          index + 1,
+          <Link label={ exam.name } to={ Route.Exam.replace(':examId', exam.id!) }/>,
+          exam.tags?.map(tag => tag.name).join(', ') || '—',
+          `${ exam.approvedQuestionCount ?? 0 }/${ exam.questionCount ?? 0 }`,
+          exam.rating?.averageMark ?? 'N/A',
+        ] }
+      />
+
+      <H2 label="Exam sessions"/>
+      <Table
+        key2={ userId }
+        columns={ [ '#', 'Exam', 'Progress', 'Score', 'Status', 'Started' ] }
+        queryOptions={ filter => getExamSessionsForUserPage(userId, filter) }
+        queryData={ (data: { paginatedExamSessions: Paginated<ExamSession> }) => data.paginatedExamSessions }
+        mapper={ (session: ExamSession, index: number) => [
+          session.id,
+          index + 1,
+          session.exam ? <Link label={ session.exam.name } to={ Route.Exam.replace(':examId', session.exam.id!) }/> : session.examId,
+          `${ session.answeredQuestionCount ?? 0 }/${ session.questionCount ?? 0 }`,
+          session.correctAnswerCount ?? '—',
+          session.completedAt ? 'Completed' : 'In progress',
+          session.createdAt ? new Date(session.createdAt).toDateString() : 'N/A',
+        ] }
+      />
+    </> }
   </>
 }
 

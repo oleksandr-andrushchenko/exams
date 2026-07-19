@@ -33,7 +33,8 @@ export default function getExamsForExamsPage(filter: GetExams = {}): any {
             $approved: String,
             $creator: String,
             $search: String,
-            $tag: String
+            $tag: String,
+            $userId: ID
         ) {
             paginatedExams(
                 size: $size,
@@ -45,7 +46,8 @@ export default function getExamsForExamsPage(filter: GetExams = {}): any {
                 approved: $approved,
                 creator: $creator,
                 search: $search,
-                tag: $tag
+                tag: $tag,
+                userId: $userId
             ) {
                 data ${examQuery}
                 meta {

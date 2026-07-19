@@ -183,19 +183,20 @@ type Query {
   exam(examId: ID!): Exam!
   examSession(examSessionId: ID!): ExamSession!
   examSessionQuestion(examSessionId: ID!, question: Int!): ExamSessionQuestionSchema!
-  examSessions(completion: Boolean, cursor: String = "id", examId: ID, nextCursor: String, order: String = "desc", prevCursor: String, size: Int = 20): [ExamSession!]!
+  examSessions(completion: Boolean, cursor: String = "id", examId: ID, nextCursor: String, order: String = "desc", prevCursor: String, size: Int = 20, userId: ID): [ExamSession!]!
   examTags(search: String, size: Int = 20): [ExamTag!]!
-  exams(approved: String, creator: String, cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20, subscription: String, tag: String): [Exam!]!
+  exams(approved: String, creator: String, cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20, subscription: String, tag: String, userId: ID): [Exam!]!
   me: User!
   paginatedActivities(cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, size: Int = 20): PaginatedActivityList!
-  paginatedExamSessions(completion: Boolean, cursor: String = "id", examId: ID, nextCursor: String, order: String = "desc", prevCursor: String, size: Int = 20): PaginatedExamSessions!
-  paginatedExams(approved: String, creator: String, cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20, subscription: String, tag: String): PaginatedExams!
+  paginatedExamSessions(completion: Boolean, cursor: String = "id", examId: ID, nextCursor: String, order: String = "desc", prevCursor: String, size: Int = 20, userId: ID): PaginatedExamSessions!
+  paginatedExams(approved: String, creator: String, cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20, subscription: String, tag: String, userId: ID): PaginatedExams!
   paginatedQuestions(approved: String, creator: String, cursor: String = "id", difficulty: String, exam: ID, nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20, subscription: String, type: String): PaginatedQuestions!
   paginatedUsers(cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20): PaginatedUsers!
   permission: PermissionSchema!
   question(questionId: ID!): Question!
   questions(approved: String, creator: String, cursor: String = "id", difficulty: String, exam: ID, nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20, subscription: String, type: String): [Question!]!
   user(userId: ID!): User!
+  userExamSessions(completion: Boolean, cursor: String = "id", examId: ID, nextCursor: String, order: String = "desc", prevCursor: String, size: Int = 20, userId: ID): [ExamSession!]!
   users(cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20): [User!]!
 }
 
