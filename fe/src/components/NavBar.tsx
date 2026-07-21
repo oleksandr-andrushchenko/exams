@@ -39,7 +39,11 @@ const NavBar = () => {
         me
           ? <>
             <Typography as="li" variant="small" className="truncate">
-              <Text icon={ UserCircleIcon } label={ me.email } variant="small" className="font-normal"/>
+              { me.id
+                ? <Link to={ Route.User.replace(":userId", me.id) } className="flex items-center" aria-label="Open your profile">
+                  <Text icon={ UserCircleIcon } label={ me.email } variant="small" className="font-normal"/>
+                </Link>
+                : <Text icon={ UserCircleIcon } label={ me.email } variant="small" className="font-normal"/> }
             </Typography>
             <Typography as="li" variant="small">
               <Button icon={ ArrowRightStartOnRectangleIcon } label="Logout"
