@@ -1,12 +1,12 @@
 services:
   be:
     build:
-      context: ./api
-      dockerfile: ../Dockerfile-be
+      context: .
+      dockerfile: Dockerfile-be
     depends_on:
       - postgres
     volumes:
-      - ./api:/usr/app
+      - .:/usr/app
     env_file:
       - .env
     environment:
@@ -21,16 +21,20 @@ services:
 
   fe:
     build:
-      context: ./fe
-      dockerfile: ../Dockerfile-fe
+      context: .
+      dockerfile: Dockerfile-fe
     volumes:
-      - ./fe:/usr/app
+      - .:/usr/app
     env_file:
       - .env
     environment:
       NODE_ENV: development
       PORT: 8081
-      VITE_API_BASE_URL: http://localhost:${BE_PORT}
+      API_BASE_URL: http://be:8080
+      DATABASE_TYPE: postgres
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/examme
+      DATABASE_SCHEMA: public
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:${BE_PORT}
     ports:
       - "${FE_PORT}:8081"
 

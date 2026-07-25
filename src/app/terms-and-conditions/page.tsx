@@ -1,0 +1,1 @@
+export default function TermsPage() { return <><h1 className="mt-1 font-primary text-black text-3xl font-bold">Terms and conditions</h1><p className="mt-4">Please review the terms and conditions for using ExamMe.</p></> }

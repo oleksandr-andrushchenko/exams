@@ -1,0 +1,100 @@
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react'
+import Token from '../schema/auth/Token'
+import Me from '../schema/me/Me'
+import Permission from '../enum/Permission'
+import { default as PermissionQuery } from '../schema/auth/Permission'
+import { apiQuery } from '../client/graphql/apolloClient'
+import getMeAndPermissions from '../client/graphql/me/getMeAndPermissions'
+import PermissionHierarchy from '../schema/auth/PermissionHierarchy'
+
+const authenticationContext = createContext({})
+
+interface AuthenticationProviderContextValue {
+  authenticationToken: Token | undefined
+  setAuthenticationToken: (token: Token | undefined) => void
+  me: Me | undefined
+  checkAuthorization: (permission: string, resource?: {
+    ownerId?: string,
+    isOwner?: boolean
+  }, permissions?: string[]) => boolean
+}
+
+export function AuthenticationProvider({ children }: { children: ReactNode }) {
+  const authenticationTokenString = localStorage.getItem('authenticationToken')
+  const [ authenticationToken, setAuthenticationToken ] = useState<Token | undefined>(
+    authenticationTokenString ? JSON.parse(authenticationTokenString) : undefined,
+  )
+  const defaultData = { me: undefined, permissionHierarchy: undefined }
+  const [ { me, permissionHierarchy }, setData ] = useState<{
+    me?: Me | undefined
+    permissionHierarchy?: PermissionHierarchy | undefined
+  }>(defaultData)
+  const checkAuthorization: AuthenticationProviderContextValue['checkAuthorization'] = (permission, resource, permissions): boolean => {
+    if (!authenticationToken || !me || !permissionHierarchy) {
+      return false
+    }
+
+    if (resource) {
+      if (('ownerId' in resource) && resource.ownerId === me.id) {
+        return true
+      }
+
+      if (('isOwner' in resource) && resource.isOwner) {
+        return true
+      }
+    }
+
+    const effectivePermissions = permissions ?? me.permissions ?? []
+
+    if (effectivePermissions.indexOf(Permission.All) !== -1) {
+      return true
+    }
+
+    if (effectivePermissions.indexOf(permission) !== -1) {
+      return true
+    }
+
+    for (const mePermission of effectivePermissions) {
+      if (permissionHierarchy.hasOwnProperty(mePermission)) {
+        if (checkAuthorization(permission, resource, permissionHierarchy[mePermission as keyof PermissionHierarchy])) {
+          return true
+        }
+      }
+    }
+
+    return false
+  }
+
+  useEffect(() => {
+    if (authenticationToken) {
+      localStorage.setItem('authenticationToken', JSON.stringify(authenticationToken))
+      apiQuery<{ me: Me, permission: PermissionQuery }>(
+        getMeAndPermissions(),
+        data => setData({ me: data.me, permissionHierarchy: data.permission.hierarchy }),
+        () => setAuthenticationToken(undefined),
+        () => {
+        },
+      )
+    } else {
+      localStorage.removeItem('authenticationToken')
+      setData(defaultData)
+    }
+  }, [ authenticationToken ])
+
+  const value: AuthenticationProviderContextValue = {
+    authenticationToken,
+    setAuthenticationToken,
+    me,
+    checkAuthorization,
+  }
+
+  return (
+    <authenticationContext.Provider value={ value }>
+      { children }
+    </authenticationContext.Provider>
+  )
+}
+
+export default function useAuth(): AuthenticationProviderContextValue {
+  return useContext<AuthenticationProviderContextValue>(authenticationContext as any)
+}

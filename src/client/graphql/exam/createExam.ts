@@ -1,0 +1,23 @@
+import { gql } from '@apollo/client'
+import CreateExam from '../../../schema/exam/CreateExam'
+
+export default function createExam(createExam: CreateExam): any {
+  return {
+    mutation: gql`
+        mutation CreateExam($createExam: CreateExam!) {
+            createExam(createExam: $createExam) {
+                id
+                name
+                isApproved
+                isOwner
+                isCreator
+                rating {averageMark markCount mark}
+                tags {id name slug rating examsCount imageFilename}
+            }
+        }
+    `,
+    variables: {
+      createExam,
+    },
+  }
+}
