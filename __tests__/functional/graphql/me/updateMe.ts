@@ -1,4 +1,4 @@
-import UpdateMe from '../../../../src/server/schema/user/UpdateMe'
+import UpdateMe from '../../../../apps/graphql/src/server/schema/user/UpdateMe'
 
 export const updateMe = (variables: { updateMe: UpdateMe }, fields: string[] = [ 'id' ]) => {
   return {

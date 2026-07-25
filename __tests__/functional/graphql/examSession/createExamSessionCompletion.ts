@@ -1,4 +1,4 @@
-import GetExamSession from '../../../../src/server/schema/examSession/GetExamSession'
+import GetExamSession from '../../../../apps/graphql/src/server/schema/examSession/GetExamSession'
 
 export const createExamSessionCompletion = (variables: GetExamSession, fields: string[] = [ 'id' ]) => {
   return {

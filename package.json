@@ -3,16 +3,16 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "dev": "next dev apps/web",
+    "build": "next build apps/web",
+    "lint": "eslint apps/web/src apps/graphql/src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "test:dom": "jest --testEnvironment=jsdom --testPathPattern=__tests__/dom",
-    "start": "next start",
+    "start": "next start apps/web",
     "test:functional": "jest --config=jest.functional.config.ts --runInBand",
-    "seed:test": "ts-node -P tsconfig.server.json -r tsconfig-paths/register src/server/scripts/seedDemoData.ts",
-    "api:dev": "ts-node -P tsconfig.server.json -r tsconfig-paths/register src/server/server.ts",
-    "api:build": "tsc -p tsconfig.server.json",
-    "api:start": "node src/server/dist/server.js"
+    "seed:test": "ts-node -P apps/graphql/tsconfig.json -r tsconfig-paths/register apps/graphql/src/server/scripts/seedDemoData.ts",
+    "api:dev": "ts-node -P apps/graphql/tsconfig.json -r tsconfig-paths/register apps/graphql/src/server/server.ts",
+    "api:build": "tsc -p apps/graphql/tsconfig.json",
+    "api:start": "node apps/graphql/dist/server.js"
   },
   "dependencies": {
     "@apollo/client": "^3.14.1",

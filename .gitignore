@@ -1,7 +1,7 @@
 .idea
 .env
 # Generated server and Next output
-.next/
-src/server/dist/
+**/.next/
+apps/graphql/dist/
 node_modules/
 *.js.map

@@ -1,4 +1,4 @@
-import Permission from '../../src/server/enums/Permission'
+import Permission from '../../apps/graphql/src/server/enums/Permission'
 
 const values = {
   exams: [

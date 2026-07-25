@@ -1,11 +1,11 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
 import TestFramework from '../../TestFramework'
-import User from '../../../../src/server/entities/user/User'
+import User from '../../../../apps/graphql/src/server/entities/user/User'
 // @ts-ignore
 import { getUsers } from '../../graphql/user/getUsers'
-import UserPermission from '../../../../src/server/enums/user/UserPermission'
-import GetUsers from '../../../../src/server/schema/user/GetUsers'
+import UserPermission from '../../../../apps/graphql/src/server/enums/user/UserPermission'
+import GetUsers from '../../../../apps/graphql/src/server/schema/user/GetUsers'
 
 const framework: TestFramework = globalThis.framework
 describe('Get users', () => {

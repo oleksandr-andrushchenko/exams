@@ -1,5 +1,5 @@
 import 'reflect-metadata'
-import TestFramework from '../../../__tests__/functional/TestFramework'
+import TestFramework from '../../../../../__tests__/functional/TestFramework'
 
 const framework = new TestFramework()
 

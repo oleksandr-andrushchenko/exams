@@ -1,4 +1,4 @@
-import CreateQuestion from '../../../../src/server/schema/question/CreateQuestion'
+import CreateQuestion from '../../../../apps/graphql/src/server/schema/question/CreateQuestion'
 
 export const createQuestion = (variables: { createQuestion: CreateQuestion }, fields: string[] = [ 'id' ]) => {
   return {

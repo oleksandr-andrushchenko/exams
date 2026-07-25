@@ -1,5 +1,5 @@
-import GetQuestion from '../../../../src/server/schema/question/GetQuestion'
-import Question from '../../../../src/server/entities/question/Question'
+import GetQuestion from '../../../../apps/graphql/src/server/schema/question/GetQuestion'
+import Question from '../../../../apps/graphql/src/server/entities/question/Question'
 
 export const toggleQuestionApprove = (variables: GetQuestion, fields: (keyof Question)[] = [ 'id' ]) => {
   return {

@@ -1,4 +1,4 @@
-import GetUsers from '../../../../src/server/schema/user/GetUsers'
+import GetUsers from '../../../../apps/graphql/src/server/schema/user/GetUsers'
 
 export const getUsers = (variables: GetUsers = {}, fields: string[] = [ 'id' ]) => {
   return {

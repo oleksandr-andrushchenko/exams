@@ -1,11 +1,11 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
-import Exam from '../../../../src/server/entities/exam/Exam'
+import Exam from '../../../../apps/graphql/src/server/entities/exam/Exam'
 import TestFramework from '../../TestFramework'
 // @ts-ignore
 import { getActivities } from '../../graphql/activity/getActivities'
-import Activity from '../../../../src/server/entities/activity/Activity'
-import ExamEvent from '../../../../src/server/enums/exam/ExamEvent'
+import Activity from '../../../../apps/graphql/src/server/entities/activity/Activity'
+import ExamEvent from '../../../../apps/graphql/src/server/enums/exam/ExamEvent'
 
 const framework: TestFramework = globalThis.framework
 

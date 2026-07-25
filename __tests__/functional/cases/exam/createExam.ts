@@ -1,15 +1,15 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
-import Exam from '../../../../src/server/entities/exam/Exam'
-import User from '../../../../src/server/entities/user/User'
+import Exam from '../../../../apps/graphql/src/server/entities/exam/Exam'
+import User from '../../../../apps/graphql/src/server/entities/user/User'
 import { ObjectId } from 'bson'
-import ExamPermission from '../../../../src/server/enums/exam/ExamPermission'
+import ExamPermission from '../../../../apps/graphql/src/server/enums/exam/ExamPermission'
 // @ts-ignore
 import { createExam } from '../../graphql/exam/createExam'
-import CreateExam from '../../../../src/server/schema/exam/CreateExam'
+import CreateExam from '../../../../apps/graphql/src/server/schema/exam/CreateExam'
 import TestFramework from '../../TestFramework'
-import Activity from '../../../../src/server/entities/activity/Activity'
-import ExamEvent from '../../../../src/server/enums/exam/ExamEvent'
+import Activity from '../../../../apps/graphql/src/server/entities/activity/Activity'
+import ExamEvent from '../../../../apps/graphql/src/server/enums/exam/ExamEvent'
 
 const framework: TestFramework = globalThis.framework
 

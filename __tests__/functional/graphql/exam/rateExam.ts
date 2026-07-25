@@ -1,4 +1,4 @@
-import RateExamRequest from '../../../../src/server/schema/exam/RateExamRequest'
+import RateExamRequest from '../../../../apps/graphql/src/server/schema/exam/RateExamRequest'
 
 export const rateExam = (variables: RateExamRequest, fields: string[] = [ 'id' ]) => {
   return {

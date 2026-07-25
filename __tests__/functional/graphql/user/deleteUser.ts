@@ -1,4 +1,4 @@
-import GetUser from '../../../../src/server/schema/user/GetUser'
+import GetUser from '../../../../apps/graphql/src/server/schema/user/GetUser'
 
 export const deleteUser = (variables: GetUser) => {
   return {

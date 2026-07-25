@@ -1,14 +1,14 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
-import ExamSession from '../../../../src/server/entities/examSession/ExamSession'
-import Question from '../../../../src/server/entities/question/Question'
-import User from '../../../../src/server/entities/user/User'
+import ExamSession from '../../../../apps/graphql/src/server/entities/examSession/ExamSession'
+import Question from '../../../../apps/graphql/src/server/entities/question/Question'
+import User from '../../../../apps/graphql/src/server/entities/user/User'
 // @ts-ignore
 import { createExamSessionQuestionAnswer } from '../../graphql/examSession/createExamSessionQuestionAnswer'
-import CreateExamSessionQuestionAnswer from '../../../../src/server/schema/examSession/CreateExamSessionQuestionAnswer'
-import ExamSessionPermission from '../../../../src/server/enums/examSession/ExamSessionPermission'
+import CreateExamSessionQuestionAnswer from '../../../../apps/graphql/src/server/schema/examSession/CreateExamSessionQuestionAnswer'
+import ExamSessionPermission from '../../../../apps/graphql/src/server/enums/examSession/ExamSessionPermission'
 import TestFramework from '../../TestFramework'
-import QuestionType from '../../../../src/server/entities/question/QuestionType'
+import QuestionType from '../../../../apps/graphql/src/server/entities/question/QuestionType'
 
 const framework: TestFramework = globalThis.framework
 

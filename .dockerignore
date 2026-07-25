@@ -1,2 +1,5 @@
-../ExamMeApi/node_modules
-../ExamMeFront/node_modules
+node_modules
+.next
+apps/graphql/src/server/dist
+.git
+.env

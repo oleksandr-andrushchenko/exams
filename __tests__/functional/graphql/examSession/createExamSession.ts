@@ -1,4 +1,4 @@
-import CreateExamSession from '../../../../src/server/schema/examSession/CreateExamSession'
+import CreateExamSession from '../../../../apps/graphql/src/server/schema/examSession/CreateExamSession'
 
 export const createExamSession = (variables: { createExamSession: CreateExamSession }, fields: string[] = [ 'id' ]) => {
   return {

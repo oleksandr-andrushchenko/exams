@@ -1,6 +1,5 @@
 import path from 'path'
-// @ts-ignore
-import pkg from '../../package.json'
+const pkg = require(path.resolve(process.cwd(), 'package.json'))
 import Permission from './enums/Permission'
 import Env from './schema/config/Env'
 import EnvValidator from './services/config/EnvValidator'
@@ -15,7 +14,7 @@ const environment: string = env.NODE_ENV
 
 export default {
   env: environment,
-  projectDir: path.resolve(process.cwd(), 'src/server'),
+  projectDir: path.resolve(process.cwd(), 'apps/graphql/src/server'),
   client_url: env.CLIENT_URL,
   app: {
     name: pkg.name,

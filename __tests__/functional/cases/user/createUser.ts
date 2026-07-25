@@ -1,12 +1,12 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
-import User from '../../../../src/server/entities/user/User'
+import User from '../../../../apps/graphql/src/server/entities/user/User'
 import { ObjectId } from 'bson'
-import UserPermission from '../../../../src/server/enums/user/UserPermission'
+import UserPermission from '../../../../apps/graphql/src/server/enums/user/UserPermission'
 // @ts-ignore
 import { createUser } from '../../graphql/user/createUser'
-import CreateUser from '../../../../src/server/schema/user/CreateUser'
-import Permission from '../../../../src/server/enums/Permission'
+import CreateUser from '../../../../apps/graphql/src/server/schema/user/CreateUser'
+import Permission from '../../../../apps/graphql/src/server/enums/Permission'
 import TestFramework from '../../TestFramework'
 
 const framework: TestFramework = globalThis.framework

@@ -31,7 +31,8 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
       }
       if (!response.ok) throw new Error(result.errors?.[0]?.message || `Authentication request failed (${response.status})`)
       if (result.errors?.length) throw new Error(result.errors[0].message || 'Authentication failed')
-      const token = register ? result.data.createAuthenticationToken : result.data.createAuthenticationToken
+      const token = result.data?.createAuthenticationToken
+      if (!token?.token) throw new Error('Authentication response did not include a token')
       localStorage.setItem('authenticationToken', JSON.stringify(token))
       window.dispatchEvent(new Event('auth-changed'))
       await new Promise(resolve => setTimeout(resolve, 400))

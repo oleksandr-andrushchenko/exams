@@ -1,16 +1,16 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
-import Question from '../../../../src/server/entities/question/Question'
-import User from '../../../../src/server/entities/user/User'
+import Question from '../../../../apps/graphql/src/server/entities/question/Question'
+import User from '../../../../apps/graphql/src/server/entities/user/User'
 import { faker } from '@faker-js/faker'
-import QuestionPermission from '../../../../src/server/enums/question/QuestionPermission'
+import QuestionPermission from '../../../../apps/graphql/src/server/enums/question/QuestionPermission'
 // @ts-ignore
 import { updateQuestion } from '../../graphql/question/updateQuestion'
-import UpdateQuestion from '../../../../src/server/schema/question/UpdateQuestion'
+import UpdateQuestion from '../../../../apps/graphql/src/server/schema/question/UpdateQuestion'
 import TestFramework from '../../TestFramework'
-import QuestionType from '../../../../src/server/entities/question/QuestionType'
-import ExamPermission from '../../../../src/server/enums/exam/ExamPermission'
-import Exam from '../../../../src/server/entities/exam/Exam'
+import QuestionType from '../../../../apps/graphql/src/server/entities/question/QuestionType'
+import ExamPermission from '../../../../apps/graphql/src/server/enums/exam/ExamPermission'
+import Exam from '../../../../apps/graphql/src/server/entities/exam/Exam'
 
 const framework: TestFramework = globalThis.framework
 

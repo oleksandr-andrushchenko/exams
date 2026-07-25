@@ -1,5 +1,5 @@
-import UpdateExam from '../../../../src/server/schema/exam/UpdateExam'
-import GetExam from '../../../../src/server/schema/exam/GetExam'
+import UpdateExam from '../../../../apps/graphql/src/server/schema/exam/UpdateExam'
+import GetExam from '../../../../apps/graphql/src/server/schema/exam/GetExam'
 
 export const updateExam = (variables: GetExam & {
   updateExam: UpdateExam

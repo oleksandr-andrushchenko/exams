@@ -16,7 +16,7 @@ const config: Config = {
     '<rootDir>/__tests__/functional/cases/**/*.ts',
   ],
   transform: {
-    '^.+\\.(ts|tsx)$': [ 'ts-jest', { tsconfig: 'tsconfig.server.json' } ],
+    '^.+\\.(ts|tsx)$': [ 'ts-jest', { tsconfig: 'apps/graphql/tsconfig.json' } ],
   },
   globalSetup: '<rootDir>/__tests__/functional/globalSetup.ts',
   globalTeardown: '<rootDir>/__tests__/functional/globalTeardown.ts',

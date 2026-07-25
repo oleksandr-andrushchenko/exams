@@ -1,12 +1,12 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
-import User from '../../../../src/server/entities/user/User'
-import ExamSession from '../../../../src/server/entities/examSession/ExamSession'
-import Exam from '../../../../src/server/entities/exam/Exam'
-import ExamSessionPermission from '../../../../src/server/enums/examSession/ExamSessionPermission'
+import User from '../../../../apps/graphql/src/server/entities/user/User'
+import ExamSession from '../../../../apps/graphql/src/server/entities/examSession/ExamSession'
+import Exam from '../../../../apps/graphql/src/server/entities/exam/Exam'
+import ExamSessionPermission from '../../../../apps/graphql/src/server/enums/examSession/ExamSessionPermission'
 // @ts-ignore
 import { getExamSessions } from '../../graphql/examSession/getExamSessions'
-import GetExamSessions from '../../../../src/server/schema/examSession/GetExamSessions'
+import GetExamSessions from '../../../../apps/graphql/src/server/schema/examSession/GetExamSessions'
 import TestFramework from '../../TestFramework'
 
 const framework: TestFramework = globalThis.framework

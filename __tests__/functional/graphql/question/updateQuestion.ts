@@ -1,5 +1,5 @@
-import GetQuestion from '../../../../src/server/schema/question/GetQuestion'
-import UpdateQuestion from '../../../../src/server/schema/question/UpdateQuestion'
+import GetQuestion from '../../../../apps/graphql/src/server/schema/question/GetQuestion'
+import UpdateQuestion from '../../../../apps/graphql/src/server/schema/question/UpdateQuestion'
 
 export const updateQuestion = (variables: GetQuestion & {
   updateQuestion: UpdateQuestion

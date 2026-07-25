@@ -1,5 +1,5 @@
-import CreateExamSessionQuestionAnswer from '../../../../src/server/schema/examSession/CreateExamSessionQuestionAnswer'
-import GetExamSessionQuestion from '../../../../src/server/schema/examSession/GetExamSessionQuestion'
+import CreateExamSessionQuestionAnswer from '../../../../apps/graphql/src/server/schema/examSession/CreateExamSessionQuestionAnswer'
+import GetExamSessionQuestion from '../../../../apps/graphql/src/server/schema/examSession/GetExamSessionQuestion'
 
 export const createExamSessionQuestionAnswer = (variables: GetExamSessionQuestion & {
   createExamSessionQuestionAnswer: CreateExamSessionQuestionAnswer

@@ -1,18 +1,18 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
-import Exam from '../../../../src/server/entities/exam/Exam'
-import User from '../../../../src/server/entities/user/User'
+import Exam from '../../../../apps/graphql/src/server/entities/exam/Exam'
+import User from '../../../../apps/graphql/src/server/entities/user/User'
 import { ObjectId } from 'bson'
-import Question from '../../../../src/server/entities/question/Question'
+import Question from '../../../../apps/graphql/src/server/entities/question/Question'
 import { faker } from '@faker-js/faker'
-import QuestionPermission from '../../../../src/server/enums/question/QuestionPermission'
+import QuestionPermission from '../../../../apps/graphql/src/server/enums/question/QuestionPermission'
 // @ts-ignore
 import { createQuestion } from '../../graphql/question/createQuestion'
-import CreateQuestion from '../../../../src/server/schema/question/CreateQuestion'
+import CreateQuestion from '../../../../apps/graphql/src/server/schema/question/CreateQuestion'
 import TestFramework from '../../TestFramework'
-import QuestionType from '../../../../src/server/entities/question/QuestionType'
-import QuestionDifficulty from '../../../../src/server/entities/question/QuestionDifficulty'
-import ExamPermission from '../../../../src/server/enums/exam/ExamPermission'
+import QuestionType from '../../../../apps/graphql/src/server/entities/question/QuestionType'
+import QuestionDifficulty from '../../../../apps/graphql/src/server/entities/question/QuestionDifficulty'
+import ExamPermission from '../../../../apps/graphql/src/server/enums/exam/ExamPermission'
 
 const framework: TestFramework = globalThis.framework
 
