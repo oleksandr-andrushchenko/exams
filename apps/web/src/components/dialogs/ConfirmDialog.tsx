@@ -1,4 +1,4 @@
-import { Card, CardBody, CardFooter, Dialog, Typography } from '@material-tailwind/react'
+import { Card, CardBody, CardFooter, Dialog, Typography } from '@/components/bootstrap'
 import { ComponentProps, memo, useState } from 'react'
 import { apiMutate } from '../../client/graphql/apolloClient'
 import Error from '../Error'
@@ -17,21 +17,21 @@ interface Props extends ComponentProps<any> {
   iconButton?: boolean
 }
 
-const ConfirmDialog = ({ mutateOptionsFn, iconFn, labelFn, title, body, onSubmit, iconButton = false }: Props) => {
-  const [ isOpened, setOpened ] = useState<boolean>(false)
-  const [ isSubmitting, setSubmitting ] = useState<boolean>(false)
+const ConfirmDialog = ({mutateOptionsFn, iconFn, labelFn, title, body, onSubmit, iconButton = false}: Props) => {
+  const [isOpened, setOpened] = useState<boolean>(false)
+  const [isSubmitting, setSubmitting] = useState<boolean>(false)
   const handleOpen = () => setOpened(!isOpened)
-  const [ error, setError ] = useState<string>('')
+  const [error, setError] = useState<string>('')
 
   const onClick = () => {
     apiMutate(
-      mutateOptionsFn(),
-      data => {
-        setOpened(false)
-        onSubmit && onSubmit(data)
-      },
-      setError,
-      setSubmitting,
+            mutateOptionsFn(),
+            data => {
+              setOpened(false)
+              onSubmit && onSubmit(data)
+            },
+            setError,
+            setSubmitting,
     )
   }
 
@@ -39,22 +39,22 @@ const ConfirmDialog = ({ mutateOptionsFn, iconFn, labelFn, title, body, onSubmit
   const label = labelFn(isSubmitting)
 
   return <>
-    { iconButton
-      ? <IconButton icon={ icon } tooltip={ label } onClick={ handleOpen } disabled={ isSubmitting }/>
-      : <Button icon={ icon } label={ label } onClick={ handleOpen } disabled={ isSubmitting }/> }
-    <Dialog open={ isOpened } handler={ handleOpen }>
+    {iconButton
+            ? <IconButton icon={icon} tooltip={label} onClick={handleOpen} disabled={isSubmitting}/>
+            : <Button icon={icon} label={label} onClick={handleOpen} disabled={isSubmitting}/>}
+    <Dialog open={isOpened} handler={handleOpen}>
       <Card>
-        <CardBody className="flex flex-col gap-4">
-          <H3>{ title }</H3>
+        <CardBody className="d-flex flex-column gap-4">
+          <H3>{title}</H3>
 
-          <Typography className="mb-3" variant="paragraph">{ body }</Typography>
+          <Typography className="mb-3" variant="paragraph">{body}</Typography>
 
-          { error && <Error text={ error } simple/> }
+          {error && <Error text={error} simple/>}
         </CardBody>
 
         <CardFooter className="pt-0">
-          <Button label="Cancel" onClick={ handleOpen }/>{ ' ' }
-          <Button icon={ icon } label={ label } size="md" onClick={ onClick } disabled={ isSubmitting }/>
+          <Button label="Cancel" onClick={handleOpen}/>{' '}
+          <Button icon={icon} label={label} size="md" onClick={onClick} disabled={isSubmitting}/>
         </CardFooter>
       </Card>
     </Dialog>

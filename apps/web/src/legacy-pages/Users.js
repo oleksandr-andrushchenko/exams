@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const react_1 = require("@material-tailwind/react");
+const react_1 = require("@/components/bootstrap");
 const Route_1 = __importDefault(require("../enum/Route"));
 const useAuth_1 = __importDefault(require("../hooks/useAuth"));
 const solid_1 = require("@heroicons/react/24/solid");

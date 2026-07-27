@@ -4,12 +4,12 @@ import { memo } from 'react'
 
 const Layout = () => {
   return (
-    <div className="min-h-full">
-      <NavBar/>
-      <main className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
-        <Outlet/>
-      </main>
-    </div>
+          <div className="min-vh-100">
+            <NavBar/>
+            <main className="mx-auto container py-4 px-4 px-lg-5">
+              <Outlet/>
+            </main>
+          </div>
   )
 }
 

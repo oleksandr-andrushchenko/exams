@@ -18,25 +18,25 @@ interface Props extends ComponentProps<any> {
   iconButton?: boolean
 }
 
-const AddExamSession = ({ exam, iconButton = false }: Props) => {
-  const { authenticationToken } = useAuth()
-  const [ processing, setProcessing ] = useState<boolean>(false)
-  const [ create, setCreate ] = useState<boolean>(false)
-  const [ error, setError ] = useState<string>('')
+const AddExamSession = ({exam, iconButton = false}: Props) => {
+  const {authenticationToken} = useAuth()
+  const [processing, setProcessing] = useState<boolean>(false)
+  const [create, setCreate] = useState<boolean>(false)
+  const [error, setError] = useState<string>('')
   const navigate = useNavigate()
 
   useEffect(() => {
     if (create) {
       apiMutate(
-        createExamSession({ examId: exam.id! }),
-        (data: {
-          createExamSession: ExamSession
-        }) => navigate(Route.ExamSession.replace(':examId', exam.id!).replace(':examSessionId', data.createExamSession.id!)),
-        setError,
-        setProcessing,
+              createExamSession({examId: exam.id!}),
+              (data: {
+                createExamSession: ExamSession
+              }) => navigate(Route.ExamSession.replace(':examId', exam.id!).replace(':examSessionId', data.createExamSession.id!)),
+              setError,
+              setProcessing,
       )
     }
-  }, [ create ])
+  }, [create])
 
   const onClick = () => setCreate(true)
 
@@ -46,9 +46,9 @@ const AddExamSession = ({ exam, iconButton = false }: Props) => {
 
   if (!authenticationToken) {
     return <Auth
-      button={ { icon, label, size: 'sm', iconOnly: iconButton!, color } }
-      dialog={ { label: 'You need to be authenticated' } }
-      onSubmit={ onClick }
+            button={{icon, label, size: 'sm', iconOnly: iconButton!, color}}
+            dialog={{label: 'You need to be authenticated'}}
+            onSubmit={onClick}
     />
   }
 
@@ -58,18 +58,18 @@ const AddExamSession = ({ exam, iconButton = false }: Props) => {
     const color = 'blue'
 
     if (iconButton) {
-      return <Link to={ url } label={ <IconButton icon={ icon } color={ color }/> } tooltip={ label }/>
+      return <Link to={url} label={<IconButton icon={icon} color={color}/>} tooltip={label}/>
     }
 
-    return <Link to={ url } label={ <Button icon={ icon } label={ label } color={ color }/> }/>
+    return <Link to={url} label={<Button icon={icon} label={label} color={color}/>}/>
   }
 
   return <>
-    { error && <Error text={ error }/> }
+    {error && <Error text={error}/>}
 
-    { iconButton
-      ? <IconButton icon={ icon } tooltip={ label } color={ color } onClick={ onClick } disabled={ processing }/>
-      : <Button icon={ icon } label={ label } color={ color } onClick={ onClick } disabled={ processing }/> }
+    {iconButton
+            ? <IconButton icon={icon} tooltip={label} color={color} onClick={onClick} disabled={processing}/>
+            : <Button icon={icon} label={label} color={color} onClick={onClick} disabled={processing}/>}
   </>
 }
 

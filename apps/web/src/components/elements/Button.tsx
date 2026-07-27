@@ -1,4 +1,4 @@
-import { Button as MlButton, Tooltip } from '@material-tailwind/react'
+import { Button as MlButton, Tooltip } from '@/components/bootstrap'
 import { ComponentPropsWithoutRef, createElement, memo } from 'react'
 
 interface Props extends ComponentPropsWithoutRef<'button'> {
@@ -16,43 +16,43 @@ interface Props extends ComponentPropsWithoutRef<'button'> {
 }
 
 const Button = (
-  {
-    label,
-    tooltip,
-    size,
-    className,
-    icon,
-    onClick,
-    disabled,
-    type,
-    variant,
-    color,
-    children,
-    ...props
-  }: Props,
+        {
+          label,
+          tooltip,
+          size,
+          className,
+          icon,
+          onClick,
+          disabled,
+          type,
+          variant,
+          color,
+          children,
+          ...props
+        }: Props,
 ) => {
   const button = (
-    <MlButton
-      { ...props }
-      variant={ variant }
-      color={ color }
-      size={ size }
-      type={ type }
-      className={ className }
-      onClick={ onClick }
-      disabled={ disabled }
-    >
-      { icon && createElement(icon, { className: 'inline-block h-4 w-4 align-top' }) }
-      { icon && ' ' }
-      { label || children }
-    </MlButton>
+          <MlButton
+                  {...props}
+                  variant={variant}
+                  color={color}
+                  size={size}
+                  type={type}
+                  className={className}
+                  onClick={onClick}
+                  disabled={disabled}
+          >
+            {icon && createElement(icon, {className: 'd-inline-block  align-top'})}
+            {icon && ' '}
+            {label || children}
+          </MlButton>
   )
 
   if (tooltip) {
     return (
-      <Tooltip content={ tooltip }>
-        { disabled ? <div>{ button }</div> : button }
-      </Tooltip>
+            <Tooltip content={tooltip}>
+              {disabled ? <div>{button}</div> : button}
+            </Tooltip>
     )
   }
 

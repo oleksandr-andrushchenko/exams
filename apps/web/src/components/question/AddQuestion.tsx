@@ -1,4 +1,4 @@
-import { Card, CardBody, Dialog } from '@material-tailwind/react'
+import { Card, CardBody, Dialog } from '@/components/bootstrap'
 import { ComponentProps, memo, useEffect, useState } from 'react'
 import CreateQuestion, { QuestionChoice, QuestionDifficulty, QuestionType } from '../../schema/question/CreateQuestion'
 import Question from '../../schema/question/Question'
@@ -40,19 +40,19 @@ interface Form {
   choices: QuestionChoice[]
 }
 
-const AddQuestion = ({ exam, question, onSubmit, iconButton = false }: Props) => {
-  const [ open, setOpen ] = useState<boolean>(false)
-  const [ exams, setExams ] = useState<Exam[]>()
+const AddQuestion = ({exam, question, onSubmit, iconButton = false}: Props) => {
+  const [open, setOpen] = useState<boolean>(false)
+  const [exams, setExams] = useState<Exam[]>()
   const handleOpen = () => setOpen(!open)
-  const [ _, setLoading ] = useState<boolean>(true)
-  const [ error, setError ] = useState<string>('')
-  const { authenticationToken, checkAuthorization } = useAuth()
+  const [_, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string>('')
+  const {authenticationToken, checkAuthorization} = useAuth()
 
   const refreshExams = () => apiQuery(
-    getExamsForSelect(),
-    (data: { exams: Exam[] }) => setExams(data.exams),
-    setError,
-    setLoading,
+          getExamsForSelect(),
+          (data: { exams: Exam[] }) => setExams(data.exams),
+          setError,
+          setLoading,
   )
 
   useEffect(() => {
@@ -66,206 +66,206 @@ const AddQuestion = ({ exam, question, onSubmit, iconButton = false }: Props) =>
 
   if (!authenticationToken) {
     return <Auth
-      button={ { icon, label, size: 'sm', iconOnly: iconButton } }
-      dialog={ { label: 'You need to be authenticated' } }
-      onSubmit={ () => setOpen(true) }
+            button={{icon, label, size: 'sm', iconOnly: iconButton}}
+            dialog={{label: 'You need to be authenticated'}}
+            onSubmit={() => setOpen(true)}
     />
   }
 
   const buildButton = (props = {}) => {
     if (iconButton) {
-      return <IconButton icon={ icon } tooltip={ label } onClick={ handleOpen } { ...props }/>
+      return <IconButton icon={icon} tooltip={label} onClick={handleOpen} {...props}/>
     }
 
-    return <Button icon={ icon } label={ label } onClick={ handleOpen } { ...props }/>
+    return <Button icon={icon} label={label} onClick={handleOpen} {...props}/>
   }
 
   const permission = question ? QuestionPermission.Update : QuestionPermission.Create
 
   if (!checkAuthorization(permission, question)) {
-    return buildButton({ disabled: true, tooltip: 'You are not allowed to do this' })
+    return buildButton({disabled: true, tooltip: 'You are not allowed to do this'})
   }
 
   return <>
-    { buildButton() }
-    <Dialog open={ open } handler={ handleOpen } className="text-left">
+    {buildButton()}
+    <Dialog open={open} handler={handleOpen} className="text-start">
       <Card>
-        <CardBody className="flex flex-col gap-4">
-          <H3 icon={ icon } label={ label }/>
+        <CardBody className="d-flex flex-column gap-4">
+          <H3 icon={icon} label={label}/>
           <Formik<Form>
-            initialValues={ {
-              title: question?.title || '',
-              type: question?.type || QuestionType.CHOICE,
-              examId: question?.examId || '',
-              difficulty: question?.difficulty || '',
-              choices: question?.choices || [ new QuestionChoice() ],
-            } }
-            validationSchema={ yup.object({
-              title: yup.string()
-                .min(10, 'Title must be at least 10 characters')
-                .max(300, 'Title cannot exceed 300 characters')
-                .matches(/^[a-zA-Z]/, 'Title must start with a letter')
-                .required('Title is required'),
-              examId: exam || question ? yup.string().optional() : yup.lazy(_ => {
-                if (exams) {
-                  return yup.string()
-                    .oneOf(exams.map(exam => exam.id))
-                    .required('Exam is required')
-                }
-
-                return yup.string().required('Exam is required')
-              }),
-              type: yup.string()
-                .oneOf(Object.values(QuestionType))
-                .required('Type is required'),
-              difficulty: yup.string()
-                .oneOf(Object.values(QuestionDifficulty))
-                .required('Difficulty is required'),
-              choices: yup.mixed().when('type', {
-                is: QuestionType.CHOICE,
-                then: () => yup.array().of(
-                  yup.object().shape({
+                  initialValues={{
+                    title: question?.title || '',
+                    type: question?.type || QuestionType.CHOICE,
+                    examId: question?.examId || '',
+                    difficulty: question?.difficulty || '',
+                    choices: question?.choices || [new QuestionChoice()],
+                  }}
+                  validationSchema={yup.object({
                     title: yup.string()
-                      .min(10, 'Choice title must be at least 10 characters')
-                      .max(3000, 'Choice title cannot exceed 3000 characters')
-                      .matches(/^[a-zA-Z]/, 'Choice title must start with a letter')
-                      .required('Choice title is required'),
-                    explanation: yup.lazy((value) => {
-                      if (!!value) {
+                            .min(10, 'Title must be at least 10 characters')
+                            .max(300, 'Title cannot exceed 300 characters')
+                            .matches(/^[a-zA-Z]/, 'Title must start with a letter')
+                            .required('Title is required'),
+                    examId: exam || question ? yup.string().optional() : yup.lazy(_ => {
+                      if (exams) {
                         return yup.string()
-                          .min(10, 'Choice explanation must be at least 10 characters')
-                          .max(3000, 'Choice explanation cannot exceed 3000 characters')
-                          .matches(/^[a-zA-Z]/, 'Explanation must start with a letter')
+                                .oneOf(exams.map(exam => exam.id))
+                                .required('Exam is required')
                       }
 
-                      return yup.string()
-                        .nullable()
-                        .optional()
+                      return yup.string().required('Exam is required')
                     }),
-                    correct: yup.boolean(),
-                  }),
-                ),
-              }),
-            }) }
-            onSubmit={ (values, { setSubmitting }: FormikHelpers<Form>) => {
-              setError('')
+                    type: yup.string()
+                            .oneOf(Object.values(QuestionType))
+                            .required('Type is required'),
+                    difficulty: yup.string()
+                            .oneOf(Object.values(QuestionDifficulty))
+                            .required('Difficulty is required'),
+                    choices: yup.mixed().when('type', {
+                      is: QuestionType.CHOICE,
+                      then: () => yup.array().of(
+                              yup.object().shape({
+                                title: yup.string()
+                                        .min(10, 'Choice title must be at least 10 characters')
+                                        .max(3000, 'Choice title cannot exceed 3000 characters')
+                                        .matches(/^[a-zA-Z]/, 'Choice title must start with a letter')
+                                        .required('Choice title is required'),
+                                explanation: yup.lazy((value) => {
+                                  if (!!value) {
+                                    return yup.string()
+                                            .min(10, 'Choice explanation must be at least 10 characters')
+                                            .max(3000, 'Choice explanation cannot exceed 3000 characters')
+                                            .matches(/^[a-zA-Z]/, 'Explanation must start with a letter')
+                                  }
 
-              const transfer = {
-                examId: exam?.id || question?.examId || values.examId || '',
-                title: values.title,
-                type: values.type,
-                difficulty: values.difficulty,
-                choices: values.choices.map(choice => {
-                  if (!choice.explanation) {
-                    delete choice.explanation
-                  }
+                                  return yup.string()
+                                          .nullable()
+                                          .optional()
+                                }),
+                                correct: yup.boolean(),
+                              }),
+                      ),
+                    }),
+                  })}
+                  onSubmit={(values, {setSubmitting}: FormikHelpers<Form>) => {
+                    setError('')
 
-                  return choice
-                }),
-              }
+                    const transfer = {
+                      examId: exam?.id || question?.examId || values.examId || '',
+                      title: values.title,
+                      type: values.type,
+                      difficulty: values.difficulty,
+                      choices: values.choices.map(choice => {
+                        if (!choice.explanation) {
+                          delete choice.explanation
+                        }
 
-              const callback = (question: Question) => {
-                setOpen(false)
-                onSubmit && onSubmit(question)
-              }
+                        return choice
+                      }),
+                    }
 
-              if (question) {
-                apiMutate(
-                  updateQuestion(question.id!, transfer as UpdateQuestion),
-                  (data: { updateQuestion: Question }) => callback(data.updateQuestion),
-                  setError,
-                  setSubmitting,
-                )
-              } else {
-                apiMutate(
-                  createQuestion(transfer as CreateQuestion),
-                  (data: { createQuestion: Question }) => callback(data.createQuestion),
-                  setError,
-                  setSubmitting,
-                )
-              }
-            } }>
-            { ({ values, isSubmitting }) => (
-              <Form className="flex flex-col gap-6">
-                { !exam && !question && (!exams ? <Spinner type="button"/> : (
-                  <FormikSelect
-                    name="examId"
-                    label="Exam"
-                    options={ exams.map(exam => ({ value: exam.id, label: exam.name })) }
-                    append={ <AddExam onSubmit={ refreshExams }/> }
-                  />
-                )) }
+                    const callback = (question: Question) => {
+                      setOpen(false)
+                      onSubmit && onSubmit(question)
+                    }
 
-                <FormikTextarea name="title"/>
-
-                <FormikSelect
-                  name="type"
-                  options={ Object.values(QuestionType).map(type => ({ value: type, label: type })) }
-                />
-
-                { values.type === QuestionType.CHOICE && (
-                  <FieldArray name="choices">
-                    { ({ remove, push }) => (
-                      <div className="flex flex-col gap-6">
-                        { values.choices.map((_choice, index) => (
-                          <div key={ `choices.${ index }` } className="flex flex-col gap-3">
-
-                            <FormikInput name={ `choices.${ index }.title` }>
-                              [{ index + 1 }] Choice title
-                            </FormikInput>
-
-                            <FormikTextarea name={ `choices.${ index }.explanation` }>
-                              [{ index + 1 }] Choice explanation
-                            </FormikTextarea>
-
-                            <FormikCheckbox name={ `choices.${ index }.correct` }>
-                              [{ index + 1 }] Choice correct
-                            </FormikCheckbox>
-
-                            { values.choices.length > 1 && (
-                              <Button
-                                icon={ DeleteIcon }
-                                label="Remove"
-                                className="-mt-3"
-                                onClick={ () => remove(index) }
+                    if (question) {
+                      apiMutate(
+                              updateQuestion(question.id!, transfer as UpdateQuestion),
+                              (data: { updateQuestion: Question }) => callback(data.updateQuestion),
+                              setError,
+                              setSubmitting,
+                      )
+                    } else {
+                      apiMutate(
+                              createQuestion(transfer as CreateQuestion),
+                              (data: { createQuestion: Question }) => callback(data.createQuestion),
+                              setError,
+                              setSubmitting,
+                      )
+                    }
+                  }}>
+            {({values, isSubmitting}) => (
+                    <Form className="d-flex flex-column gap-5">
+                      {!exam && !question && (!exams ? <Spinner type="button"/> : (
+                              <FormikSelect
+                                      name="examId"
+                                      label="Exam"
+                                      options={exams.map(exam => ({value: exam.id, label: exam.name}))}
+                                      append={<AddExam onSubmit={refreshExams}/>}
                               />
-                            ) }
-                          </div>
-                        )) }
+                      ))}
+
+                      <FormikTextarea name="title"/>
+
+                      <FormikSelect
+                              name="type"
+                              options={Object.values(QuestionType).map(type => ({value: type, label: type}))}
+                      />
+
+                      {values.type === QuestionType.CHOICE && (
+                              <FieldArray name="choices">
+                                {({remove, push}) => (
+                                        <div className="d-flex flex-column gap-5">
+                                          {values.choices.map((_choice, index) => (
+                                                  <div key={`choices.${index}`} className="d-flex flex-column gap-3">
+
+                                                    <FormikInput name={`choices.${index}.title`}>
+                                                      [{index + 1}] Choice title
+                                                    </FormikInput>
+
+                                                    <FormikTextarea name={`choices.${index}.explanation`}>
+                                                      [{index + 1}] Choice explanation
+                                                    </FormikTextarea>
+
+                                                    <FormikCheckbox name={`choices.${index}.correct`}>
+                                                      [{index + 1}] Choice correct
+                                                    </FormikCheckbox>
+
+                                                    {values.choices.length > 1 && (
+                                                            <Button
+                                                                    icon={DeleteIcon}
+                                                                    label="Remove"
+                                                                    className="-mt-3"
+                                                                    onClick={() => remove(index)}
+                                                            />
+                                                    )}
+                                                  </div>
+                                          ))}
+                                          <Button
+                                                  icon={CreateIcon}
+                                                  label="Add"
+                                                  type="button"
+                                                  className="-mt-3"
+                                                  onClick={() => push(new QuestionChoice())}
+                                          />
+                                        </div>
+                                )}
+                              </FieldArray>
+                      )}
+
+                      <FormikSelect
+                              name="difficulty"
+                              options={Object.values(QuestionDifficulty).map(difficulty => ({
+                                value: difficulty,
+                                label: difficulty,
+                              }))}
+                      />
+
+                      {error && <Error text={error}/>}
+
+                      <div>
+                        <Button label="Cancel" type="reset" onClick={handleOpen}/>{' '}
                         <Button
-                          icon={ CreateIcon }
-                          label="Add"
-                          type="button"
-                          className="-mt-3"
-                          onClick={ () => push(new QuestionChoice()) }
+                                icon={icon}
+                                label={question ? (isSubmitting ? 'Updating...' : 'Update') : (isSubmitting ? 'Adding...' : 'Add')}
+                                size="md"
+                                type="submit"
+                                disabled={isSubmitting}
                         />
                       </div>
-                    ) }
-                  </FieldArray>
-                ) }
-
-                <FormikSelect
-                  name="difficulty"
-                  options={ Object.values(QuestionDifficulty).map(difficulty => ({
-                    value: difficulty,
-                    label: difficulty,
-                  })) }
-                />
-
-                { error && <Error text={ error }/> }
-
-                <div>
-                  <Button label="Cancel" type="reset" onClick={ handleOpen }/>{ ' ' }
-                  <Button
-                    icon={ icon }
-                    label={ question ? (isSubmitting ? 'Updating...' : 'Update') : (isSubmitting ? 'Adding...' : 'Add') }
-                    size="md"
-                    type="submit"
-                    disabled={ isSubmitting }
-                  />
-                </div>
-              </Form>
-            ) }
+                    </Form>
+            )}
           </Formik>
         </CardBody>
       </Card>

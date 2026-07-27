@@ -5,12 +5,12 @@ interface Props extends ComponentProps<any> {
   buttons: Record<string, any>
 }
 
-const Buttons = ({ className = '', buttons }: Props) => {
+const Buttons = ({className = '', buttons}: Props) => {
   return (
-    <div className={ `flex gap-1 items-center ${ className }` }>
-      { Object.entries(buttons).filter(([ _, button ]) => !!button)
-        .map(([ key, button ]) => <span key={ key }>{ button }</span>) }
-    </div>
+          <div className={`d-flex gap-1 align-items-center ${className}`}>
+            {Object.entries(buttons).filter(([_, button]) => !!button)
+                    .map(([key, button]) => <span key={key}>{button}</span>)}
+          </div>
   )
 }
 

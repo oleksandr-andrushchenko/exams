@@ -1,5 +1,5 @@
 import { Params, useNavigate, useParams } from 'react-router-dom'
-import { Breadcrumbs, Checkbox } from '@material-tailwind/react'
+import { Breadcrumbs, Checkbox } from '@/components/bootstrap'
 import Route from '../enum/Route'
 import { HomeIcon } from '@heroicons/react/24/solid'
 import { memo, useEffect, useState } from 'react'
@@ -22,94 +22,94 @@ import { RateQuestion } from '../components/question/RateQuestion'
 import Buttons from '../components/elements/Buttons'
 
 const Question = () => {
-  const { questionId } = useParams<Params>() as { questionId: string }
-  const [ question, setQuestion ] = useState<Question>()
-  const [ infoTableKey, setInfoTableKey ] = useState<number>(1)
-  const [ _, setLoading ] = useState<boolean>(true)
-  const [ error, setError ] = useState<string>('')
-  const { checkAuthorization } = useAuth()
-  const navigate = useNavigate()
+ const { questionId } = useParams<Params>() as { questionId: string }
+ const [ question, setQuestion ] = useState<Question>()
+ const [ infoTableKey, setInfoTableKey ] = useState<number>(1)
+ const [ _, setLoading ] = useState<boolean>(true)
+ const [ error, setError ] = useState<string>('')
+ const { checkAuthorization } = useAuth()
+ const navigate = useNavigate()
 
-  const updateQuestion = (question: Question) => setQuestion(question)
-  const refreshQuestion = () => apiQuery(
-    getQuestionForQuestionPage(questionId),
-    (data: { question: Question }) => setQuestion(data.question),
-    setError,
-    setLoading,
-  )
-  const refreshInfoTable = () => {
-    setInfoTableKey(Math.random())
-  }
-  const updateQuestionAndRefreshInfoTable = (question: Question) => {
-    updateQuestion(question)
-    refreshInfoTable()
-  }
-  const onDelete = () => navigate(Route.Exam.replace(':examId', question!.examId!), { replace: true })
+ const updateQuestion = (question: Question) => setQuestion(question)
+ const refreshQuestion = () => apiQuery(
+ getQuestionForQuestionPage(questionId),
+ (data: { question: Question }) => setQuestion(data.question),
+ setError,
+ setLoading,
+ )
+ const refreshInfoTable = () => {
+ setInfoTableKey(Math.random())
+ }
+ const updateQuestionAndRefreshInfoTable = (question: Question) => {
+ updateQuestion(question)
+ refreshInfoTable()
+ }
+ const onDelete = () => navigate(Route.Exam.replace(':examId', question!.examId!), { replace: true })
 
-  useEffect(() => {
-    document.title = question?.title || 'ExamMe'
-    refreshQuestion()
-  }, [])
+ useEffect(() => {
+ document.title = question?.title || 'ExamMe'
+ refreshQuestion()
+ }, [])
 
-  return <>
-    <Breadcrumbs>
-      <Link icon={ HomeIcon } label="Home" to={ Route.Home }/>
-      <Link label="Exams" to={ Route.Exams }/>
-      { !question ? <Spinner type="text"/> :
-        <Link label={ question.exam!.name } to={ Route.Exam.replace(':examId', question.examId!) }/> }
-      { !question ? <Spinner type="text"/> :
-        <Link label={ question.title } to={ Route.Question.replace(':questionId', question.id!) }/> }
-    </Breadcrumbs>
+ return <>
+ <Breadcrumbs>
+ <Link icon={ HomeIcon } label="Home" to={ Route.Home }/>
+ <Link label="Exams" to={ Route.Exams }/>
+ { !question ? <Spinner type="text"/> :
+ <Link label={ question.exam!.name } to={ Route.Exam.replace(':examId', question.examId!) }/> }
+ { !question ? <Spinner type="text"/> :
+ <Link label={ question.title } to={ Route.Question.replace(':questionId', question.id!) }/> }
+ </Breadcrumbs>
 
-    <H1
-      label={ question?.title ?? <Spinner type="text"/> }
-      sup={ question?.isCreator ? <CreatorBadge/> : '' }
-    />
+ <H1
+ label={ question?.title ?? <Spinner type="text"/> }
+ sup={ question?.isCreator ? <CreatorBadge/> : '' }
+ />
 
-    { question ?
-      <RateQuestion
-        question={ question }
-        onChange={ updateQuestion }
-        readonly={ !checkAuthorization(QuestionPermission.Rate) }
-        showAverageMark
-        showMarkCount
-      /> : <Spinner type="text"/> }
+ { question ?
+ <RateQuestion
+ question={ question }
+ onChange={ updateQuestion }
+ readonly={ !checkAuthorization(QuestionPermission.Rate) }
+ showAverageMark
+ showMarkCount
+ /> : <Spinner type="text"/> }
 
-    { error && <Error text={ error }/> }
+ { error && <Error text={ error }/> }
 
-    <Buttons
-      className="mt-2"
-      buttons={ {
-        approve: !question ? <Spinner type="button"/> : (checkAuthorization(QuestionPermission.Approve) &&
-          <ApproveQuestion question={ question } onChange={ updateQuestionAndRefreshInfoTable }/>),
+ <Buttons
+ className="mt-2"
+ buttons={ {
+ approve: !question ? <Spinner type="button"/> : (checkAuthorization(QuestionPermission.Approve) &&
+ <ApproveQuestion question={ question } onChange={ updateQuestionAndRefreshInfoTable }/>),
 
-        update: !question ? <Spinner type="button"/> : (checkAuthorization(QuestionPermission.Update, question) &&
-          <AddQuestion question={ question } onSubmit={ updateQuestion }/>),
+ update: !question ? <Spinner type="button"/> : (checkAuthorization(QuestionPermission.Update, question) &&
+ <AddQuestion question={ question } onSubmit={ updateQuestion }/>),
 
-        delete: !question ? <Spinner type="button"/> : (checkAuthorization(QuestionPermission.Delete, question) &&
-          <DeleteQuestion question={ question } onSubmit={ onDelete }/>),
-      } }
-    />
+ delete: !question ? <Spinner type="button"/> : (checkAuthorization(QuestionPermission.Delete, question) &&
+ <DeleteQuestion question={ question } onSubmit={ onDelete }/>),
+ } }
+ />
 
-    <InfoTable
-      className="mt-4"
-      title="Question info"
-      key2={ infoTableKey }
-      columns={ [ 'Title', 'Exam', 'Type', 'Choices', 'Difficulty', 'Rating', 'Approved' ] }
-      source={ question }
-      mapper={ (question: Question) => [
-        question.title,
-        question.exam!.name,
-        question.type,
-        question.type === QuestionType.CHOICE ? (question.choices || []).map((choice: QuestionChoice, index) => (
-          <Checkbox key={ `${ question.id }-${ index }` } name="choice" label={ choice.title } disabled={ true }/>
-        )) : 'N/A',
-        question.difficulty,
-        <RateQuestion question={ question } readonly/>,
-        <ApproveQuestion question={ question } readonly/>,
-      ] }
-    />
-  </>
+ <InfoTable
+ className="mt-4"
+ title="Question info"
+ key2={ infoTableKey }
+ columns={ [ 'Title', 'Exam', 'Type', 'Choices', 'Difficulty', 'Rating', 'Approved' ] }
+ source={ question }
+ mapper={ (question: Question) => [
+ question.title,
+ question.exam!.name,
+ question.type,
+ question.type === QuestionType.CHOICE ? (question.choices || []).map((choice: QuestionChoice, index) => (
+ <Checkbox key={ `${ question.id }-${ index }` } name="choice" label={ choice.title } disabled={ true }/>
+ )) : 'N/A',
+ question.difficulty,
+ <RateQuestion question={ question } readonly/>,
+ <ApproveQuestion question={ question } readonly/>,
+ ] }
+ />
+ </>
 }
 
 export default memo(Question)

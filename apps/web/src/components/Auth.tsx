@@ -1,4 +1,4 @@
-import { Card, CardBody, Dialog, Tab, TabPanel, Tabs, TabsBody, TabsHeader } from '@material-tailwind/react'
+import { Card, CardBody, Dialog, Tab, TabPanel, Tabs, TabsBody, TabsHeader } from '@/components/bootstrap'
 import { ArrowRightEndOnRectangleIcon, UserPlusIcon } from '@heroicons/react/24/solid'
 import { ComponentProps, memo, ReactNode, useState } from 'react'
 import Register from './Register'
@@ -23,24 +23,24 @@ interface Props extends ComponentProps<any> {
   onSubmit?: () => void
 }
 
-const Auth = ({ button, dialog, register, onSubmit }: Props) => {
-  const [ open, setOpen ] = useState<boolean>(false)
+const Auth = ({button, dialog, register, onSubmit}: Props) => {
+  const [open, setOpen] = useState<boolean>(false)
   const handleOpen = () => setOpen(!open)
   const navigate = useNavigate()
 
-  const [ activeTab, setActiveTab ] = useState<string>(register ? 'register' : 'login')
-  const buttons = [ <Button key="cancel" label="Cancel" type="reset" onClick={ handleOpen }/> ]
+  const [activeTab, setActiveTab] = useState<string>(register ? 'register' : 'login')
+  const buttons = [<Button key="cancel" label="Cancel" type="reset" onClick={handleOpen}/>]
   const _onSubmit = onSubmit || (() => navigate(0))
   const tabs = [
     {
       key: 'login',
-      header: <Text icon={ ArrowRightEndOnRectangleIcon } label="Login"/>,
-      content: <Login onSubmit={ _onSubmit } buttons={ buttons } onRegisterClick={ () => setActiveTab('register') }/>,
+      header: <Text icon={ArrowRightEndOnRectangleIcon} label="Login"/>,
+      content: <Login onSubmit={_onSubmit} buttons={buttons} onRegisterClick={() => setActiveTab('register')}/>,
     },
     {
       key: 'register',
-      header: <Text icon={ UserPlusIcon } label="Register"/>,
-      content: <Register onSubmit={ _onSubmit } buttons={ buttons }/>,
+      header: <Text icon={UserPlusIcon} label="Register"/>,
+      content: <Register onSubmit={_onSubmit} buttons={buttons}/>,
     },
   ]
 
@@ -52,28 +52,28 @@ const Auth = ({ button, dialog, register, onSubmit }: Props) => {
 
   const buildButton = (props = {}) => {
     if (iconOnly) {
-      return <IconButton icon={ icon } tooltip={ label } size={ size } color={ color }
-                         onClick={ handleOpen } { ...props }/>
+      return <IconButton icon={icon} tooltip={label} size={size} color={color}
+                         onClick={handleOpen} {...props}/>
     }
 
-    return <Button icon={ icon } label={ label } size={ size } color={ color } onClick={ handleOpen } { ...props }/>
+    return <Button icon={icon} label={label} size={size} color={color} onClick={handleOpen} {...props}/>
   }
 
   return <>
-    { buildButton() }
-    <Dialog open={ open } handler={ handleOpen } className="text-left">
+    {buildButton()}
+    <Dialog open={open} handler={handleOpen} className="text-start">
       <Card>
-        <CardBody className="flex flex-col gap-4">
-          { dialog?.label || '' }
-          <Tabs value={ activeTab }>
+        <CardBody className="d-flex flex-column gap-4">
+          {dialog?.label || ''}
+          <Tabs value={activeTab}>
             <TabsHeader
-              className="rounded-none border-b border-blue-gray-50 bg-transparent p-0"
-              indicatorProps={ { className: 'bg-transparent border-b-2 border-gray-900 shadow-none rounded-none' } }
+                    className="rounded-0 border-bottom border-secondary-subtle bg-transparent p-0"
+
             >
-              { tabs.map(({ key, header }) => <Tab key={ key } value={ key }>{ header }</Tab>) }
+              {tabs.map(({key, header}) => <Tab key={key} value={key}>{header}</Tab>)}
             </TabsHeader>
             <TabsBody>
-              { tabs.map(({ key, content }) => <TabPanel key={ key } value={ key }>{ content }</TabPanel>) }
+              {tabs.map(({key, content}) => <TabPanel key={key} value={key}>{content}</TabPanel>)}
             </TabsBody>
           </Tabs>
         </CardBody>

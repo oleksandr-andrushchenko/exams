@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Breadcrumbs } from '@material-tailwind/react'
+import { Breadcrumbs } from '@/components/bootstrap'
 import Route from '../enum/Route'
 import { memo, useEffect } from 'react'
 import Auth from '../components/Auth'
@@ -9,26 +9,26 @@ import { GoBackIcon, HomeIcon } from '../registry/icons'
 import Link from '../components/elements/Link'
 
 const Unauthenticated = () => {
-  const navigate = useNavigate()
-  const goBack = () => navigate(-1)
+ const navigate = useNavigate()
+ const goBack = () => navigate(-1)
 
-  useEffect(() => {
-    document.title = 'Unauthenticated'
-  }, [])
+ useEffect(() => {
+ document.title = 'Unauthenticated'
+ }, [])
 
-  return <>
-    <Breadcrumbs>
-      <Link icon={ HomeIcon } label="Home" to={ Route.Home }/>
-    </Breadcrumbs>
+ return <>
+ <Breadcrumbs>
+ <Link icon={ HomeIcon } label="Home" to={ Route.Home }/>
+ </Breadcrumbs>
 
-    <H1 label="Unauthenticated" sub="You do not logged in"/>
+ <H1 label="Unauthenticated" sub="You do not logged in"/>
 
-    <div className="inline-flex items-center gap-1 mt-3">
-      <Auth/>
-      <Button icon={ GoBackIcon } label="Go Back" onClick={ goBack }/>
-      <Link label={ <Button icon={ HomeIcon } label="Go Home" size="md"/> } to={ Route.Home }/>
-    </div>
-  </>
+ <div className="d-inline-flex align-items-center gap-1 mt-3">
+ <Auth/>
+ <Button icon={ GoBackIcon } label="Go Back" onClick={ goBack }/>
+ <Link label={ <Button icon={ HomeIcon } label="Go Home" size="md"/> } to={ Route.Home }/>
+ </div>
+ </>
 }
 
 export default memo(Unauthenticated)

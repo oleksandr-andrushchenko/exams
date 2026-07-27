@@ -1,5 +1,5 @@
 import { Params, useNavigate, useParams } from 'react-router-dom'
-import { Breadcrumbs, ButtonGroup, Checkbox, Input, Progress } from '@material-tailwind/react'
+import { Breadcrumbs, ButtonGroup, Checkbox, Input, Progress } from '@/components/bootstrap'
 import Route from '../enum/Route'
 import { ArrowLeftIcon, ArrowRightIcon, HomeIcon } from '@heroicons/react/24/solid'
 import { memo, ReactNode, useEffect, useState } from 'react'
@@ -27,209 +27,209 @@ import InfoTable from '../components/elements/InfoTable'
 import YesNo from '../components/elements/YesNo'
 
 const ExamSession = () => {
-  const { examSessionId } = useParams<Params>() as { examSessionId: string }
-  const [ questionNumber, setQuestionNumber ] = useState<number>()
-  const [ examSessionQuestion, setExamSessionQuestion ] = useState<ExamSessionQuestion>()
-  const [ answering, setAnswering ] = useState<boolean>(false)
-  const [ clearing, setClearing ] = useState<boolean>(false)
-  const [ _, setLoading ] = useState<boolean>(true)
-  const [ error, setError ] = useState<string>('')
-  const { authenticationToken, me, checkAuthorization } = useAuth()
-  const navigate = useNavigate()
-  const examSession = examSessionQuestion?.examSession
-  const exam = examSession?.exam
+ const { examSessionId } = useParams<Params>() as { examSessionId: string }
+ const [ questionNumber, setQuestionNumber ] = useState<number>()
+ const [ examSessionQuestion, setExamSessionQuestion ] = useState<ExamSessionQuestion>()
+ const [ answering, setAnswering ] = useState<boolean>(false)
+ const [ clearing, setClearing ] = useState<boolean>(false)
+ const [ _, setLoading ] = useState<boolean>(true)
+ const [ error, setError ] = useState<string>('')
+ const { authenticationToken, me, checkAuthorization } = useAuth()
+ const navigate = useNavigate()
+ const examSession = examSessionQuestion?.examSession
+ const exam = examSession?.exam
 
-  const onPrevQuestionClick = () => setQuestionNumber(getQuestionNumber() - 1)
-  const onNextQuestionClick = () => setQuestionNumber(getQuestionNumber() + 1)
-  const onCompleted = (data: { createExamSessionCompletion: ExamSession }) => setExamSessionQuestion({
-    ...examSessionQuestion,
-    ...{ examSession: data.createExamSessionCompletion },
-  })
-  const onDeleted = () => navigate(Route.Exam.replace(':examId', examSessionQuestion!.examSession!.examId!), { replace: true })
+ const onPrevQuestionClick = () => setQuestionNumber(getQuestionNumber() - 1)
+ const onNextQuestionClick = () => setQuestionNumber(getQuestionNumber() + 1)
+ const onCompleted = (data: { createExamSessionCompletion: ExamSession }) => setExamSessionQuestion({
+ ...examSessionQuestion,
+ ...{ examSession: data.createExamSessionCompletion },
+ })
+ const onDeleted = () => navigate(Route.Exam.replace(':examId', examSessionQuestion!.examSession!.examId!), { replace: true })
 
-  const getQuestionNumber = (): number => {
-    if (questionNumber !== undefined) {
-      return questionNumber
-    }
+ const getQuestionNumber = (): number => {
+ if (questionNumber !== undefined) {
+ return questionNumber
+ }
 
-    if (examSessionQuestion === undefined) {
-      return 0
-    }
+ if (examSessionQuestion === undefined) {
+ return 0
+ }
 
-    return examSessionQuestion.number ?? 0
-  }
-  const showPrev = (): boolean => {
-    if (answering || clearing) {
-      return false
-    }
+ return examSessionQuestion.number ?? 0
+ }
+ const showPrev = (): boolean => {
+ if (answering || clearing) {
+ return false
+ }
 
-    const questionNumber = getQuestionNumber()
-
-
-    return questionNumber > 0
-  }
-  const showNext = (): boolean => {
-    if (answering || clearing) {
-      return false
-    }
-
-    const questionNumber = getQuestionNumber()
+ const questionNumber = getQuestionNumber()
 
 
-    return questionNumber < (examSessionQuestion?.examSession?.questionCount ?? 0) - 1
-  }
+ return questionNumber > 0
+ }
+ const showNext = (): boolean => {
+ if (answering || clearing) {
+ return false
+ }
 
-  const createAnswer = (answer: number | string) => {
-    const transfer = examSessionQuestion!.question!.type === QuestionType.CHOICE
-      ? { choice: answer as number }
-      : { answer: answer as string }
+ const questionNumber = getQuestionNumber()
 
-    apiMutate(
-      createExamSessionQuestionAnswer(examSessionId, getQuestionNumber()!, transfer),
-      (data: { createExamSessionQuestionAnswer: ExamSessionQuestion }) => setExamSessionQuestion(data.createExamSessionQuestionAnswer),
-      setError,
-      setAnswering,
-    )
-  }
 
-  const clearAnswer = () => {
-    apiMutate(
-      deleteExamSessionQuestionAnswer(examSessionId, getQuestionNumber()!),
-      (data: { deleteExamSessionQuestionAnswer: ExamSessionQuestion }) => setExamSessionQuestion(data.deleteExamSessionQuestionAnswer),
-      setError,
-      setClearing,
-    )
-  }
+ return questionNumber < (examSessionQuestion?.examSession?.questionCount ?? 0) - 1
+ }
 
-  useEffect(() => {
-    if (questionNumber === undefined) {
-      apiQuery(
-        getCurrentExamSessionQuestion(examSessionId),
-        (data: { currentExamSessionQuestion: ExamSessionQuestion }) => setExamSessionQuestion(data.currentExamSessionQuestion),
-        setError,
-        setLoading,
-      )
-    } else {
-      apiQuery(
-        getExamSessionQuestion(examSessionId, questionNumber!),
-        (data: { examSessionQuestion: ExamSessionQuestion }) => setExamSessionQuestion(data.examSessionQuestion),
-        setError,
-        setLoading,
-      )
-    }
-  }, [ questionNumber ])
+ const createAnswer = (answer: number | string) => {
+ const transfer = examSessionQuestion!.question!.type === QuestionType.CHOICE
+ ? { choice: answer as number }
+ : { answer: answer as string }
 
-  useEffect(() => {
-    document.title = `ExamSession: ${ examSessionQuestion?.examSession?.exam?.name || 'ExamMe' }`
-  }, [ examSessionQuestion?.examSession?.exam?.name ])
+ apiMutate(
+ createExamSessionQuestionAnswer(examSessionId, getQuestionNumber()!, transfer),
+ (data: { createExamSessionQuestionAnswer: ExamSessionQuestion }) => setExamSessionQuestion(data.createExamSessionQuestionAnswer),
+ setError,
+ setAnswering,
+ )
+ }
 
-  if (!authenticationToken) {
-    return <Unauthenticated/>
-  }
+ const clearAnswer = () => {
+ apiMutate(
+ deleteExamSessionQuestionAnswer(examSessionId, getQuestionNumber()!),
+ (data: { deleteExamSessionQuestionAnswer: ExamSessionQuestion }) => setExamSessionQuestion(data.deleteExamSessionQuestionAnswer),
+ setError,
+ setClearing,
+ )
+ }
 
-  if (!me) {
-    return <Spinner/>
-  }
+ useEffect(() => {
+ if (questionNumber === undefined) {
+ apiQuery(
+ getCurrentExamSessionQuestion(examSessionId),
+ (data: { currentExamSessionQuestion: ExamSessionQuestion }) => setExamSessionQuestion(data.currentExamSessionQuestion),
+ setError,
+ setLoading,
+ )
+ } else {
+ apiQuery(
+ getExamSessionQuestion(examSessionId, questionNumber!),
+ (data: { examSessionQuestion: ExamSessionQuestion }) => setExamSessionQuestion(data.examSessionQuestion),
+ setError,
+ setLoading,
+ )
+ }
+ }, [ questionNumber ])
 
-  if (examSessionQuestion && !checkAuthorization(ExamSessionPermission.Get, examSessionQuestion?.examSession)) {
-    return <Unauthorized/>
-  }
+ useEffect(() => {
+ document.title = `ExamSession: ${ examSessionQuestion?.examSession?.exam?.name || 'ExamMe' }`
+ }, [ examSessionQuestion?.examSession?.exam?.name ])
 
-  const layout = (header: string, body: ReactNode) => {
-    return <>
-      <Breadcrumbs>
-        <Link icon={ HomeIcon } label="Home" to={ Route.Home }/>
-        <Link label="Exams" to={ Route.Exams }/>
-        { !examSessionQuestion ? <Spinner type="text"/> : <Link label={ examSessionQuestion.examSession!.exam!.name }
-                                                         to={ Route.Exam.replace(':examId', examSessionQuestion.examSession!.examId!) }/> }
-        <Link label="ExamSession" to={ Route.ExamSession.replace(':examSessionId', examSessionId) }/>
-      </Breadcrumbs>
+ if (!authenticationToken) {
+ return <Unauthenticated/>
+ }
 
-      <H1 sub={ header }>ExamSession: { examSessionQuestion ? examSessionQuestion.examSession!.exam!.name : <Spinner type="text"/> }</H1>
+ if (!me) {
+ return <Spinner/>
+ }
 
-      { error && <Error text={ error }/> }
+ if (examSessionQuestion && !checkAuthorization(ExamSessionPermission.Get, examSessionQuestion?.examSession)) {
+ return <Unauthorized/>
+ }
 
-      { body }
-    </>
-  }
+ const layout = (header: string, body: ReactNode) => {
+ return <>
+ <Breadcrumbs>
+ <Link icon={ HomeIcon } label="Home" to={ Route.Home }/>
+ <Link label="Exams" to={ Route.Exams }/>
+ { !examSessionQuestion ? <Spinner type="text"/> : <Link label={ examSessionQuestion.examSession!.exam!.name }
+ to={ Route.Exam.replace(':examId', examSessionQuestion.examSession!.examId!) }/> }
+ <Link label="ExamSession" to={ Route.ExamSession.replace(':examSessionId', examSessionId) }/>
+ </Breadcrumbs>
 
-  if (examSession?.completedAt) {
-    const score = Math.floor(100 * (examSession.correctAnswerCount ?? 0) / (examSession.questionCount ?? 1))
-    const requiredScore = exam?.requiredScore ?? 0
-    const passed = score > requiredScore
+ <H1 sub={ header }>ExamSession: { examSessionQuestion ? examSessionQuestion.examSession!.exam!.name : <Spinner type="text"/> }</H1>
 
-    return layout('ExamSession completed', (
-      <InfoTable
-        columns={ [ 'Completion date', 'Correct answers', 'Required score', 'Passed' ] }
-        source={ examSession }
-        mapper={ (examSession: ExamSession) => [
-          new Date(examSession.completedAt!).toDateString(),
-          <>{ examSession.correctAnswerCount }/{ examSession?.questionCount } ({ score }%)</>,
-          <>{ requiredScore }%</>,
-          <YesNo yes={ passed }/>,
-        ] }
-      />
-    ))
-  }
+ { error && <Error text={ error }/> }
 
-  return layout('ExamSession questions', <>
-    { !examSessionQuestion ? <Spinner type="text" height="h-3"/> :
-      <Progress
-        value={ Math.floor(100 * (getQuestionNumber() + 1) / (examSessionQuestion.examSession?.questionCount ?? 1)) }
-        label="Steps"
-        size="sm"
-        className="mt-4"
-      /> }
+ { body }
+ </>
+ }
 
-    { !examSessionQuestion ? <Spinner type="text" height="h-4"/> :
-      <Progress
-        value={ Math.floor(100 * (examSessionQuestion.examSession?.answeredQuestionCount ?? 0) / (examSessionQuestion.examSession?.questionCount ?? 1)) }
-        label="Answered"
-        size="lg"
-        className="mt-4"
-      /> }
+ if (examSession?.completedAt) {
+ const score = Math.floor(100 * (examSession.correctAnswerCount ?? 0) / (examSession.questionCount ?? 1))
+ const requiredScore = exam?.requiredScore ?? 0
+ const passed = score > requiredScore
 
-    { !examSessionQuestion ? <Spinner type="text"/> :
-      <H2 className="min-h-8">Question #{ getQuestionNumber() + 1 }: { examSessionQuestion.question!.title }</H2> }
+ return layout('ExamSession completed', (
+ <InfoTable
+ columns={ [ 'Completion date', 'Correct answers', 'Required score', 'Passed' ] }
+ source={ examSession }
+ mapper={ (examSession: ExamSession) => [
+ new Date(examSession.completedAt!).toDateString(),
+ <>{ examSession.correctAnswerCount }/{ examSession?.questionCount } ({ score }%)</>,
+ <>{ requiredScore }%</>,
+ <YesNo yes={ passed }/>,
+ ] }
+ />
+ ))
+ }
 
-    <div className="flex flex-col gap-2 mt-4 min-h-48">
-      { !examSessionQuestion ? <Spinner/> : (
-        examSessionQuestion.question!.type === QuestionType.CHOICE
-          ? examSessionQuestion!.choices!.map((choice: string, index) => (
-            <Checkbox
-              key={ `${ examSessionQuestion.question!.id }-${ index }-${ examSessionQuestion.choice }` }
-              name="choice"
-              defaultChecked={ index === examSessionQuestion.choice }
-              onChange={ (e) => e.target.checked ? createAnswer(index) : clearAnswer() }
-              label={ choice }
-              disabled={ answering }
-            />
-          ))
-          : <Input
-            type="text"
-            name="answer"
-            size="lg"
-            label="Answer"
-            onChange={ (e) => createAnswer(e.target.value) }
-            disabled={ answering }
-          />
-      ) }
-    </div>
+ return layout('ExamSession questions', <>
+ { !examSessionQuestion ? <Spinner type="text" height=""/> :
+ <Progress
+ value={ Math.floor(100 * (getQuestionNumber() + 1) / (examSessionQuestion.examSession?.questionCount ?? 1)) }
+ label="Steps"
+ size="sm"
+ className="mt-4"
+ /> }
 
-    <div className="flex gap-1 items-center mt-4">
-      { examSessionQuestion &&
-        <ButtonGroup variant="outlined">
-          <Button icon={ ArrowLeftIcon } label="Prev" onClick={ onPrevQuestionClick } disabled={ !showPrev() }/>
-          <Button icon={ ArrowRightIcon } label="Next" onClick={ onNextQuestionClick } disabled={ !showNext() }/>
-        </ButtonGroup> }
+ { !examSessionQuestion ? <Spinner type="text" height=""/> :
+ <Progress
+ value={ Math.floor(100 * (examSessionQuestion.examSession?.answeredQuestionCount ?? 0) / (examSessionQuestion.examSession?.questionCount ?? 1)) }
+ label="Answered"
+ size="lg"
+ className="mt-4"
+ /> }
 
-      { examSessionQuestion && checkAuthorization(ExamSessionPermission.CreateCompletion, examSessionQuestion.examSession) &&
-        <CompleteExamSession examSession={ examSessionQuestion.examSession! } onSubmit={ onCompleted }/> }
+ { !examSessionQuestion ? <Spinner type="text"/> :
+ <H2>Question #{ getQuestionNumber() + 1 }: { examSessionQuestion.question!.title }</H2> }
 
-      { examSessionQuestion && checkAuthorization(ExamSessionPermission.Delete, examSessionQuestion.examSession) &&
-        <DeleteExamSession examSession={ examSessionQuestion.examSession! } onSubmit={ onDeleted }/> }
-    </div>
-  </>)
+ <div className="d-flex flex-column gap-2 mt-4 py-5">
+ { !examSessionQuestion ? <Spinner/> : (
+ examSessionQuestion.question!.type === QuestionType.CHOICE
+ ? examSessionQuestion!.choices!.map((choice: string, index) => (
+ <Checkbox
+ key={ `${ examSessionQuestion.question!.id }-${ index }-${ examSessionQuestion.choice }` }
+ name="choice"
+ defaultChecked={ index === examSessionQuestion.choice }
+ onChange={ (e) => e.target.checked ? createAnswer(index) : clearAnswer() }
+ label={ choice }
+ disabled={ answering }
+ />
+ ))
+ : <Input
+ type="text"
+ name="answer"
+ size="lg"
+ label="Answer"
+ onChange={ (e) => createAnswer(e.target.value) }
+ disabled={ answering }
+ />
+ ) }
+ </div>
+
+ <div className="d-flex gap-1 align-items-center mt-4">
+ { examSessionQuestion &&
+ <ButtonGroup variant="outlined">
+ <Button icon={ ArrowLeftIcon } label="Prev" onClick={ onPrevQuestionClick } disabled={ !showPrev() }/>
+ <Button icon={ ArrowRightIcon } label="Next" onClick={ onNextQuestionClick } disabled={ !showNext() }/>
+ </ButtonGroup> }
+
+ { examSessionQuestion && checkAuthorization(ExamSessionPermission.CreateCompletion, examSessionQuestion.examSession) &&
+ <CompleteExamSession examSession={ examSessionQuestion.examSession! } onSubmit={ onCompleted }/> }
+
+ { examSessionQuestion && checkAuthorization(ExamSessionPermission.Delete, examSessionQuestion.examSession) &&
+ <DeleteExamSession examSession={ examSessionQuestion.examSession! } onSubmit={ onDeleted }/> }
+ </div>
+ </>)
 }
 
 export default memo(ExamSession)

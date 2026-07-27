@@ -11,7 +11,7 @@ async function handle(request: Request): Promise<Response> {
     body: request.method === 'GET' ? undefined : await request.arrayBuffer(),
     cache: 'no-store',
   })
-  return new Response(response.body, { status: response.status, headers: response.headers })
+  return new Response(response.body, {status: response.status, headers: response.headers})
 }
 
 export const GET = handle

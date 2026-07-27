@@ -16,43 +16,43 @@ interface Props extends ComponentProps<any> {
 }
 
 const _RateQuestion = (
-  {
-    className = '',
-    question,
-    onChange,
-    showAverageMark = false,
-    showMarkCount = false,
-    readonly = false,
-  }: Props,
+        {
+          className = '',
+          question,
+          onChange,
+          showAverageMark = false,
+          showMarkCount = false,
+          readonly = false,
+        }: Props,
 ) => {
   return (
-    <Rating
-      className={ className }
-      rating={ question.rating! }
-      showAverageMark={ showAverageMark }
-      showMarkCount={ showMarkCount }
-      onChange={
-        (mark, setRating, { setError, setLoading }) => {
-          setLoading(true)
-          apiMutate(
-            rateQuestion(question.id!, mark),
-            async (data: { rateQuestion: Question }) => {
-              await sleep(100)
-              apiQuery(
-                getQuestion(data.rateQuestion.id!),
-                (data: { question: Question }) => {
-                  setRating(data.question.rating ?? {})
-                  onChange && onChange(data.question)
-                },
-                setError,
-              ).finally(() => setLoading(false))
-            },
-            setError,
-          )
-        }
-      }
-      readonly={ readonly }
-    />
+          <Rating
+                  className={className}
+                  rating={question.rating!}
+                  showAverageMark={showAverageMark}
+                  showMarkCount={showMarkCount}
+                  onChange={
+                    (mark, setRating, {setError, setLoading}) => {
+                      setLoading(true)
+                      apiMutate(
+                              rateQuestion(question.id!, mark),
+                              async (data: { rateQuestion: Question }) => {
+                                await sleep(100)
+                                apiQuery(
+                                        getQuestion(data.rateQuestion.id!),
+                                        (data: { question: Question }) => {
+                                          setRating(data.question.rating ?? {})
+                                          onChange && onChange(data.question)
+                                        },
+                                        setError,
+                                ).finally(() => setLoading(false))
+                              },
+                              setError,
+                      )
+                    }
+                  }
+                  readonly={readonly}
+          />
   )
 }
 

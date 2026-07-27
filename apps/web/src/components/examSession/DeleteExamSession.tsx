@@ -10,17 +10,18 @@ interface Props extends ComponentProps<any> {
   iconButton?: boolean
 }
 
-const DeleteExamSession = ({ examSession, onSubmit, iconButton = false }: Props) => {
+const DeleteExamSession = ({examSession, onSubmit, iconButton = false}: Props) => {
   return (
-    <ConfirmDialog
-      mutateOptionsFn={ () => deleteExamSession(examSession.id!) }
-      iconFn={ DeleteIcon }
-      labelFn={ (isSubmitting) => isSubmitting ? 'Deleting ExamSession...' : 'Delete ExamSession' }
-      title={ `Are you sure you want to delete "${ examSession.exam!.name }" examSession?` }
-      body={ <>This will delete "{ examSession.exam!.name }" examSession permanently.<br/>You cannot undo this action.</> }
-      onSubmit={ onSubmit }
-      iconButton={ iconButton }
-    />
+          <ConfirmDialog
+                  mutateOptionsFn={() => deleteExamSession(examSession.id!)}
+                  iconFn={DeleteIcon}
+                  labelFn={(isSubmitting) => isSubmitting ? 'Deleting ExamSession...' : 'Delete ExamSession'}
+                  title={`Are you sure you want to delete "${examSession.exam!.name}" examSession?`}
+                  body={<>This will delete "{examSession.exam!.name}" examSession permanently.<br/>You cannot undo this
+                    action.</>}
+                  onSubmit={onSubmit}
+                  iconButton={iconButton}
+          />
   )
 }
 

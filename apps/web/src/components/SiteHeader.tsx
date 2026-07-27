@@ -10,18 +10,32 @@ const apiUrl = '/graphql'
 export default function SiteHeader() {
   const [user, setUser] = useState<User>()
   const [loadingUser, setLoadingUser] = useState(true)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     const loadUser = async () => {
       const raw = localStorage.getItem('authenticationToken')
-      if (!raw) { setUser(undefined); setLoadingUser(false); return }
+      if (!raw) {
+        setUser(undefined);
+        setLoadingUser(false);
+        return
+      }
       try {
         const token = JSON.parse(raw) as Token
-        const response = await fetch(apiUrl, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token.token}` }, body: JSON.stringify({ query: 'query CurrentUser { me { id email name } }' }) })
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {'content-type': 'application/json', authorization: `Bearer ${token.token}`},
+          body: JSON.stringify({query: 'query CurrentUser { me { id email name } }'})
+        })
         const result = await response.json()
         if (result.errors?.length || !result.data?.me) throw new Error('Invalid session')
         setUser(result.data.me)
-      } catch { localStorage.removeItem('authenticationToken'); setUser(undefined) } finally { setLoadingUser(false) }
+      } catch {
+        localStorage.removeItem('authenticationToken');
+        setUser(undefined)
+      } finally {
+        setLoadingUser(false)
+      }
     }
     loadUser()
     const refresh = () => loadUser()
@@ -29,10 +43,42 @@ export default function SiteHeader() {
     return () => window.removeEventListener('auth-changed', refresh)
   }, [])
 
-  const logout = () => { localStorage.removeItem('authenticationToken'); setUser(undefined); window.dispatchEvent(new Event('auth-changed')) }
+  const logout = () => {
+    localStorage.removeItem('authenticationToken');
+    setUser(undefined);
+    window.dispatchEvent(new Event('auth-changed'))
+  }
 
-  return <header className="h-max max-w-full rounded-none border-b bg-white px-4 py-2 text-black lg:px-8 lg:py-4"><nav className="mx-auto flex max-w-7xl items-center justify-between text-blue-gray-900 sm:px-6 lg:px-8">
-    <Link className="font-secondary text-xl" href="/">Exam Me</Link>
-    <div className="flex items-center gap-4 text-sm text-blue-gray-900"><Link href="/exams">Exams</Link><Link href="/questions">Questions</Link><Link href="/users">Users</Link>{loadingUser ? <span>Loading...</span> : user ? <><Link href={`/users/${user.id}`}>{user.email || user.name}</Link><button onClick={logout}>Logout</button></> : <a href="/login">Login</a>}</div>
-  </nav></header>
+  const closeMenu = () => setMenuOpen(false)
+
+  return <header>
+    <nav className="navbar navbar-expand-md bg-light">
+      <div className="container">
+        <Link className="navbar-brand link-secondary" href="/">Exam Me</Link>
+        <button className="navbar-toggler" type="button" aria-controls="main-navigation" aria-expanded={menuOpen}
+                aria-label="Toggle navigation" onClick={() => setMenuOpen(!menuOpen)}>
+          <span className="navbar-toggler-icon"/>
+        </button>
+        <div className={menuOpen ? "collapse navbar-collapse show" : "collapse navbar-collapse"} id="main-navigation">
+          <ul className="navbar-nav me-auto">
+            <li className="nav-item"><Link className="nav-link" href="/exams" onClick={closeMenu}>Exams</Link></li>
+            <li className="nav-item"><Link className="nav-link" href="/questions" onClick={closeMenu}>Questions</Link>
+            </li>
+            <li className="nav-item"><Link className="nav-link" href="/users" onClick={closeMenu}>Users</Link></li>
+          </ul>
+          <ul className="navbar-nav">
+            {loadingUser ?
+                    <li className="nav-item"><span className="nav-link disabled">Loading...</span></li> : user ? <>
+                      <li className="nav-item"><Link className="nav-link" href={"/users/" + user.id}
+                                                     onClick={closeMenu}>{user.email || user.name}</Link></li>
+                      <li className="nav-item">
+                        <button className="btn btn-link nav-link" onClick={logout}>Logout</button>
+                      </li>
+                    </> : <li className="nav-item"><Link className="nav-link" href="/login" onClick={closeMenu}>Sign
+                      in</Link></li>}
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
 }

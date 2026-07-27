@@ -1,4 +1,4 @@
-import { Typography } from '@material-tailwind/react'
+import { Typography } from '@/components/bootstrap'
 import { ComponentProps, createElement, memo } from 'react'
 
 interface Props extends ComponentProps<any> {
@@ -10,11 +10,11 @@ interface Props extends ComponentProps<any> {
   className?: string
 }
 
-const Text = ({ icon, label, children, variant, color, className }: Props) => {
-  return <Typography as="span" variant={ variant } color={ color } className={ className }>
-    { icon && createElement(icon, { className: 'h-4 w-4 inline-block' }) }
-    { icon && ' ' }
-    { label || children }
+const Text = ({icon, label, children, variant, color, className}: Props) => {
+  return <Typography as="span" variant={variant} color={color} className={className}>
+    {icon && createElement(icon, {className: ' d-inline-block'})}
+    {icon && ' '}
+    {label || children}
   </Typography>
 }
 

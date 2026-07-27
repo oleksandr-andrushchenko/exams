@@ -1,4 +1,4 @@
-import { IconButton as MlIconButton, Tooltip } from '@material-tailwind/react'
+import { IconButton as MlIconButton, Tooltip } from '@/components/bootstrap'
 import { ComponentPropsWithoutRef, createElement, memo } from 'react'
 
 interface Props extends ComponentPropsWithoutRef<'button'> {
@@ -14,37 +14,37 @@ interface Props extends ComponentPropsWithoutRef<'button'> {
 }
 
 const IconButton = (
-  {
-    icon,
-    tooltip,
-    size,
-    className,
-    onClick,
-    disabled,
-    type,
-    variant,
-    color,
-    ...props
-  }: Props,
+        {
+          icon,
+          tooltip,
+          size,
+          className,
+          onClick,
+          disabled,
+          type,
+          variant,
+          color,
+          ...props
+        }: Props,
 ) => {
   const button = (
-    <MlIconButton
-      { ...props }
-      variant={ variant }
-      color={ color }
-      size={ size }
-      type={ type }
-      className={ className }
-      onClick={ onClick }
-      disabled={ disabled }
-    >
-      { createElement(icon, { className: 'h-4 w-4 align-top' }) }
-    </MlIconButton>
+          <MlIconButton
+                  {...props}
+                  variant={variant}
+                  color={color}
+                  size={size}
+                  type={type}
+                  className={className}
+                  onClick={onClick}
+                  disabled={disabled}
+          >
+            {createElement(icon, {className: ' align-top'})}
+          </MlIconButton>
   )
 
   if (tooltip) {
     return (
-      <Tooltip content={ tooltip }>{ button }</Tooltip>
+            <Tooltip content={tooltip}>{button}</Tooltip>
     )
   }
 

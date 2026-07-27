@@ -16,43 +16,43 @@ interface Props extends ComponentProps<any> {
 }
 
 const _RateExam = (
-  {
-    className = '',
-    exam,
-    onChange,
-    showAverageMark = false,
-    showMarkCount = false,
-    readonly = false,
-  }: Props,
+        {
+          className = '',
+          exam,
+          onChange,
+          showAverageMark = false,
+          showMarkCount = false,
+          readonly = false,
+        }: Props,
 ) => {
   return (
-    <Rating
-      className={ className }
-      rating={ exam.rating! }
-      showAverageMark={ showAverageMark }
-      showMarkCount={ showMarkCount }
-      onChange={
-        (mark, setRating, { setError, setLoading }) => {
-          setLoading(true)
-          apiMutate(
-            rateExam(exam.id!, mark),
-            async (data: { rateExam: Exam }) => {
-              await sleep(100)
-              apiQuery(
-                getExam(data.rateExam.id!),
-                (data: { exam: Exam }) => {
-                  setRating(data.exam.rating ?? {})
-                  onChange && onChange(data.exam)
-                },
-                setError,
-              ).finally(() => setLoading(false))
-            },
-            setError,
-          )
-        }
-      }
-      readonly={ readonly }
-    />
+          <Rating
+                  className={className}
+                  rating={exam.rating!}
+                  showAverageMark={showAverageMark}
+                  showMarkCount={showMarkCount}
+                  onChange={
+                    (mark, setRating, {setError, setLoading}) => {
+                      setLoading(true)
+                      apiMutate(
+                              rateExam(exam.id!, mark),
+                              async (data: { rateExam: Exam }) => {
+                                await sleep(100)
+                                apiQuery(
+                                        getExam(data.rateExam.id!),
+                                        (data: { exam: Exam }) => {
+                                          setRating(data.exam.rating ?? {})
+                                          onChange && onChange(data.exam)
+                                        },
+                                        setError,
+                                ).finally(() => setLoading(false))
+                              },
+                              setError,
+                      )
+                    }
+                  }
+                  readonly={readonly}
+          />
   )
 }
 

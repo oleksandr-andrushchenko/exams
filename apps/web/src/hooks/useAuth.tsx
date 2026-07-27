@@ -19,13 +19,13 @@ interface AuthenticationProviderContextValue {
   }, permissions?: string[]) => boolean
 }
 
-export function AuthenticationProvider({ children }: { children: ReactNode }) {
+export function AuthenticationProvider({children}: { children: ReactNode }) {
   const authenticationTokenString = localStorage.getItem('authenticationToken')
-  const [ authenticationToken, setAuthenticationToken ] = useState<Token | undefined>(
-    authenticationTokenString ? JSON.parse(authenticationTokenString) : undefined,
+  const [authenticationToken, setAuthenticationToken] = useState<Token | undefined>(
+          authenticationTokenString ? JSON.parse(authenticationTokenString) : undefined,
   )
-  const defaultData = { me: undefined, permissionHierarchy: undefined }
-  const [ { me, permissionHierarchy }, setData ] = useState<{
+  const defaultData = {me: undefined, permissionHierarchy: undefined}
+  const [{me, permissionHierarchy}, setData] = useState<{
     me?: Me | undefined
     permissionHierarchy?: PermissionHierarchy | undefined
   }>(defaultData)
@@ -69,17 +69,17 @@ export function AuthenticationProvider({ children }: { children: ReactNode }) {
     if (authenticationToken) {
       localStorage.setItem('authenticationToken', JSON.stringify(authenticationToken))
       apiQuery<{ me: Me, permission: PermissionQuery }>(
-        getMeAndPermissions(),
-        data => setData({ me: data.me, permissionHierarchy: data.permission.hierarchy }),
-        () => setAuthenticationToken(undefined),
-        () => {
-        },
+              getMeAndPermissions(),
+              data => setData({me: data.me, permissionHierarchy: data.permission.hierarchy}),
+              () => setAuthenticationToken(undefined),
+              () => {
+              },
       )
     } else {
       localStorage.removeItem('authenticationToken')
       setData(defaultData)
     }
-  }, [ authenticationToken ])
+  }, [authenticationToken])
 
   const value: AuthenticationProviderContextValue = {
     authenticationToken,
@@ -89,9 +89,9 @@ export function AuthenticationProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <authenticationContext.Provider value={ value }>
-      { children }
-    </authenticationContext.Provider>
+          <authenticationContext.Provider value={value}>
+            {children}
+          </authenticationContext.Provider>
   )
 }
 

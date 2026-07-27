@@ -1,4 +1,4 @@
-import { Breadcrumbs } from '@material-tailwind/react'
+import { Breadcrumbs } from '@/components/bootstrap'
 import Route from '../enum/Route'
 import useAuth from '../hooks/useAuth'
 import { HomeIcon } from '@heroicons/react/24/solid'

@@ -8,20 +8,20 @@ interface Props extends ComponentProps<any> {
   activity: Activity
 }
 
-const ExamCreatedActivity = ({ activity }: Props) => {
-  const exam = { id: activity.examId! }
+const ExamCreatedActivity = ({activity}: Props) => {
+  const exam = {id: activity.examId!}
   const link = Route.Exam.replace(':examId', exam.id)
 
   return <>
-    <b><Link label={ activity.examName } to={ link }/></b>
-    { ' ' }
+    <b><Link label={activity.examName} to={link}/></b>
+    {' '}
     exam has been created. You can add your own questions
-    { ' ' }
-    <b><Link label="here" to={ link }/></b>
-    { ' ' }
+    {' '}
+    <b><Link label="here" to={link}/></b>
+    {' '}
     or
-    { ' ' }
-    <AddQuestion exam={ exam }/>
+    {' '}
+    <AddQuestion exam={exam}/>
   </>
 }
 

@@ -1,4 +1,4 @@
-import { Button, IconButton, Spinner as TailwindSpinner, Typography } from '@material-tailwind/react'
+import { Button, IconButton, Spinner as BootstrapSpinner } from '@/components/bootstrap'
 import { ComponentProps, memo, ReactNode } from 'react'
 
 interface Props extends ComponentProps<any> {
@@ -8,43 +8,36 @@ interface Props extends ComponentProps<any> {
   children?: ReactNode
 }
 
-const Spinner = ({ type, height, width, children }: Props) => {
+const Spinner = ({type, height, width, children}: Props) => {
   if (type === 'button') {
     return (
-      <span className="animate-pulse">
-        <Button
-          disabled
-          tabIndex={ -1 }
-          className={ `${ height ?? 'h-8' } ${ width ?? 'w-24' } bg-gray-300 shadow-none hover:shadow-none` }
-        >
-        { children ?? '' }
-      </Button>
-      </span>
+            <span className="placeholder-glow">
+ <Button
+         disabled
+         tabIndex={-1}
+         className={`${height ?? ''} ${width ?? 'w-100'}`} color="secondary"
+ >
+ {children ?? ''}
+ </Button>
+ </span>
     )
   }
 
   if (type === 'icon-button') {
     return (
-      <span className="animate-pulse">
-        <IconButton disabled tabIndex={ -1 } className={ `bg-gray-300 shadow-none hover:shadow-none` }>
-          &nbsp;
-        </IconButton>
-      </span>
+            <span className="placeholder-glow">
+ <IconButton disabled tabIndex={-1} color="secondary">
+ &nbsp;
+ </IconButton>
+ </span>
     )
   }
 
   if (type === 'text') {
-    return (
-      <Typography
-        as="span"
-        className={ `animate-pulse inline-block ${ height ?? 'h-2' } ${ width ?? 'w-24' } rounded-full bg-gray-300` }
-      >
-        { children ?? '' }
-      </Typography>
-    )
+    return <span className="placeholder-glow d-inline-block w-100"><span className="placeholder col-6"/></span>
   }
 
-  return <TailwindSpinner className="h-8 w-8 text-gray-900/50"/>
+  return <BootstrapSpinner/>
 }
 
 export default memo(Spinner)

@@ -1,4 +1,4 @@
-import { Button, Typography } from '@material-tailwind/react'
+import { Button, Typography } from '@/components/bootstrap'
 import { ComponentProps, memo, ReactNode, useState } from 'react'
 import { Link } from 'react-router-dom'
 import useAuth from '../hooks/useAuth'
@@ -24,74 +24,74 @@ interface Form {
   terms: boolean
 }
 
-const Register = ({ buttons, onSubmit }: Props) => {
-  const [ error, setError ] = useState<string>('')
-  const { setAuthenticationToken } = useAuth()
+const Register = ({buttons, onSubmit}: Props) => {
+  const [error, setError] = useState<string>('')
+  const {setAuthenticationToken} = useAuth()
 
   return (
-    <Formik
-      initialValues={ {
-        email: '',
-        password: '',
-        confirmPassword: '',
-        terms: false,
-      } }
-      validationSchema={ yup.object({
-        email: yup.string()
-          .email('Invalid email address')
-          .required('Email is required'),
-        password: yup.string()
-          .min(8, 'Password must be at least 8 characters')
-          .max(24, 'Password cannot exceed 24 characters')
-          .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[~!@#$%^&*()])/, 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character')
-          .required('Password is required'),
-        confirmPassword: yup.string()
-          .required('Confirm password is required')
-          .oneOf([ yup.ref('password') ], 'Passwords must match'),
-        terms: yup.bool()
-          .oneOf([ true ], 'Terms must be accepted'),
-      }) }
-      onSubmit={ (values, { setSubmitting }: FormikHelpers<Form>): any => {
-        setError('')
+          <Formik
+                  initialValues={{
+                    email: '',
+                    password: '',
+                    confirmPassword: '',
+                    terms: false,
+                  }}
+                  validationSchema={yup.object({
+                    email: yup.string()
+                            .email('Invalid email address')
+                            .required('Email is required'),
+                    password: yup.string()
+                            .min(8, 'Password must be at least 8 characters')
+                            .max(24, 'Password cannot exceed 24 characters')
+                            .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[~!@#$%^&*()])/, 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character')
+                            .required('Password is required'),
+                    confirmPassword: yup.string()
+                            .required('Confirm password is required')
+                            .oneOf([yup.ref('password')], 'Passwords must match'),
+                    terms: yup.bool()
+                            .oneOf([true], 'Terms must be accepted'),
+                  })}
+                  onSubmit={(values, {setSubmitting}: FormikHelpers<Form>): any => {
+                    setError('')
 
-        const transfer = {
-          email: values.email,
-          password: values.password,
-        }
-        apiMutate<{ createAuthenticationToken: Token }>(
-          createMeAndAuthenticationToken(transfer),
-          data => {
-            setAuthenticationToken(data.createAuthenticationToken)
-            onSubmit && onSubmit()
-          },
-          setError,
-          setSubmitting,
-        )
-      } }>
-      { ({ isSubmitting, isValid, dirty }) => (
-        <Form className="flex flex-col gap-6">
-          <Typography variant="h4" color="blue-gray">Register</Typography>
+                    const transfer = {
+                      email: values.email,
+                      password: values.password,
+                    }
+                    apiMutate<{ createAuthenticationToken: Token }>(
+                            createMeAndAuthenticationToken(transfer),
+                            data => {
+                              setAuthenticationToken(data.createAuthenticationToken)
+                              onSubmit && onSubmit()
+                            },
+                            setError,
+                            setSubmitting,
+                    )
+                  }}>
+            {({isSubmitting, isValid, dirty}) => (
+                    <Form className="d-flex flex-column gap-5">
+                      <Typography variant="h4" color="blue-gray">Register</Typography>
 
-          <FormikInput name="email" type="email" label="Email Address"/>
-          <FormikInput name="password" type="password" label="Password"/>
-          <FormikInput name="confirmPassword" type="password" label="Confirm password"/>
+                      <FormikInput name="email" type="email" label="Email Address"/>
+                      <FormikInput name="password" type="password" label="Password"/>
+                      <FormikInput name="confirmPassword" type="password" label="Confirm password"/>
 
-          <FormikCheckbox name="terms">
-            I agree to the <Link to={ Route.Terms }>Terms and Conditions</Link>
-          </FormikCheckbox>
+                      <FormikCheckbox name="terms">
+                        I agree to the <Link to={Route.Terms}>Terms and Conditions</Link>
+                      </FormikCheckbox>
 
-          { error && <Error text={ error }/> }
+                      {error && <Error text={error}/>}
 
-          <div>
-            { buttons }
+                      <div>
+                        {buttons}
 
-            <Button type="submit" className="ml-1" size="md" disabled={ isSubmitting || !dirty || !isValid }>
-              { isSubmitting ? 'Registering...' : 'Register' }
-            </Button>
-          </div>
-        </Form>
-      ) }
-    </Formik>
+                        <Button type="submit" className="ms-1" size="md" disabled={isSubmitting || !dirty || !isValid}>
+                          {isSubmitting ? 'Registering...' : 'Register'}
+                        </Button>
+                      </div>
+                    </Form>
+            )}
+          </Formik>
   )
 }
 

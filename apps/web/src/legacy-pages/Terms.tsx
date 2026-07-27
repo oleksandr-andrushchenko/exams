@@ -1,4 +1,4 @@
-import { Breadcrumbs } from '@material-tailwind/react'
+import { Breadcrumbs } from '@/components/bootstrap'
 import { HomeIcon } from '@heroicons/react/24/solid'
 import Route from '../enum/Route'
 import { memo, useEffect } from 'react'

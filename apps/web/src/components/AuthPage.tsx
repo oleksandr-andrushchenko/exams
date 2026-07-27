@@ -3,7 +3,7 @@
 import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
+export default function AuthPage({mode}: { mode: 'login' | 'register' }) {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -15,13 +15,23 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   async function submit(event: FormEvent) {
     event.preventDefault()
     setError('')
-    if (register && password !== confirmPassword) { setError('Passwords do not match'); return }
+    if (register && password !== confirmPassword) {
+      setError('Passwords do not match');
+      return
+    }
     setSubmitting(true)
     const mutation = register
-      ? 'mutation Register($createMe: CreateMe!, $credentials: Credentials!) { createMe(createMe: $createMe) { id } createAuthenticationToken(credentials: $credentials) { token } }'
-      : 'mutation Login($email: String!, $password: String!) { createAuthenticationToken(credentials: { email: $email, password: $password }) { token } }'
+            ? 'mutation Register($createMe: CreateMe!, $credentials: Credentials!) { createMe(createMe: $createMe) { id } createAuthenticationToken(credentials: $credentials) { token } }'
+            : 'mutation Login($email: String!, $password: String!) { createAuthenticationToken(credentials: { email: $email, password: $password }) { token } }'
     try {
-      const response = await fetch('/graphql', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ query: mutation, variables: register ? { createMe: { email, password }, credentials: { email, password } } : { email, password } }) })
+      const response = await fetch('/graphql', {
+        method: 'POST',
+        headers: {'content-type': 'application/json'},
+        body: JSON.stringify({
+          query: mutation,
+          variables: register ? {createMe: {email, password}, credentials: {email, password}} : {email, password}
+        })
+      })
       const responseText = await response.text()
       let result: { data?: { createAuthenticationToken?: { token?: string } }; errors?: Array<{ message?: string }> }
       try {
@@ -38,17 +48,31 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
       await new Promise(resolve => setTimeout(resolve, 400))
       router.push('/')
       router.refresh()
-    } catch (e) { setError(e instanceof Error ? e.message : 'Authentication failed') } finally { setSubmitting(false) }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Authentication failed')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  return <section className="mx-auto max-w-lg rounded-xl bg-white p-6 shadow">
-    <h1 className="mb-6 font-primary text-3xl text-black">{register ? 'Register' : 'Login'}</h1>
-    <form className="space-y-4" onSubmit={submit}>
-      <label className="block">Email<input className="mt-1 w-full rounded border p-2" type="email" required value={email} onChange={e => setEmail(e.target.value)} /></label>
-      <label className="block">Password<input className="mt-1 w-full rounded border p-2" type="password" required value={password} onChange={e => setPassword(e.target.value)} /></label>
-      {register && <label className="block">Confirm password<input className="mt-1 w-full rounded border p-2" type="password" required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} /></label>}
-      {error && <p className="text-red-600">{error}</p>}
-      <button className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-50" disabled={submitting} type="submit">{submitting ? 'Please wait...' : register ? 'Register' : 'Login'}</button>
-    </form>
+  return <section className="mx-auto col-12 col-md-8 col-lg-6">
+    <div className="card">
+      <div className="card-body">
+        <h1>{register ? 'Register' : 'Login'}</h1>
+        <form className="d-flex flex-column gap-2" onSubmit={submit}>
+          <label className="d-block">Email<input className="form-control mt-1" type="email" required value={email}
+                                                 onChange={e => setEmail(e.target.value)}/></label>
+          <label className="d-block">Password<input className="form-control mt-1" type="password" required
+                                                    value={password}
+                                                    onChange={e => setPassword(e.target.value)}/></label>
+          {register && <label className="d-block">Confirm password<input className="form-control mt-1" type="password"
+                                                                         required value={confirmPassword}
+                                                                         onChange={e => setConfirmPassword(e.target.value)}/></label>}
+          {error && <p className="text-danger">{error}</p>}
+          <button className="btn btn-primary" disabled={submitting}
+                  type="submit">{submitting ? 'Please wait...' : register ? 'Register' : 'Login'}</button>
+        </form>
+      </div>
+    </div>
   </section>
 }

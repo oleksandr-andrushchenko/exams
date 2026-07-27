@@ -15,43 +15,43 @@ interface Props extends ComponentProps<any> {
   readonly?: boolean
 }
 
-const _ApproveQuestion = ({ question, onChange, iconButton = false, readonly = false }: Props) => {
-  const [ isApproved, setApproved ] = useState<boolean>(question.isApproved!)
-  const [ isSubmitting, setSubmitting ] = useState<boolean>(false)
-  const [ error, setError ] = useState<string>('')
+const _ApproveQuestion = ({question, onChange, iconButton = false, readonly = false}: Props) => {
+  const [isApproved, setApproved] = useState<boolean>(question.isApproved!)
+  const [isSubmitting, setSubmitting] = useState<boolean>(false)
+  const [error, setError] = useState<string>('')
 
   if (readonly) {
     return (
-      <YesNo yes={ isApproved }/>
+            <YesNo yes={isApproved}/>
     )
   }
 
   const icon = isApproved ? EnabledIcon : DisabledIcon
   const label = isApproved
-    ? (isSubmitting ? 'Un-approving Question...' : 'Un-approve Question')
-    : (isSubmitting ? 'Approving Question...' : 'Approve Question')
+          ? (isSubmitting ? 'Un-approving Question...' : 'Un-approve Question')
+          : (isSubmitting ? 'Approving Question...' : 'Approve Question')
 
   const onClick = () => {
     apiMutate(
-      // todo: change depending on onChange is defined or not
-      toggleQuestionApprove(question.id!),
-      (data: { toggleQuestionApprove: Question }) => {
-        const updatedQuestion = data.toggleQuestionApprove
-        setApproved(updatedQuestion.isApproved!)
-        onChange && onChange(updatedQuestion)
-      },
-      setError,
-      setSubmitting,
+            // todo: change depending on onChange is defined or not
+            toggleQuestionApprove(question.id!),
+            (data: { toggleQuestionApprove: Question }) => {
+              const updatedQuestion = data.toggleQuestionApprove
+              setApproved(updatedQuestion.isApproved!)
+              onChange && onChange(updatedQuestion)
+            },
+            setError,
+            setSubmitting,
     )
   }
 
   return (
-    <>
-      { error && <Error text={ error } simple/> }
-      { iconButton
-        ? <IconButton icon={ icon } tooltip={ label } onClick={ onClick } disabled={ isSubmitting }/>
-        : <Button icon={ icon } label={ label } onClick={ onClick } disabled={ isSubmitting }/> }
-    </>
+          <>
+            {error && <Error text={error} simple/>}
+            {iconButton
+                    ? <IconButton icon={icon} tooltip={label} onClick={onClick} disabled={isSubmitting}/>
+                    : <Button icon={icon} label={label} onClick={onClick} disabled={isSubmitting}/>}
+          </>
   )
 }
 

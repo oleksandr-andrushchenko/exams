@@ -10,21 +10,21 @@ interface Props extends ComponentProps<any> {
   key2?: number
 }
 
-const InfoTable = ({ className = '', title, columns, source, mapper, key2 = 1 }: Props) => {
+const InfoTable = ({className = '', title, columns, source, mapper, key2 = 1}: Props) => {
   const data = source ? mapper(source) : {}
 
   return (
-    <table className={ `w-full table-auto text-left text-sm ${ className }` }>
-      { title && <legend>{ title }</legend> }
-      <tbody>
-      { columns.map((column, index) => (
-        <tr key={ `${ column }-${ data[index] ?? '' }-${ key2 }` }>
-          <th className="w-2/12">{ column }</th>
-          <td>{ data ? data[index] : <Spinner type="text"/> }</td>
-        </tr>
-      )) }
-      </tbody>
-    </table>
+          <table className={`w-100 table-layout-fixed text-start small ${className}`}>
+            {title && <legend>{title}</legend>}
+            <tbody>
+            {columns.map((column, index) => (
+                    <tr key={`${column}-${data[index] ?? ''}-${key2}`}>
+                      <th className="col-2">{column}</th>
+                      <td>{data ? data[index] : <Spinner type="text"/>}</td>
+                    </tr>
+            ))}
+            </tbody>
+          </table>
   )
 }
 

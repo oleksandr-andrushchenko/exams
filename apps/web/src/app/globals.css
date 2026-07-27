@@ -1,5 +1,27 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-body { min-height: 100vh; background: #f8fafc; color: #263238; }
-a { color: #1565c0; }
+@import 'bootstrap/dist/css/bootstrap.min.css';
+
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6, .navbar-brand {
+  font-weight: bold
+}
+
+.breadcrumb {
+  margin: 1rem 0
+}
+
+.form-control.h1 {
+  font-size: 2.5rem;
+  font-weight: 500;
+}
+
+.two-line-ellipsis {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.label-required::after {
+  content: " *";
+  color: red;
+}

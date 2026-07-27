@@ -1,6 +1,6 @@
 import { useField } from 'formik'
 import Error from '../Error'
-import { Textarea } from '@material-tailwind/react'
+import { Textarea } from '@/components/bootstrap'
 import { ComponentProps } from 'react'
 
 interface Props extends ComponentProps<'textarea'> {
@@ -9,23 +9,23 @@ interface Props extends ComponentProps<'textarea'> {
   children?: any
 }
 
-export default function FormikTextarea({ name, label, children }: Props) {
-  const [ input, meta ] = useField(name)
-  const { touched, error } = meta
+export default function FormikTextarea({name, label, children}: Props) {
+  const [input, meta] = useField(name)
+  const {touched, error} = meta
 
   return (
-    <div className="flex flex-col gap-1">
-      <Textarea
-        { ...input }
-        rows={ 1 }
-        resize
-        name={ name }
-        label={ label || (children || []).join('') || name }
-        success={ touched && !error }
-        error={ touched && !!error }
-      />
+          <div className="d-flex flex-column gap-1">
+            <Textarea
+                    {...input}
+                    rows={1}
+                    resize
+                    name={name}
+                    label={label || (children || []).join('') || name}
+                    success={touched && !error}
+                    error={touched && !!error}
+            />
 
-      { touched && error && <Error text={ error }/> }
-    </div>
+            {touched && error && <Error text={error}/>}
+          </div>
   )
 };

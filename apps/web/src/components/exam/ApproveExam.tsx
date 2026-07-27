@@ -15,43 +15,43 @@ interface Props extends ComponentProps<any> {
   readonly?: boolean
 }
 
-const _ApproveExam = ({ exam, onChange, iconButton = false, readonly = false }: Props) => {
-  const [ isApproved, setApproved ] = useState<boolean>(exam.isApproved!)
-  const [ isSubmitting, setSubmitting ] = useState<boolean>(false)
-  const [ error, setError ] = useState<string>('')
+const _ApproveExam = ({exam, onChange, iconButton = false, readonly = false}: Props) => {
+  const [isApproved, setApproved] = useState<boolean>(exam.isApproved!)
+  const [isSubmitting, setSubmitting] = useState<boolean>(false)
+  const [error, setError] = useState<string>('')
 
   if (readonly) {
     return (
-      <YesNo yes={ isApproved }/>
+            <YesNo yes={isApproved}/>
     )
   }
 
   const icon = isApproved ? EnabledIcon : DisabledIcon
   const label = isApproved
-    ? (isSubmitting ? 'Un-approving Exam...' : 'Un-approve Exam')
-    : (isSubmitting ? 'Approving Exam...' : 'Approve Exam')
+          ? (isSubmitting ? 'Un-approving Exam...' : 'Un-approve Exam')
+          : (isSubmitting ? 'Approving Exam...' : 'Approve Exam')
 
   const onClick = () => {
     apiMutate(
-      // todo: change depending on onChange is defined or not
-      toggleExamApprove(exam.id!),
-      (data: { toggleExamApprove: Exam }) => {
-        const updatedExam = data.toggleExamApprove
-        setApproved(updatedExam.isApproved!)
-        onChange && onChange(updatedExam)
-      },
-      setError,
-      setSubmitting,
+            // todo: change depending on onChange is defined or not
+            toggleExamApprove(exam.id!),
+            (data: { toggleExamApprove: Exam }) => {
+              const updatedExam = data.toggleExamApprove
+              setApproved(updatedExam.isApproved!)
+              onChange && onChange(updatedExam)
+            },
+            setError,
+            setSubmitting,
     )
   }
 
   return (
-    <>
-      { error && <Error text={ error } simple/> }
-      { iconButton
-        ? <IconButton icon={ icon } tooltip={ label } onClick={ onClick } disabled={ isSubmitting }/>
-        : <Button icon={ icon } label={ label } onClick={ onClick } disabled={ isSubmitting }/> }
-    </>
+          <>
+            {error && <Error text={error} simple/>}
+            {iconButton
+                    ? <IconButton icon={icon} tooltip={label} onClick={onClick} disabled={isSubmitting}/>
+                    : <Button icon={icon} label={label} onClick={onClick} disabled={isSubmitting}/>}
+          </>
   )
 }
 

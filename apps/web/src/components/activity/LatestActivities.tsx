@@ -12,21 +12,21 @@ interface Props extends ComponentProps<any> {
 }
 
 const renderers: Record<string, (activity: Activity) => JSX.Element> = {
-  [ExamEvent.Created]: (activity: Activity) => <ExamCreatedActivity activity={ activity }/>,
-  [ExamEvent.Approved]: (activity: Activity) => <ExamApprovedActivity activity={ activity }/>,
+  [ExamEvent.Created]: (activity: Activity) => <ExamCreatedActivity activity={activity}/>,
+  [ExamEvent.Approved]: (activity: Activity) => <ExamApprovedActivity activity={activity}/>,
 }
 
 const LatestActivities = ({}: Props) => {
-  const [ isLoading, setLoading ] = useState<boolean>(true)
-  const [ activities, setActivities ] = useState<Activity[]>([])
-  const [ error, setError ] = useState<string>('')
+  const [isLoading, setLoading] = useState<boolean>(true)
+  const [activities, setActivities] = useState<Activity[]>([])
+  const [error, setError] = useState<string>('')
 
   useEffect(() => {
     apiQuery(
-      getActivities({ size: 20 }),
-      async (data: { activities: Activity[] }) => setActivities(data.activities),
-      setError,
-      setLoading,
+            getActivities({size: 20}),
+            async (data: { activities: Activity[] }) => setActivities(data.activities),
+            setError,
+            setLoading,
     )
   }, [])
 
@@ -35,13 +35,13 @@ const LatestActivities = ({}: Props) => {
   }
 
   return <>
-    { error && <Error text={ error }/> }
+    {error && <Error text={error}/>}
 
-    { activities.map((activity: Activity, index: number) => (
-      <div key={ index }>
-        { activity.event && activity.event in renderers ? renderers[activity.event](activity) : <></> }
-      </div>
-    )) }
+    {activities.map((activity: Activity, index: number) => (
+            <div key={index}>
+              {activity.event && activity.event in renderers ? renderers[activity.event](activity) : <></>}
+            </div>
+    ))}
   </>
 }
 

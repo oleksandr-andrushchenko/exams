@@ -20,39 +20,41 @@ import ExamTag from '../legacy-pages/ExamTag'
 import Login from './Login'
 import Register from './Register'
 import Link from './elements/Link'
-import { Breadcrumbs } from '@material-tailwind/react'
+import { Breadcrumbs } from '@/components/bootstrap'
 import { HomeIcon } from '@heroicons/react/24/solid'
 
 const routes = <Routes>
-  <Route element={ <Layout/> }>
-    <Route path={ Path.Home } element={ <Home/> }/>
-    <Route path={ Path.Exams } element={ <Exams/> }/>
-    <Route path={ Path.Exam } element={ <Exam/> }/>
-    <Route path={ Path.ExamTag } element={ <ExamTag/> }/>
-    <Route path={ Path.Questions } element={ <Questions/> }/>
-    <Route path={ Path.Question } element={ <Question/> }/>
-    <Route element={ <RequireAuthentication/> }>
-      <Route path={ Path.ExamSession } element={ <ExamSession/> }/>
+  <Route element={<Layout/>}>
+    <Route path={Path.Home} element={<Home/>}/>
+    <Route path={Path.Exams} element={<Exams/>}/>
+    <Route path={Path.Exam} element={<Exam/>}/>
+    <Route path={Path.ExamTag} element={<ExamTag/>}/>
+    <Route path={Path.Questions} element={<Questions/>}/>
+    <Route path={Path.Question} element={<Question/>}/>
+    <Route element={<RequireAuthentication/>}>
+      <Route path={Path.ExamSession} element={<ExamSession/>}/>
     </Route>
-    <Route path={ Path.Terms } element={ <Terms/> }/>
-    <Route path={ Path.Users } element={ <Users/> }/>
-    <Route path={ Path.User } element={ <User/> }/>
-    <Route path="*" element={ <NotFound/> }/>
+    <Route path={Path.Terms} element={<Terms/>}/>
+    <Route path={Path.Users} element={<Users/>}/>
+    <Route path={Path.User} element={<User/>}/>
+    <Route path="*" element={<NotFound/>}/>
   </Route>
-  <Route path={ Path.Login } element={ <><Breadcrumbs><Link icon={ HomeIcon } label="Home" to={ Path.Home }/></Breadcrumbs><Login/></> }/>
-  <Route path={ Path.Register } element={ <><Breadcrumbs><Link icon={ HomeIcon } label="Home" to={ Path.Home }/></Breadcrumbs><Register/></> }/>
+  <Route path={Path.Login}
+         element={<><Breadcrumbs><Link icon={HomeIcon} label="Home" to={Path.Home}/></Breadcrumbs><Login/></>}/>
+  <Route path={Path.Register}
+         element={<><Breadcrumbs><Link icon={HomeIcon} label="Home" to={Path.Home}/></Breadcrumbs><Register/></>}/>
 </Routes>
 
 export default function App() {
   return (
-    <AuthenticationProvider>
-      <ThemeProvider>
-        <ApolloProvider client={ apolloClient }>
-          <BrowserRouter>
-            { routes }
-          </BrowserRouter>
-        </ApolloProvider>
-      </ThemeProvider>
-    </AuthenticationProvider>
+          <AuthenticationProvider>
+            <ThemeProvider>
+              <ApolloProvider client={apolloClient}>
+                <BrowserRouter>
+                  {routes}
+                </BrowserRouter>
+              </ApolloProvider>
+            </ThemeProvider>
+          </AuthenticationProvider>
   )
 }

@@ -9,8 +9,8 @@ interface Props extends ComponentProps<any> {
   permission?: any
 }
 
-export default function RequireAuthentication({ permission }: Props) {
-  const { authenticationToken, me, checkAuthorization } = useAuth()
+export default function RequireAuthentication({permission}: Props) {
+  const {authenticationToken, me, checkAuthorization} = useAuth()
 
   if (!authenticationToken) {
     return <Unauthenticated/>

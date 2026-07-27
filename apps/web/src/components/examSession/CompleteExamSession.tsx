@@ -10,17 +10,18 @@ interface Props extends ComponentProps<any> {
   iconButton?: boolean
 }
 
-const CompleteExamSession = ({ examSession, onSubmit, iconButton = false }: Props) => {
+const CompleteExamSession = ({examSession, onSubmit, iconButton = false}: Props) => {
   return (
-    <ConfirmDialog
-      mutateOptionsFn={ () => createExamSessionCompletion(examSession.id!) }
-      iconFn={ CheckIcon }
-      labelFn={ (isSubmitting) => isSubmitting ? 'Completing ExamSession...' : 'Complete ExamSession' }
-      title={ `Are you sure you want to complete "${ examSession.exam!.name }" examSession?` }
-      body={ <>This will complete "{ examSession.exam!.name }" examSession permanently.<br/>You cannot undo this action.</> }
-      onSubmit={ onSubmit }
-      iconButton={ iconButton }
-    />
+          <ConfirmDialog
+                  mutateOptionsFn={() => createExamSessionCompletion(examSession.id!)}
+                  iconFn={CheckIcon}
+                  labelFn={(isSubmitting) => isSubmitting ? 'Completing ExamSession...' : 'Complete ExamSession'}
+                  title={`Are you sure you want to complete "${examSession.exam!.name}" examSession?`}
+                  body={<>This will complete "{examSession.exam!.name}" examSession permanently.<br/>You cannot undo
+                    this action.</>}
+                  onSubmit={onSubmit}
+                  iconButton={iconButton}
+          />
   )
 }
 

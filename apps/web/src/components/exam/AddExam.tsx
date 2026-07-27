@@ -1,4 +1,4 @@
-import { Card, CardBody, Dialog } from '@material-tailwind/react'
+import { Card, CardBody, Dialog } from '@/components/bootstrap'
 import { ComponentProps, memo, useState } from 'react'
 import Exam from '../../schema/exam/Exam'
 import { apiMutate } from '../../client/graphql/apolloClient'
@@ -30,111 +30,111 @@ interface Form {
   tags: string[]
 }
 
-const AddExam = ({ exam, onSubmit, iconButton = false }: Props) => {
-  const [ open, setOpen ] = useState<boolean>(false)
+const AddExam = ({exam, onSubmit, iconButton = false}: Props) => {
+  const [open, setOpen] = useState<boolean>(false)
   const handleOpen = () => setOpen(!open)
-  const [ error, setError ] = useState<string>('')
-  const { authenticationToken, checkAuthorization } = useAuth()
+  const [error, setError] = useState<string>('')
+  const {authenticationToken, checkAuthorization} = useAuth()
 
   const icon = exam ? EditIcon : CreateIcon
   const label = exam ? 'Update Exam' : 'Add Exam'
 
   if (!authenticationToken) {
     return <Auth
-      button={ { icon, label, size: 'sm', iconOnly: iconButton } }
-      dialog={ { label: 'You need to be authenticated' } }
-      onSubmit={ () => setOpen(true) }
+            button={{icon, label, size: 'sm', iconOnly: iconButton}}
+            dialog={{label: 'You need to be authenticated'}}
+            onSubmit={() => setOpen(true)}
     />
   }
 
   const buildButton = (props = {}) => {
     if (iconButton) {
-      return <IconButton icon={ icon } tooltip={ label } onClick={ handleOpen } { ...props }/>
+      return <IconButton icon={icon} tooltip={label} onClick={handleOpen} {...props}/>
     }
 
-    return <Button icon={ icon } label={ label } onClick={ handleOpen } { ...props }/>
+    return <Button icon={icon} label={label} onClick={handleOpen} {...props}/>
   }
 
   const permission = exam ? ExamPermission.Update : ExamPermission.Create
 
   if (!checkAuthorization(permission, exam)) {
-    return buildButton({ disabled: true, tooltip: 'You are not allowed to do this' })
+    return buildButton({disabled: true, tooltip: 'You are not allowed to do this'})
   }
 
   return <>
-    { buildButton() }
-    <Dialog open={ open } handler={ handleOpen } className="text-left">
+    {buildButton()}
+    <Dialog open={open} handler={handleOpen} className="text-start">
       <Card>
-        <CardBody className="flex flex-col gap-4">
-          <H3 icon={ icon } label={ label }/>
+        <CardBody className="d-flex flex-column gap-4">
+          <H3 icon={icon} label={label}/>
           <Formik
-            initialValues={ {
-              name: exam?.name || '',
-              requiredScore: exam?.requiredScore || 0,
-              tags: exam?.tags?.map(tag => tag.name) || [],
-            } }
-            validationSchema={ yup.object({
-              name: yup.string()
-                .min(3, 'Name must be at least 3 characters')
-                .max(100, 'Name cannot exceed 100 characters')
-                .matches(/^[a-zA-Z]/, 'Name must start with a letter')
-                .required('Name is required'),
-              requiredScore: yup.number()
-                .min(0, 'Score must be at least 0')
-                .max(100, 'Score cannot exceed 100')
-                .optional(),
-              tags: yup.array().of(yup.string().trim().max(50)).max(10),
-            }) }
-            onSubmit={ (values, { setSubmitting }: FormikHelpers<Form>) => {
-              setError('')
+                  initialValues={{
+                    name: exam?.name || '',
+                    requiredScore: exam?.requiredScore || 0,
+                    tags: exam?.tags?.map(tag => tag.name) || [],
+                  }}
+                  validationSchema={yup.object({
+                    name: yup.string()
+                            .min(3, 'Name must be at least 3 characters')
+                            .max(100, 'Name cannot exceed 100 characters')
+                            .matches(/^[a-zA-Z]/, 'Name must start with a letter')
+                            .required('Name is required'),
+                    requiredScore: yup.number()
+                            .min(0, 'Score must be at least 0')
+                            .max(100, 'Score cannot exceed 100')
+                            .optional(),
+                    tags: yup.array().of(yup.string().trim().max(50)).max(10),
+                  })}
+                  onSubmit={(values, {setSubmitting}: FormikHelpers<Form>) => {
+                    setError('')
 
-              const transfer = {
-                name: values.name,
-                requiredScore: values.requiredScore,
-                tags: values.tags,
-              }
-              const callback = (exam: Exam) => {
-                setOpen(false)
-                onSubmit && onSubmit(exam)
-              }
+                    const transfer = {
+                      name: values.name,
+                      requiredScore: values.requiredScore,
+                      tags: values.tags,
+                    }
+                    const callback = (exam: Exam) => {
+                      setOpen(false)
+                      onSubmit && onSubmit(exam)
+                    }
 
-              if (exam) {
-                apiMutate(
-                  updateExam(exam.id!, transfer),
-                  (data: { updateExam: Exam }) => callback(data.updateExam),
-                  setError,
-                  setSubmitting,
-                )
-              } else {
-                apiMutate(
-                  createExam(transfer),
-                  (data: { createExam: Exam }) => callback(data.createExam),
-                  setError,
-                  setSubmitting,
-                )
-              }
-            } }>
-            { ({ isSubmitting }) => (
-              <Form className="flex flex-col gap-6">
+                    if (exam) {
+                      apiMutate(
+                              updateExam(exam.id!, transfer),
+                              (data: { updateExam: Exam }) => callback(data.updateExam),
+                              setError,
+                              setSubmitting,
+                      )
+                    } else {
+                      apiMutate(
+                              createExam(transfer),
+                              (data: { createExam: Exam }) => callback(data.createExam),
+                              setError,
+                              setSubmitting,
+                      )
+                    }
+                  }}>
+            {({isSubmitting}) => (
+                    <Form className="d-flex flex-column gap-5">
 
-                <FormikTextarea name="name" label="Name"/>
-                <FormikInput name="requiredScore" type="number" label="Required score"/>
-                <FormikTagAutocomplete name="tags" label="Tags"/>
+                      <FormikTextarea name="name" label="Name"/>
+                      <FormikInput name="requiredScore" type="number" label="Required score"/>
+                      <FormikTagAutocomplete name="tags" label="Tags"/>
 
-                { error && <Error text={ error }/> }
+                      {error && <Error text={error}/>}
 
-                <div>
-                  <Button label="Cancel" type="reset" onClick={ handleOpen }/>{ ' ' }
-                  <Button
-                    icon={ icon }
-                    label={ exam ? (isSubmitting ? 'Updating...' : 'Update') : (isSubmitting ? 'Adding...' : 'Add') }
-                    size="md"
-                    type="submit"
-                    disabled={ isSubmitting }
-                  />
-                </div>
-              </Form>
-            ) }
+                      <div>
+                        <Button label="Cancel" type="reset" onClick={handleOpen}/>{' '}
+                        <Button
+                                icon={icon}
+                                label={exam ? (isSubmitting ? 'Updating...' : 'Update') : (isSubmitting ? 'Adding...' : 'Add')}
+                                size="md"
+                                type="submit"
+                                disabled={isSubmitting}
+                        />
+                      </div>
+                    </Form>
+            )}
           </Formik>
         </CardBody>
       </Card>

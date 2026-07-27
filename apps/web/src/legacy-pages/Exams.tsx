@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Breadcrumbs } from '@material-tailwind/react'
+import { Breadcrumbs } from '@/components/bootstrap'
 import Exam from '../schema/exam/Exam'
 import Route from '../enum/Route'
 import useAuth from '../hooks/useAuth'

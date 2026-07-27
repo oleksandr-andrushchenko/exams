@@ -1,4 +1,4 @@
-import { Card, CardBody, Dialog } from '@material-tailwind/react'
+import { Card, CardBody, Dialog } from '@/components/bootstrap'
 import { ComponentProps, memo, useState } from 'react'
 import { apiMutate } from '../../client/graphql/apolloClient'
 import Error from '../Error'
@@ -28,100 +28,100 @@ interface Form {
   permissions: Permission[]
 }
 
-const AddUser = ({ user, onSubmit, iconButton }: Props) => {
-  const [ open, setOpen ] = useState<boolean>(false)
+const AddUser = ({user, onSubmit, iconButton}: Props) => {
+  const [open, setOpen] = useState<boolean>(false)
   const handleOpen = () => setOpen(!open)
-  const [ error, setError ] = useState<string>('')
+  const [error, setError] = useState<string>('')
 
   const icon = user ? EditIcon : CreateIcon
   const label = user ? 'Update User' : 'Add User'
 
   return <>
-    { iconButton
-      ? <IconButton icon={ icon } tooltip={ label } onClick={ handleOpen }/>
-      : <Button icon={ icon } label={ label } onClick={ handleOpen }/> }
-    <Dialog open={ open } handler={ handleOpen } className="text-left">
+    {iconButton
+            ? <IconButton icon={icon} tooltip={label} onClick={handleOpen}/>
+            : <Button icon={icon} label={label} onClick={handleOpen}/>}
+    <Dialog open={open} handler={handleOpen} className="text-start">
       <Card>
-        <CardBody className="flex flex-col gap-4">
-          <H3 icon={ icon } label={ label }/>
+        <CardBody className="d-flex flex-column gap-4">
+          <H3 icon={icon} label={label}/>
           <Formik
-            initialValues={ {
-              name: user?.name || '',
-              email: user?.email || '',
-              password: '',
-              permissions: user?.permissions || [ Permission.Regular ],
-            } }
-            validationSchema={ yup.object({
-              name: yup.string()
-                .min(2, 'Name must be at least 2 characters')
-                .max(30, 'Name cannot exceed 30 characters')
-                .required('Name is required'),
-              email: yup.string()
-                .email('Invalid email address')
-                .required('Email is required'),
-              password: yup.string()
-                .min(8, 'Password must be at least 8 characters')
-                .max(24, 'Password cannot exceed 24 characters')
-                .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[~!@#$%^&*()])/, 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
-              permissions: yup.array()
-                .of(yup.string().oneOf(Object.values(Permission), 'Invalid permission'))
-                .required('At least one permission is required'),
-            }) }
-            onSubmit={ (values, { setSubmitting }: FormikHelpers<Form>) => {
-              setError('')
+                  initialValues={{
+                    name: user?.name || '',
+                    email: user?.email || '',
+                    password: '',
+                    permissions: user?.permissions || [Permission.Regular],
+                  }}
+                  validationSchema={yup.object({
+                    name: yup.string()
+                            .min(2, 'Name must be at least 2 characters')
+                            .max(30, 'Name cannot exceed 30 characters')
+                            .required('Name is required'),
+                    email: yup.string()
+                            .email('Invalid email address')
+                            .required('Email is required'),
+                    password: yup.string()
+                            .min(8, 'Password must be at least 8 characters')
+                            .max(24, 'Password cannot exceed 24 characters')
+                            .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[~!@#$%^&*()])/, 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
+                    permissions: yup.array()
+                            .of(yup.string().oneOf(Object.values(Permission), 'Invalid permission'))
+                            .required('At least one permission is required'),
+                  })}
+                  onSubmit={(values, {setSubmitting}: FormikHelpers<Form>) => {
+                    setError('')
 
-              const transfer: any = {
-                name: values.name,
-                email: values.email,
-                permissions: [ ...new Set(values.permissions) ],
-              }
+                    const transfer: any = {
+                      name: values.name,
+                      email: values.email,
+                      permissions: [...new Set(values.permissions)],
+                    }
 
-              if (values.password) {
-                transfer.password = values.password
-              }
+                    if (values.password) {
+                      transfer.password = values.password
+                    }
 
-              const callback = (user: User) => {
-                setOpen(false)
-                onSubmit && onSubmit(user)
-              }
+                    const callback = (user: User) => {
+                      setOpen(false)
+                      onSubmit && onSubmit(user)
+                    }
 
-              if (user) {
-                apiMutate(
-                  updateUser(user.id!, transfer),
-                  (data: { updateUser: User }) => callback(data.updateUser),
-                  setError,
-                  setSubmitting,
-                )
-              } else {
-                apiMutate(
-                  createUser(transfer),
-                  (data: { createUser: User }) => callback(data.createUser),
-                  setError,
-                  setSubmitting,
-                )
-              }
-            } }>
-            { ({ isSubmitting }) => (
-              <Form className="flex flex-col gap-6">
-                <FormikInput name="name" label="Name"/>
-                <FormikInput name="email" label="Email"/>
-                <FormikInput name="password" label="Password" type="password"/>
-                <FormikTags name="permissions" label="Permission" whitelist={ Object.values(Permission) }/>
+                    if (user) {
+                      apiMutate(
+                              updateUser(user.id!, transfer),
+                              (data: { updateUser: User }) => callback(data.updateUser),
+                              setError,
+                              setSubmitting,
+                      )
+                    } else {
+                      apiMutate(
+                              createUser(transfer),
+                              (data: { createUser: User }) => callback(data.createUser),
+                              setError,
+                              setSubmitting,
+                      )
+                    }
+                  }}>
+            {({isSubmitting}) => (
+                    <Form className="d-flex flex-column gap-5">
+                      <FormikInput name="name" label="Name"/>
+                      <FormikInput name="email" label="Email"/>
+                      <FormikInput name="password" label="Password" type="password"/>
+                      <FormikTags name="permissions" label="Permission" whitelist={Object.values(Permission)}/>
 
-                { error && <Error text={ error }/> }
+                      {error && <Error text={error}/>}
 
-                <div>
-                  <Button label="Cancel" type="reset" onClick={ handleOpen }/>{ ' ' }
-                  <Button
-                    icon={ icon }
-                    label={ user ? (isSubmitting ? 'Updating...' : 'Update') : (isSubmitting ? 'Adding...' : 'Add') }
-                    size="md"
-                    type="submit"
-                    disabled={ isSubmitting }
-                  />
-                </div>
-              </Form>
-            ) }
+                      <div>
+                        <Button label="Cancel" type="reset" onClick={handleOpen}/>{' '}
+                        <Button
+                                icon={icon}
+                                label={user ? (isSubmitting ? 'Updating...' : 'Update') : (isSubmitting ? 'Adding...' : 'Add')}
+                                size="md"
+                                type="submit"
+                                disabled={isSubmitting}
+                        />
+                      </div>
+                    </Form>
+            )}
           </Formik>
         </CardBody>
       </Card>
