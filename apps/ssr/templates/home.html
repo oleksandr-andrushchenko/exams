@@ -1,0 +1,8 @@
+{% extends "layout.html" %}{% block content %}
+<div class="row g-5 pt-3">
+  <div class="col-12 col-lg-8"><h1 class="h2">{{ siteName }}</h1><p class="lead">Practice exams and explore questions.</p>
+    <section class="mt-4"><h2 class="h4">Latest exams</h2>{% if data.exams %}<div class="d-flex flex-column gap-3">{% for exam in data.exams %}<article class="card"><div class="card-body"><h3 class="h5 mb-1"><a href="/exams/{{ exam.id }}" class="link-body-emphasis">{{ exam.name }}</a></h3><p class="text-secondary mb-0">{{ exam.questionCount or 0 }} questions</p></div></article>{% endfor %}</div>{% else %}<p>No exams found.</p>{% endif %}</section>
+    <section class="mt-4"><h2 class="h4"><a href="/questions" class="link-body-emphasis">Latest questions</a></h2><div class="list-group">{% for question in data.questions %}<a class="list-group-item list-group-item-action" href="/questions/{{ question.id }}">{{ question.title }}</a>{% else %}<div class="list-group-item">No questions found.</div>{% endfor %}</div></section>
+  </div>
+  <aside class="col-12 col-lg-4 border-start-lg"><h2 class="h4">Popular topics</h2><div class="d-flex flex-wrap gap-2">{% for tag in data.tags %}<a class="btn btn-light border" href="/tags/{{ tag.slug }}">{{ tag.name }}</a>{% else %}<span class="text-secondary">No topics found.</span>{% endfor %}</div><div class="mt-4"><a href="/exams" class="btn btn-primary">Browse all exams</a></div></aside>
+</div>{% endblock %}

@@ -1,5 +1,6 @@
 node_modules
 .next
-apps/graphql/src/server/dist
+apps/graphql/dist
+apps/ssr/dist
 .git
 .env

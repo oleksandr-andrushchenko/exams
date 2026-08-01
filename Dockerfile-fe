@@ -1,8 +1,0 @@
-FROM node:20-alpine3.20
-
-WORKDIR /usr/app
-RUN chown node:node /usr/app
-
-USER node
-
-CMD ["sh", "-c", "npm install && if test \"$NODE_ENV\" = production; then npm run build && npm run start; else npm run dev; fi"]

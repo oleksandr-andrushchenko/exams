@@ -12,8 +12,8 @@ else
     DC := docker-compose
 endif
 
-BE_SERVICE = be
-FE_SERVICE = fe
+GRAPHQL_SERVICE = graphql
+SSR_SERVICE = ssr
 DB_SERVICE = postgres
 
 .PHONY: help
@@ -39,26 +39,25 @@ restart: down up ## Restart local Docker containers
 rebuild: ## Rebuild and start Docker containers
 	$(DC) up -d --build --force-recreate
 
-.PHONY: be
-be: ## Open shell in Back-End Docker container
-	$(DC) exec $(BE_SERVICE) bash
+.PHONY: graphql
+graphql: ## Open shell in GraphQL Docker container
+	$(DC) exec $(GRAPHQL_SERVICE) bash
 
-.PHONY: fe
-fe: ## Open shell in Front-End Docker container
-	$(DC) exec $(FE_SERVICE) bash
+.PHONY: ssr
+ssr: ## Open shell in SSR Docker container
+	$(DC) exec $(SSR_SERVICE) bash
 
 .PHONY: db
 db: ## Open PostgreSQL client for the local database
 	$(DC) exec $(DB_SERVICE) psql -U postgres -d examme
 
 .PHONY: tests
-tests: ## Run all API and front-end tests
-	@POSTGRES_PORT=$${POSTGRES_PORT:-5432} $(DC) exec -e NODE_ENV=test -e NODE_OPTIONS=--no-deprecation $(BE_SERVICE) npm run --silent test:functional
-	@$(DC) exec -e NODE_ENV=test -e NODE_OPTIONS=--no-deprecation $(BE_SERVICE) npm run --silent seed:test
-	@POSTGRES_PORT=$${POSTGRES_PORT:-5432} $(DC) exec -e NODE_OPTIONS=--no-deprecation $(FE_SERVICE) npm run --silent test:dom
+tests: ## Run GraphQL functional tests
+	@POSTGRES_PORT=$${POSTGRES_PORT:-5432} $(DC) exec -e NODE_ENV=test -e NODE_OPTIONS=--no-deprecation $(GRAPHQL_SERVICE) npm run --silent test:functional
+	@$(DC) exec -e NODE_ENV=test -e NODE_OPTIONS=--no-deprecation $(GRAPHQL_SERVICE) npm run --silent seed:test
 .PHONY: seed
 seed: ## Rebuild readable local demo data
-	@$(DC) exec -e NODE_ENV=test -e NODE_OPTIONS=--no-deprecation $(BE_SERVICE) npm run --silent seed:test
+	@$(DC) exec -e NODE_ENV=test -e NODE_OPTIONS=--no-deprecation $(GRAPHQL_SERVICE) npm run --silent seed:test
 
 
 .PHONY: logs
@@ -67,4 +66,4 @@ logs: ## Tail Docker containers logs
 
 .PHONY: open
 open: ## Show local site URL
-	@echo "🌐 Visit http://localhost:$(FE_PORT) in your browser manually."
+	@echo "🌐 Visit http://localhost:$(FE_PORT) (SSR) in your browser manually."
