@@ -5,7 +5,6 @@ import EventDispatcher from '../event/EventDispatcher'
 import InjectEntityManager, { EntityManagerInterface } from '../../decorators/InjectEntityManager'
 import Question from '../../entities/question/Question'
 import QuestionPermission from '../../enums/question/QuestionPermission'
-import QuestionRatedAlready from '../../errors/question/QuestionRatedAlready'
 import QuestionEvent from '../../enums/question/QuestionEvent'
 import QuestionRatingMarkRepository from '../../repositories/question/QuestionRatingMarkRepository'
 import QuestionRatingMark from '../../entities/question/QuestionRatingMark'
@@ -33,15 +32,11 @@ export default class QuestionRatingMarkCreator {
 
     const existingRatingMark = await this.questionRatingMarkRepository.findOneByQuestionAndCreator(question, initiator)
 
-    if (existingRatingMark) {
-      throw new QuestionRatedAlready(question)
-    }
-
-    const ratingMark = new QuestionRatingMark()
+    const ratingMark = existingRatingMark ?? new QuestionRatingMark()
     ratingMark.questionId = question.id
     ratingMark.mark = mark
     ratingMark.creatorId = initiator.id
-    ratingMark.createdAt = new Date()
+    ratingMark.createdAt = ratingMark.createdAt ?? new Date()
 
     await this.entityManager.save<QuestionRatingMark>(ratingMark)
     await this.eventDispatcher.dispatch(QuestionEvent.Rated, { question, user: initiator })

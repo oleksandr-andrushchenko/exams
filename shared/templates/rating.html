@@ -1,0 +1,8 @@
+<input class="rating-mark" type="hidden" name="mark" value="">
+<div class="rating-widget" data-rating-widget data-average-mark="{{ rating.averageMark or 0 }}" data-user-mark="{{ userMark if userMark is not none else '' }}">
+  <div class="rating-control" role="radiogroup" aria-label="Rate this question">
+    {% for mark in [1, 2, 3, 4, 5] %}<button class="rating-star{% if mark <= (rating.averageMark or 0) %} is-filled{% endif %}" type="submit" name="mark" value="{{ mark }}" aria-label="{{ mark }} stars">★</button>{% endfor %}
+  </div>
+  <span class="rating-value">{{ (rating.averageMark or 0) | round(1) }}/5 ({{ rating.markCount or 0 }} votes)</span>
+  {% if userMark is not none %}<span class="rating-user-vote">Your vote: {{ userMark }}/5</span>{% endif %}
+</div>

@@ -15,9 +15,6 @@ import ExamUpdater from '../services/exam/ExamUpdater'
 import ExamListProvider from '../services/exam/ExamListProvider'
 import ExamApproveSwitcher from '../services/exam/ExamApproveSwitcher'
 import ExamRepository from '../repositories/exam/ExamRepository'
-import ExamRatingMarkCreator from '../services/exam/ExamRatingMarkCreator'
-import RateExamRequest from '../schema/exam/RateExamRequest'
-import ExamRatingMarkListProvider from '../services/exam/ExamRatingMarkListProvider'
 import RatingSchema from '../schema/rating/RatingSchema'
 import ExamRatingProvider from '../services/exam/ExamRatingProvider'
 import { ObjectId } from 'bson'
@@ -38,8 +35,6 @@ export class ExamResolver {
     @Inject() private readonly examRepository: ExamRepository,
     @Inject() private readonly examApproveSwitcher: ExamApproveSwitcher,
     @Inject('validator') private readonly validator: ValidatorInterface,
-    @Inject() private readonly examRatingMarkCreator: ExamRatingMarkCreator,
-    @Inject() private readonly examRatingMarkLinkProvider: ExamRatingMarkListProvider,
     @Inject() private readonly examRatingProvider: ExamRatingProvider,
     @Inject() private readonly examExamSessionIdProvider: ExamExamSessionIdProvider,
     @Inject() private readonly examTagRepository: ExamTagRepository,
@@ -137,20 +132,6 @@ export class ExamResolver {
     @Ctx('user') user: User,
   ): Promise<boolean> {
     return user && user.id.toString() === exam.creatorId.toString()
-  }
-
-  @Authorized()
-  @Mutation(_returns => Exam)
-  public async rateExam(
-    @Args() rateExamRequest: RateExamRequest,
-    @Ctx('user') user: User,
-  ): Promise<Exam> {
-    await this.validator.validate(rateExamRequest)
-    const exam = await this.examProvider.getExam(rateExamRequest.examId)
-
-    await this.examRatingMarkCreator.createExamRatingMark(exam, rateExamRequest.mark, user)
-
-    return exam
   }
 
   @FieldResolver(_returns => RatingSchema, { name: 'rating', nullable: true })

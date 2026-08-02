@@ -2,9 +2,12 @@ import { Service } from 'typedi'
 import Question from '../../entities/question/Question'
 import RatingSchema from '../../schema/rating/RatingSchema'
 import User from '../../entities/user/User'
+import RatingTemplateRenderer from '../rating/RatingTemplateRenderer'
 
 @Service()
 export default class QuestionRatingProvider {
+
+  private readonly ratingTemplateRenderer = new RatingTemplateRenderer()
 
   public getQuestionRating(question: Question, initiator: User): RatingSchema | undefined {
     if (!question.rating) {
@@ -28,6 +31,8 @@ export default class QuestionRatingProvider {
         }
       }
     }
+
+    rating.html = this.ratingTemplateRenderer.render({ questionId: question.id.toString(), rating, userMark: rating.mark })
 
     return rating
   }

@@ -5,6 +5,7 @@ import Base from '../Base'
 import UserPermission from '../../enums/user/UserPermission'
 import { ObjectId } from 'bson'
 import ObjectIdJsonTransformer from '../../database/ObjectIdJsonTransformer'
+import Rating from '../rating/Rating'
 
 @ObjectType()
 @Entity({ name: 'users' })
@@ -26,6 +27,9 @@ export default class User extends Base {
   @Column({ type: 'text', array: true, default: [ Permission.Regular ] })
   @Field(_type => [ String! ], { nullable: true, defaultValue: [ Permission.Regular ] })
   public permissions?: Permission[] = [ Permission.Regular ]
+
+  @Column({ type: 'jsonb', nullable: true })
+  public rating?: Rating
 
   @Column({ type: 'jsonb', nullable: true, transformer: ObjectIdJsonTransformer })
   public examRatingMarks?: ObjectId[][]

@@ -10,6 +10,10 @@ export default class ExamRepository extends EntityRepository<Exam> {
     return await this.findOneBy({ name })
   }
 
+  public async findByCreator(creator: User): Promise<Exam[]> {
+    return await this.findBy({ creatorId: creator.id })
+  }
+
   public async findByOwner(owner: User): Promise<Exam[]> {
     return await this.findBy({
       ownerId: owner.id,

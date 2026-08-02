@@ -27,3 +27,7 @@ Monorepo containing the ExamMe API, frontend, and local development environment.
   restart              Restart local Docker containers
   up                   Start local Docker containers
 ```
+
+## TODO
+
+- Implement live reload for application code and all local Lambda functions in the development environment.

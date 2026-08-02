@@ -5,7 +5,7 @@ import GetExam from './GetExam'
 @ArgsType()
 export default class RateExamRequest extends GetExam {
 
-  @Min(1)
+  @Min(0)
   @Max(5)
   @IsNumber({ maxDecimalPlaces: 0 })
   @Field(_type => Int)

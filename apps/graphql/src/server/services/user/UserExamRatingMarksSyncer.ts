@@ -22,7 +22,9 @@ export default class UserExamRatingMarksSyncer {
     }
 
     for (const ratingMark of ratingMarks) {
-      examRatingMarks[ratingMark.mark - 1].push(ratingMark.examId)
+      if (ratingMark.mark > 0) {
+        examRatingMarks[ratingMark.mark - 1].push(ratingMark.examId)
+      }
     }
 
     await this.userRepository.updateOneByEntity(user, { examRatingMarks, updatedAt: new Date() })

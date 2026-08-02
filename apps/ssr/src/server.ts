@@ -18,9 +18,10 @@ import {
 
 const app = express()
 const templateDir = path.resolve(__dirname, '../templates')
+const sharedTemplateDir = path.resolve(__dirname, '../../../shared/templates')
 const publicDir = path.resolve(__dirname, '../public')
 
-nunjucks.configure(templateDir, {autoescape: true, express: app, noCache: process.env.NODE_ENV !== 'production'})
+nunjucks.configure([templateDir, sharedTemplateDir], {autoescape: true, express: app, noCache: process.env.NODE_ENV !== 'production'})
 app.use(express.urlencoded({extended: true}))
 app.use('/static', express.static(publicDir, {maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0}))
 app.use((request, response, next) => {
@@ -108,6 +109,46 @@ app.get('/users', async (request, response, next) => {
     next(error)
   }
 })
+
+async function submitRating(request: Request, response: Response, id: string) {
+  const mark = Number(request.body.mark)
+  const token = request.headers.cookie
+    ?.split(';')
+    .map(cookie => cookie.trim())
+    .find(cookie => cookie.startsWith('authenticationToken='))
+    ?.slice('authenticationToken='.length)
+  const target = '/questions/' + id
+
+  const wantsJson = request.headers.accept?.includes('application/json')
+  if (!Number.isInteger(mark) || mark < 0 || mark > 5 || !token) {
+    if (wantsJson) { response.status(400).json({ ok: false, error: 'Invalid rating request' }); return }
+    response.redirect(target + '?ratingError=1')
+    return
+  }
+
+  const field = 'questionId'
+  const mutation = 'rateQuestion'
+  const result = await fetch(process.env.GRAPHQL_URL || 'http://localhost:8080/graphql', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
+    body: JSON.stringify({
+      query: 'mutation Rate($id: ID!, $mark: Int!) { ' + mutation + '(' + field + ': $id, mark: $mark) { id rating { html averageMark markCount } } }',
+      variables: { id, mark },
+    }),
+  })
+  const payload = await result.json() as { errors?: unknown[] }
+  if (wantsJson) {
+    if (!result.ok || payload.errors?.length) { response.status(400).json({ ok: false, error: payload.errors?.[0] || 'Unable to save rating' }); return }
+    response.json({ ok: true, html: (payload as any).data?.rateQuestion?.rating?.html })
+    return
+  }
+  response.redirect(target + (payload.errors?.length ? '?ratingError=1' : ''))
+}
+
+app.post('/questions/:questionId/rating', (request, response, next) => {
+  submitRating(request, response, request.params.questionId).catch(next)
+})
+
 app.get('/exams/:examId', async (request, response, next) => {
   try {
     const exam = await getExam(request.params.examId);
@@ -118,7 +159,7 @@ app.get('/exams/:examId', async (request, response, next) => {
 })
 app.get('/questions/:questionId', async (request, response, next) => {
   try {
-    const question = await getQuestion(request.params.questionId);
+    const question = await getQuestion(request.params.questionId, response.locals.currentUser?.id);
     response.status(question ? 200 : 404).render('question.html', {
       question,
       title: question?.title || 'Question not found'

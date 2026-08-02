@@ -43,7 +43,6 @@ describe('Rate question', () => {
     { case: 'mark is string', body: { mark: 'any' } },
     { case: 'mark is float', body: { mark: 1.1 } },
     { case: 'mark is negative', body: { mark: -1 } },
-    { case: 'mark is less then 1', body: { mark: 0 } },
     { case: 'mark is greater 5', body: { mark: 6 } },
   ])('Bad request ($case)', async ({ body }) => {
     const question = await framework.fixture<Question>(Question)

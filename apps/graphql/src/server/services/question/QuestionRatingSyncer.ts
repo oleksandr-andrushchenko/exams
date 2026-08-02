@@ -19,7 +19,7 @@ export default class QuestionRatingSyncer {
 
     question.rating = new Rating()
     question.rating.markCount = markCount
-    question.rating.averageMark = markSum / markCount
+    question.rating.averageMark = markCount ? markSum / markCount : 0
     question.updatedAt = new Date()
 
     await this.entityManager.save<Question>(question)

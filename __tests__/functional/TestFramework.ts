@@ -345,7 +345,7 @@ export default class TestFramework {
     for (const [ name, requiredScore ] of examData) {
       exams.push(await this.fixture<Exam>(Exam, {
         name, requiredScore, questionCount: 3, approvedQuestionCount: 2,
-        creatorId: admin.id, ownerId: undefined, rating: { averageMark: 4.5, markCount: 12 },
+        creatorId: admin.id, ownerId: undefined, rating: { averageMark: 4, markCount: 24 },
       }))
     }
 
@@ -360,16 +360,46 @@ export default class TestFramework {
         questions.push(await this.fixture<Question>(Question, {
           examId: exam.id, creatorId: admin.id, ownerId: undefined,
           title: `${ title } (${ exam.name })`, difficulty: QuestionDifficulty.MODERATE,
-          choices: defaultChoices(), rating: { averageMark: 4, markCount: 8 },
+          choices: defaultChoices(),
         }))
       }
     }
+
+    for (const question of questions) {
+      const marks = await Promise.all([ regular, admin, root ].map(async creator => {
+        const mark = faker.number.int({ min: 0, max: 5 })
+        await this.fixture<QuestionRatingMark>(QuestionRatingMark, { questionId: question.id, creatorId: creator.id, mark })
+        return mark
+      }))
+      question.rating = new Rating()
+      question.rating.markCount = marks.length
+      question.rating.averageMark = marks.reduce((sum, mark) => sum + mark, 0) / marks.length
+      await seedManager.save(question)
+    }
+
+    for (const exam of exams) {
+      const examQuestions = questions.filter(question => question.examId.toString() === exam.id.toString())
+      const marks = examQuestions.flatMap(question => {
+        const rating = question.rating!
+        return Array.from({ length: rating.markCount }, () => rating.averageMark)
+      })
+      exam.rating = new Rating()
+      exam.rating.markCount = marks.length
+      exam.rating.averageMark = marks.reduce((sum, mark) => sum + mark, 0) / marks.length
+      await seedManager.save(exam)
+    }
+
+    admin.rating = new Rating()
+    admin.rating.markCount = exams.reduce((sum, exam) => sum + (exam.rating?.markCount || 0), 0)
+    admin.rating.averageMark = admin.rating.markCount
+      ? exams.reduce((sum, exam) => sum + (exam.rating?.averageMark || 0) * (exam.rating?.markCount || 0), 0) / admin.rating.markCount
+      : 0
+    await seedManager.save(admin)
 
     for (let index = 0; index < exams.length; index++) {
       const exam = exams[index]
       await this.fixture<ExamSession>(ExamSession, { examId: exam.id, creatorId: regular.id, ownerId: regular.id, completed: index % 2 === 0 })
       await this.fixture<Activity>(Activity, { exam: exam, event: index % 2 === 0 ? ExamEvent.Created : ExamEvent.Approved })
-      await this.fixture<ExamRatingMark>(ExamRatingMark, { examId: exam.id, creatorId: regular.id, mark: 4 })
       await this.fixture<QuestionRatingMark>(QuestionRatingMark, { questionId: questions[index * 3].id, creatorId: regular.id, mark: 5 })
     }
 

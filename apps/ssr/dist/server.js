@@ -46,8 +46,9 @@ const data_1 = require("./data");
 const app = (0, express_1.default)();
 exports.app = app;
 const templateDir = node_path_1.default.resolve(__dirname, '../templates');
+const sharedTemplateDir = node_path_1.default.resolve(__dirname, '../../../shared/templates');
 const publicDir = node_path_1.default.resolve(__dirname, '../public');
-nunjucks_1.default.configure(templateDir, { autoescape: true, express: app, noCache: process.env.NODE_ENV !== 'production' });
+nunjucks_1.default.configure([templateDir, sharedTemplateDir], { autoescape: true, express: app, noCache: process.env.NODE_ENV !== 'production' });
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use('/static', express_1.default.static(publicDir, { maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0 }));
 app.use((request, response, next) => {
@@ -136,6 +137,47 @@ app.get('/users', async (request, response, next) => {
         next(error);
     }
 });
+async function submitRating(request, response, id) {
+    const mark = Number(request.body.mark);
+    const token = request.headers.cookie
+        ?.split(';')
+        .map(cookie => cookie.trim())
+        .find(cookie => cookie.startsWith('authenticationToken='))
+        ?.slice('authenticationToken='.length);
+    const target = '/questions/' + id;
+    const wantsJson = request.headers.accept?.includes('application/json');
+    if (!Number.isInteger(mark) || mark < 0 || mark > 5 || !token) {
+        if (wantsJson) {
+            response.status(400).json({ ok: false, error: 'Invalid rating request' });
+            return;
+        }
+        response.redirect(target + '?ratingError=1');
+        return;
+    }
+    const field = 'questionId';
+    const mutation = 'rateQuestion';
+    const result = await fetch(process.env.GRAPHQL_URL || 'http://localhost:8080/graphql', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
+        body: JSON.stringify({
+            query: 'mutation Rate($id: ID!, $mark: Int!) { ' + mutation + '(' + field + ': $id, mark: $mark) { id rating { html averageMark markCount } } }',
+            variables: { id, mark },
+        }),
+    });
+    const payload = await result.json();
+    if (wantsJson) {
+        if (!result.ok || payload.errors?.length) {
+            response.status(400).json({ ok: false, error: payload.errors?.[0] || 'Unable to save rating' });
+            return;
+        }
+        response.json({ ok: true, html: payload.data?.rateQuestion?.rating?.html });
+        return;
+    }
+    response.redirect(target + (payload.errors?.length ? '?ratingError=1' : ''));
+}
+app.post('/questions/:questionId/rating', (request, response, next) => {
+    submitRating(request, response, request.params.questionId).catch(next);
+});
 app.get('/exams/:examId', async (request, response, next) => {
     try {
         const exam = await (0, data_1.getExam)(request.params.examId);
@@ -147,7 +189,7 @@ app.get('/exams/:examId', async (request, response, next) => {
 });
 app.get('/questions/:questionId', async (request, response, next) => {
     try {
-        const question = await (0, data_1.getQuestion)(request.params.questionId);
+        const question = await (0, data_1.getQuestion)(request.params.questionId, response.locals.currentUser?.id);
         response.status(question ? 200 : 404).render('question.html', {
             question,
             title: question?.title || 'Question not found'

@@ -1,5 +1,5 @@
 import { Inject, Service } from 'typedi'
-import { Arg, Args, Authorized, Ctx, Mutation, Query, Resolver } from 'type-graphql'
+import { Arg, Args, Authorized, Ctx, FieldResolver, Mutation, Query, Resolver, Root } from 'type-graphql'
 import User from '../entities/user/User'
 import UserProvider from '../services/user/UserProvider'
 import CreateUser from '../schema/user/CreateUser'
@@ -12,6 +12,8 @@ import UserCreator from '../services/user/UserCreator'
 import UserUpdater from '../services/user/UserUpdater'
 import UserDeleter from '../services/user/UserDeleter'
 import UserListProvider from '../services/user/UserListProvider'
+import UserRatingProvider from '../services/user/UserRatingProvider'
+import RatingSchema from '../schema/rating/RatingSchema'
 
 @Service()
 @Resolver(User)
@@ -23,6 +25,7 @@ export class UserResolver {
     @Inject() private readonly userCreator: UserCreator,
     @Inject() private readonly userUpdater: UserUpdater,
     @Inject() private readonly userDeleter: UserDeleter,
+    @Inject() private readonly userRatingProvider: UserRatingProvider,
     @Inject('validator') private readonly validator: ValidatorInterface,
   ) {
   }
@@ -70,6 +73,11 @@ export class UserResolver {
     await this.validator.validate(getUser)
 
     return await this.userProvider.getUser(getUser.userId)
+  }
+
+  @FieldResolver(_returns => RatingSchema, { name: 'rating', nullable: true })
+  public async getUserRating(@Root() user: User): Promise<RatingSchema | undefined> {
+    return await this.userRatingProvider.getUserRating(user)
   }
 
   @Authorized()

@@ -118,7 +118,6 @@ type Mutation {
   deleteMe: Boolean!
   deleteQuestion(questionId: ID!): Boolean!
   deleteUser(userId: ID!): Boolean!
-  rateExam(examId: ID!, mark: Int!): Exam!
   rateQuestion(mark: Int!, questionId: ID!): Question!
   toggleExamApprove(examId: ID!): Exam!
   toggleQuestionApprove(questionId: ID!): Question!
@@ -231,6 +230,7 @@ input QuestionChoiceSchema {
 
 type RatingSchema {
   averageMark: Float!
+  html: String
   mark: Int
   markCount: Int!
 }
@@ -278,5 +278,6 @@ type User {
   name: String
   ownerId: ObjectId
   permissions: [String!]
+  rating: RatingSchema
   updatedAt: Timestamp
 }
