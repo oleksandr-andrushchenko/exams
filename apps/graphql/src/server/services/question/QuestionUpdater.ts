@@ -6,6 +6,7 @@ import Question from '../../entities/question/Question'
 import ExamProvider from '../exam/ExamProvider'
 import UpdateQuestion from '../../schema/question/UpdateQuestion'
 import QuestionPermission from '../../enums/question/QuestionPermission'
+import ExamPermission from '../../enums/exam/ExamPermission'
 import QuestionType from '../../entities/question/QuestionType'
 import QuestionVerifier from './QuestionVerifier'
 import AuthorizationVerifier from '../auth/AuthorizationVerifier'
@@ -41,7 +42,7 @@ export default class QuestionUpdater {
 
     if ('examId' in updateQuestion) {
       const exam = await this.examProvider.getExam(updateQuestion.examId)
-      // await this.authorizationVerifier.verifyAuthorization(initiator, ExamPermission.AddQuestion, exam)
+      await this.authorizationVerifier.verifyAuthorization(initiator, ExamPermission.AddQuestion, exam)
       question.examId = exam.id
     }
 

@@ -58,8 +58,9 @@ export default class TestFramework {
   public async clear(_entity: any | any[] = [ User, Exam, Question, ExamSession, Activity, ExamRatingMark, QuestionRatingMark, ExamTag ]): Promise<void> {
     _entity = Array.isArray(_entity) ? _entity : [ _entity ]
 
+    const schema = config.db.schema
     if (_entity.some(entity => this.compare(entity, Exam) || this.compare(entity, ExamTag))) {
-      await this.container.get<ConnectionManager>(ConnectionManager).get('default').manager.query('DELETE FROM "examExamTags"')
+      await this.container.get<ConnectionManager>(ConnectionManager).get('default').manager.query('DELETE FROM \"' + schema + '\".\"examExamTags\"')
     }
 
     for (const entity of _entity) {
@@ -68,7 +69,7 @@ export default class TestFramework {
           await this.container.get<UserRepository>(UserRepository).clear()
           break
         case this.compare(entity, Exam):
-          await this.container.get<ConnectionManager>(ConnectionManager).get('default').manager.query('DELETE FROM exams')
+          await this.container.get<ConnectionManager>(ConnectionManager).get('default').manager.query('DELETE FROM \"' + config.db.schema + '\".exams')
           break
         case this.compare(entity, Question):
           await this.container.get<QuestionRepository>(QuestionRepository).clear()
@@ -86,7 +87,7 @@ export default class TestFramework {
           await this.container.get<QuestionRatingMarkRepository>(QuestionRatingMarkRepository).clear()
           break
         case this.compare(entity, ExamTag):
-          await this.container.get<ConnectionManager>(ConnectionManager).get('default').manager.query('DELETE FROM "examTags"')
+          await this.container.get<ConnectionManager>(ConnectionManager).get('default').manager.query('DELETE FROM \"' + config.db.schema + '\".\"examTags\"')
           break
         default:
           throw new Error(`Clear: Unknown "${ entity.toString() }" type passed`)
@@ -308,7 +309,7 @@ export default class TestFramework {
 
   public async seedDemoData(): Promise<void> {
     const seedManager = this.container.get<ConnectionManager>(ConnectionManager).get('default').manager
-    for (const schema of [...new Set([ config.db.schema, 'public', 'test' ])]) {
+    for (const schema of [ config.db.schema ]) {
       for (const table of ['examExamTags', 'examRatingMarks', 'questionRatingMarks', 'activities', 'examSessions', 'questions', 'exams', 'examTags', 'users']) {
       await seedManager.query('DELETE FROM "' + schema + '"."' + table + '"')
       }
@@ -374,10 +375,10 @@ export default class TestFramework {
 
     const manager = this.container.get<ConnectionManager>(ConnectionManager).get('default').manager
     for (const [ name, _requiredScore, slugs ] of examData) {
-      const [ examRow ] = await manager.query('SELECT id FROM exams WHERE name = $1', [ name ])
+      const [ examRow ] = await manager.query('SELECT id FROM \"' + config.db.schema + '\".exams WHERE name = $1', [ name ])
       for (const slug of slugs) {
-        const [ tagRow ] = await manager.query('SELECT id FROM "examTags" WHERE slug = $1', [ slug ])
-        await manager.query('INSERT INTO "examExamTags" ("examId", "examTagId") VALUES ($1, $2)', [ examRow.id, tagRow.id ])
+        const [ tagRow ] = await manager.query('SELECT id FROM \"' + config.db.schema + '\".\"examTags\" WHERE slug = $1', [ slug ])
+        await manager.query('INSERT INTO \"' + config.db.schema + '\".\"examExamTags\" (\"examId\", \"examTagId\") VALUES ($1, $2)', [ examRow.id, tagRow.id ])
       }
     }
 

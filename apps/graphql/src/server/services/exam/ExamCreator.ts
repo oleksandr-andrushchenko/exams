@@ -1,4 +1,5 @@
 import { Inject, Service } from 'typedi'
+import config from '../../configuration'
 import InjectEntityManager, { EntityManagerInterface } from '../../decorators/InjectEntityManager'
 import Exam from '../../entities/exam/Exam'
 import User from '../../entities/user/User'
@@ -35,7 +36,7 @@ export default class ExamCreator {
     exam.createdAt = new Date()
     await this.entityManager.save(exam)
     const persistedExam = await this.entityManager.getRepository(Exam).findOneByOrFail({ name: exam.name })
-    const [ row ] = await this.entityManager.query('SELECT id FROM exams WHERE name = $1', [ exam.name ])
+    const [ row ] = await this.entityManager.query('SELECT id FROM \"' + config.db.schema + '\".exams WHERE name = $1', [ exam.name ])
     const examId = row.id
     const tags = await this.examTagManager.resolve(createExam.tags, this.entityManager)
     await this.examTagManager.attach(examId, tags, this.entityManager)

@@ -28,6 +28,7 @@ import cors from 'cors'
 import compression from 'compression'
 import morgan from 'morgan'
 import { DataSource } from 'typeorm/data-source/DataSource'
+import { Client } from 'pg'
 
 const serverlessExpress = require('@vendia/serverless-express')
 
@@ -114,8 +115,12 @@ const prepareExpress = async (app: Application, apolloServer: ApolloServer): Pro
   return app
 }
 export const initializeDb = async (db: DataSource): Promise<void> => {
+  const schema = config.db.schema.replace(/\"/g, '\"\"')
+  const client = new Client({ connectionString: config.db.url })
+  await client.connect()
+  await client.query('CREATE SCHEMA IF NOT EXISTS \"' + schema + '\"')
+  await client.end()
   await db.initialize()
-
 }
 
 export const serverUp = async (): Promise<void> => {

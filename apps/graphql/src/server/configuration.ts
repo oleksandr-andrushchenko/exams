@@ -50,7 +50,7 @@ export default {
   db: {
     type: env.DATABASE_TYPE as 'postgres',
     url: env.DATABASE_URL as string,
-    schema: env.DATABASE_SCHEMA || 'public',
+    schema: env.DATABASE_SCHEMA || (environment === 'test' ? 'test' : 'public'),
     dropSchema: environment === 'test',
     synchronize: true,
     logging: environment === 'development',

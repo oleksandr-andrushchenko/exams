@@ -6,6 +6,7 @@ import Question from '../../entities/question/Question'
 import CreateQuestion from '../../schema/question/CreateQuestion'
 import ExamProvider from '../exam/ExamProvider'
 import QuestionPermission from '../../enums/question/QuestionPermission'
+import ExamPermission from '../../enums/exam/ExamPermission'
 import QuestionType from '../../entities/question/QuestionType'
 import QuestionVerifier from './QuestionVerifier'
 import AuthorizationVerifier from '../auth/AuthorizationVerifier'
@@ -40,7 +41,7 @@ export default class QuestionCreator {
     await this.authorizationVerifier.verifyAuthorization(initiator, QuestionPermission.Create)
 
     const exam = await this.examProvider.getExam(createQuestion.examId)
-    // await this.authorizationVerifier.verifyAuthorization(initiator, ExamPermission.AddQuestion, exam)
+    await this.authorizationVerifier.verifyAuthorization(initiator, ExamPermission.AddQuestion, exam)
 
     const title = createQuestion.title
     await this.questionVerifier.verifyQuestionTitleNotExists(title)

@@ -1,4 +1,5 @@
 import { Service } from 'typedi'
+import config from '../../configuration'
 import { EntityManager, In } from 'typeorm'
 import ExamTag from '../../entities/examTag/ExamTag'
 
@@ -18,11 +19,11 @@ export default class ExamTagManager {
   }
 
   public async attach(examId: string, tags: ExamTag[], manager: EntityManager): Promise<void> {
-    await manager.query('DELETE FROM "examExamTags" WHERE "examId" = $1', [ examId ])
+    await manager.query('DELETE FROM \"' + config.db.schema + '\".\"examExamTags\" WHERE \"examId\" = $1', [ examId ])
     for (const tag of tags) {
-      const [ row ] = await manager.query('SELECT id FROM "examTags" WHERE slug = $1', [ tag.slug ])
+      const [ row ] = await manager.query('SELECT id FROM \"' + config.db.schema + '\".\"examTags\" WHERE slug = $1', [ tag.slug ])
       await manager.query(
-        'INSERT INTO "examExamTags" ("examId", "examTagId") VALUES ($1, $2)',
+        'INSERT INTO \"' + config.db.schema + '\".\"examExamTags\" (\"examId\", \"examTagId\") VALUES ($1, $2)',
         [ examId, row.id ],
       )
     }
