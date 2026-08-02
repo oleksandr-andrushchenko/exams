@@ -1,4 +1,5 @@
 enum ExamPermission {
+  Get = 'getExam',
   Create = 'createExam',
   Update = 'updateExam',
   Delete = 'deleteExam',

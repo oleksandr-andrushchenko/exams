@@ -1,10 +1,10 @@
 import { Pool, QueryResultRow } from 'pg'
 
 export type SsrRating = { averageMark?: number; markCount?: number }
-export type SsrExam = { id: string; name: string; questionCount?: number; approvedQuestionCount?: number; requiredScore?: number; rating?: SsrRating }
+export type SsrExam = { id: string; name: string; questionCount?: number; approvedQuestionCount?: number; requiredScore?: number; rating?: SsrRating; questions?: SsrQuestion[] }
 export type SsrQuestion = { id: string; examId?: string; title: string; difficulty?: string; type?: string; rating?: SsrRating; userMark?: number; exam?: { id: string; name: string } }
 export type SsrTag = { id: string; name: string; slug: string }
-export type SsrUser = { id: string; name?: string; createdAt?: string; updatedAt?: string; rating?: SsrRating }
+export type SsrUser = { id: string; name?: string; email?: string; permissions?: string[]; createdAt?: string; updatedAt?: string; rating?: SsrRating }
 export type SsrExamSession = { id: string; examId: string; exam?: { id: string; name: string }; questionCount: number; answeredQuestionCount: number; correctAnswerCount?: number; completedAt?: string; createdAt?: string }
 export type SsrListFilters = { userId?: string; search?: string; approved?: string; exam?: string; difficulty?: string; type?: string; tag?: string; page?: number; size?: number; sort?: string; order?: string }
 export type SsrPage<T> = { data: T[]; page: number; size: number; hasNext: boolean }
@@ -24,19 +24,19 @@ const direction = (f: SsrListFilters = {}) => f.order === 'asc' ? 'ASC' : 'DESC'
 const sortColumn = (f: SsrListFilters, allowed: Record<string, string>, fallback: string) => allowed[f.sort || ''] || fallback
 const userRatingSelect = 'u."rating" AS "rating"'
 
-export async function getHomeData(size = 8) {
+export async function getHomeData(size = 8, includeUnapproved = false, includeUnapprovedQuestions = includeUnapproved) {
   const [tags, exams, questions] = await Promise.all([
     query<SsrTag>('SELECT "id", "name", "slug" FROM "examTags" ORDER BY "rating" DESC, "name" ASC LIMIT $1', [size]),
-    query<SsrExam>(`SELECT "id", "name", "questionCount", "approvedQuestionCount", "requiredScore", "rating" FROM "exams" WHERE ${deletedFilter} AND "ownerId" IS NULL ORDER BY "id" DESC LIMIT $1`, [size]),
-    query<SsrQuestion & { examName?: string }>(`SELECT q."id", q."examId", q."title", q."difficulty", e."name" AS "examName", q."rating" FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId" WHERE q."deletedAt" IS NULL AND q."ownerId" IS NULL ORDER BY q."id" DESC LIMIT $1`, [size]),
+    query<SsrExam>(`SELECT "id", "name", "questionCount", "approvedQuestionCount", "requiredScore", "rating" FROM "exams" WHERE ${deletedFilter} ${includeUnapproved ? "" : "AND \"ownerId\" IS NULL"} ORDER BY "id" DESC LIMIT $1`, [size]),
+    query<SsrQuestion & { examName?: string }>(`SELECT q."id", q."examId", q."title", q."difficulty", e."name" AS "examName", q."rating" FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId" WHERE q."deletedAt" IS NULL ${includeUnapprovedQuestions ? "" : "AND q.\"ownerId\" IS NULL"} ORDER BY q."id" DESC LIMIT $1`, [size]),
   ])
   return { tags, exams, questions: questions.map(({ examName, ...q }) => ({ ...q, exam: examName ? { id: q.examId!, name: examName } : undefined })) }
 }
 
 export async function getExams(size = 50) { return query<SsrExam>(`SELECT "id", "name", "questionCount", "approvedQuestionCount", "requiredScore", "rating" FROM "exams" WHERE ${deletedFilter} ORDER BY "id" DESC LIMIT $1`, [size]) }
 
-export async function getExamList(f: SsrListFilters = {}): Promise<SsrPage<SsrExam>> {
-  const { page, size } = pageOptions(f), conditions = [deletedFilter], values: unknown[] = []
+export async function getExamList(f: SsrListFilters = {}, includeUnapproved = false): Promise<SsrPage<SsrExam>> {
+  const { page, size } = pageOptions(f), conditions = [deletedFilter, ...(includeUnapproved ? [] : ['"ownerId" IS NULL'])], values: unknown[] = []
   if (f.search) { values.push(`%${f.search}%`); conditions.push(`"name" ILIKE ${values.length}`) }
   if (f.approved === 'yes') conditions.push('"ownerId" IS NULL')
   if (f.approved === 'no') conditions.push('"ownerId" IS NOT NULL')
@@ -48,13 +48,13 @@ export async function getExamList(f: SsrListFilters = {}): Promise<SsrPage<SsrEx
   return { data: rows.slice(0, size), page, size, hasNext: rows.length > size }
 }
 
-export async function getQuestions(size = 50) {
-  const rows = await query<SsrQuestion & { examName?: string }>(`SELECT q."id", q."examId", q."title", q."difficulty", q."type", e."name" AS "examName", q."rating" FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId" WHERE q."deletedAt" IS NULL AND q."ownerId" IS NULL ORDER BY q."id" DESC LIMIT $1`, [size])
+export async function getQuestions(size = 50, includeUnapproved = false) {
+  const rows = await query<SsrQuestion & { examName?: string }>(`SELECT q."id", q."examId", q."title", q."difficulty", q."type", e."name" AS "examName", q."rating" FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId" WHERE q."deletedAt" IS NULL ${includeUnapproved ? "" : "AND q.\"ownerId\" IS NULL"} ORDER BY q."id" DESC LIMIT $1`, [size])
   return rows.map(({ examName, ...q }) => ({ ...q, exam: examName ? { id: q.examId!, name: examName } : undefined }))
 }
 
-export async function getQuestionList(f: SsrListFilters = {}): Promise<SsrPage<SsrQuestion>> {
-  const { page, size } = pageOptions(f), conditions = [`q.${deletedFilter}`], values: unknown[] = []
+export async function getQuestionList(f: SsrListFilters = {}, includeUnapproved = false): Promise<SsrPage<SsrQuestion>> {
+  const { page, size } = pageOptions(f), conditions = [`q.${deletedFilter}`, ...(includeUnapproved ? [] : ['q."ownerId" IS NULL'])], values: unknown[] = []
   if (f.search) { values.push(`%${f.search}%`); conditions.push(`q."title" ILIKE $${values.length}`) }
   if (f.exam) { values.push(f.exam); conditions.push(`q."examId" = $${values.length}`) }
   if (f.difficulty) { values.push(f.difficulty); conditions.push(`q."difficulty" = $${values.length}`) }
@@ -69,19 +69,22 @@ export async function getQuestionList(f: SsrListFilters = {}): Promise<SsrPage<S
 
 export async function getExamOptions(size = 100) { return query<{ id: string; name: string }>(`SELECT "id", "name" FROM "exams" WHERE ${deletedFilter} ORDER BY "name" ASC LIMIT $1`, [size]) }
 
-export async function getExam(examId: string) {
-  const exams = await query<SsrExam>(`SELECT "id", "name", "questionCount", "approvedQuestionCount", "requiredScore", "rating" FROM "exams" WHERE "id" = $1 AND ${deletedFilter}`, [examId])
+export async function getExam(examId: string, includeUnapproved = false) {
+  const exams = await query<SsrExam>(`SELECT "id", "name", "questionCount", "approvedQuestionCount", "requiredScore", "rating" FROM "exams" WHERE "id" = $1 AND ${deletedFilter} ${includeUnapproved ? "" : "AND \"ownerId\" IS NULL"}`, [examId])
   if (!exams[0]) return undefined
-  const tags = await query<SsrTag>('SELECT t."id", t."name", t."slug" FROM "examTags" t INNER JOIN "examExamTags" et ON et."examTagId" = t."id" WHERE et."examId" = $1 ORDER BY t."name" ASC', [examId])
-  return { ...exams[0], tags }
+  const [tags, questions] = await Promise.all([
+    query<SsrTag>('SELECT t."id", t."name", t."slug" FROM "examTags" t INNER JOIN "examExamTags" et ON et."examTagId" = t."id" WHERE et."examId" = $1 ORDER BY t."name" ASC', [examId]),
+    query<SsrQuestion>(`SELECT "id", "examId", "title", "difficulty", "type", "rating" FROM "questions" WHERE "examId" = $1 AND "deletedAt" IS NULL ${includeUnapproved ? '' : 'AND "ownerId" IS NULL'} ORDER BY "id" ASC`, [examId]),
+  ])
+  return { ...exams[0], tags, questions }
 }
 
-export async function getQuestion(questionId: string, userId?: string) {
+export async function getQuestion(questionId: string, userId?: string, includeUnapproved = false) {
   const values: unknown[] = [questionId]
   const userMark = userId ? ", m.\"mark\" AS \"userMark\"" : ''
   const userJoin = userId ? ' LEFT JOIN "questionRatingMarks" m ON m."questionId" = q."id" AND m."creatorId" = $2' : ''
   if (userId) values.push(userId)
-  const rows = await query<SsrQuestion & { examName?: string }>(`SELECT q."id", q."examId", q."title", q."difficulty", q."type", e."name" AS "examName", q."rating"${userMark} FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId"${userJoin} WHERE q."id" = $1 AND q."deletedAt" IS NULL AND q."ownerId" IS NULL`, values)
+  const rows = await query<SsrQuestion & { examName?: string }>(`SELECT q."id", q."examId", q."title", q."difficulty", q."type", e."name" AS "examName", q."rating"${userMark} FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId"${userJoin} WHERE q."id" = $1 AND q."deletedAt" IS NULL ${includeUnapproved ? '' : 'AND q."ownerId" IS NULL'}`, values)
   if (!rows[0]) return undefined
   const { examName, ...q } = rows[0]
   return { ...q, exam: examName ? { id: q.examId!, name: examName } : undefined }
@@ -104,5 +107,5 @@ export async function getUserExamSessions(userId: string): Promise<SsrExamSessio
   return rows.map(({ questions = [], examName, ...session }) => ({ ...session, questionCount: questions.length, answeredQuestionCount: questions.filter(question => typeof question.choice === 'number' || typeof question.answer === 'string').length, exam: examName ? { id: session.examId, name: examName } : undefined }))
 }
 
-export async function getUser(userId: string) { return (await query<SsrUser>(`SELECT u."id", u."name", u."createdAt", u."updatedAt", ${userRatingSelect} FROM "users" u WHERE u."id" = $1 AND u."deletedAt" IS NULL`, [userId]))[0] }
+export async function getUser(userId: string) { return (await query<SsrUser>(`SELECT u."id", u."name", u."permissions", u."createdAt", u."updatedAt", ${userRatingSelect} FROM "users" u WHERE u."id" = $1 AND u."deletedAt" IS NULL`, [userId]))[0] }
 export async function getTag(tagSlug: string) { return (await query<SsrTag>('SELECT "id", "name", "slug" FROM "examTags" WHERE "slug" = $1', [tagSlug]))[0] }

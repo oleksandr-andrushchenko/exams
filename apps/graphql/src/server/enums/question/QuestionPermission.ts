@@ -1,4 +1,5 @@
 enum QuestionPermission {
+  Get = 'getQuestion',
   Create = 'createQuestion',
   GetChoices = 'getQuestionChoices',
   Update = 'updateQuestion',

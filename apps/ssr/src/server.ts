@@ -17,6 +17,7 @@ import {
 } from './data'
 
 const app = express()
+const canViewUnapproved = (user: { permissions?: string[] } | undefined, permission: string) => user?.permissions?.some(userPermission => userPermission === permission || userPermission === 'root' || userPermission === '*') ?? false
 const templateDir = path.resolve(__dirname, '../templates')
 const sharedTemplateDir = path.resolve(__dirname, '../../../shared/templates')
 const publicDir = path.resolve(__dirname, '../public')
@@ -71,7 +72,7 @@ const queryFilters = (request: Request) => ({
 
 app.get('/', async (_request, response, next) => {
   try {
-    response.render('home.html', {data: await getHomeData(8), title: 'Home'})
+    response.render('home.html', {data: await getHomeData(8, canViewUnapproved(response.locals.currentUser, 'getExam'), canViewUnapproved(response.locals.currentUser, 'getQuestion')), title: 'Home'})
   } catch (error) {
     next(error)
   }
@@ -79,7 +80,7 @@ app.get('/', async (_request, response, next) => {
 app.get('/exams', async (request, response, next) => {
   try {
     response.render('exams.html', {
-      page: await getExamList(queryFilters(request)),
+      page: await getExamList(queryFilters(request), canViewUnapproved(response.locals.currentUser, 'getExam')),
       filters: queryFilters(request),
       title: 'Exams'
     })
@@ -90,7 +91,7 @@ app.get('/exams', async (request, response, next) => {
 app.get('/questions', async (request, response, next) => {
   try {
     response.render('questions.html', {
-      page: await getQuestionList(queryFilters(request)),
+      page: await getQuestionList(queryFilters(request), canViewUnapproved(response.locals.currentUser, 'getQuestion')),
       filters: queryFilters(request),
       title: 'Questions'
     })
@@ -151,7 +152,7 @@ app.post('/questions/:questionId/rating', (request, response, next) => {
 
 app.get('/exams/:examId', async (request, response, next) => {
   try {
-    const exam = await getExam(request.params.examId);
+    const exam = await getExam(request.params.examId, canViewUnapproved(response.locals.currentUser, 'getExam'));
     response.status(exam ? 200 : 404).render('exam.html', {exam, title: exam?.name || 'Exam not found'})
   } catch (error) {
     next(error)
@@ -159,7 +160,7 @@ app.get('/exams/:examId', async (request, response, next) => {
 })
 app.get('/questions/:questionId', async (request, response, next) => {
   try {
-    const question = await getQuestion(request.params.questionId, response.locals.currentUser?.id);
+    const question = await getQuestion(request.params.questionId, response.locals.currentUser?.id, canViewUnapproved(response.locals.currentUser, 'getQuestion'));
     response.status(question ? 200 : 404).render('question.html', {
       question,
       title: question?.title || 'Question not found'
