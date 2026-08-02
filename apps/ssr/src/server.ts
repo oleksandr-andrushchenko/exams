@@ -1,4 +1,5 @@
 import express, { type Request, type Response } from 'express'
+import * as jwt from 'jsonwebtoken'
 import path from 'node:path'
 import nunjucks from 'nunjucks'
 import serverless from 'serverless-http'
@@ -27,6 +28,26 @@ app.use((request, response, next) => {
   response.locals.siteDescription = 'Practice exams and explore questions.'
   response.locals.requestPath = request.path
   response.locals.query = request.query
+  next()
+})
+app.use(async (request, response, next) => {
+  const token = request.headers.cookie
+    ?.split(';')
+    .map(cookie => cookie.trim())
+    .find(cookie => cookie.startsWith('authenticationToken='))
+    ?.slice('authenticationToken='.length)
+
+  if (token) {
+    try {
+      const payload = jwt.verify(token, 'any') as { userId?: string; type?: string }
+      if (payload.type === 'access' && payload.userId) {
+        response.locals.currentUser = await getUser(payload.userId)
+      }
+    } catch {
+      // Treat an absent, expired, or invalid token as an anonymous session.
+    }
+  }
+
   next()
 })
 
@@ -160,6 +181,10 @@ app.post('/login', async (request, response) => {
       error: error instanceof Error ? error.message : 'Authentication failed'
     })
   }
+})
+app.post('/logout', (_request, response) => {
+  response.clearCookie('authenticationToken')
+  response.redirect('/')
 })
 app.post('/register', async (request, response) => {
   try {
