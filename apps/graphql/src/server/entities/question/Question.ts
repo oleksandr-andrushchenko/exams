@@ -1,4 +1,4 @@
-import { Column, Entity } from 'typeorm'
+import { BeforeInsert, BeforeUpdate, Column, Entity } from 'typeorm'
 import { ObjectId } from 'bson'
 import { Authorized, Field, ObjectType } from 'type-graphql'
 import { ObjectIdScalar } from '../../scalars/ObjectIdScalar'
@@ -9,10 +9,21 @@ import QuestionType from './QuestionType'
 import QuestionDifficulty from './QuestionDifficulty'
 import QuestionChoice from './QuestionChoice'
 import ObjectIdTransformer from '../../database/ObjectIdTransformer'
+import slugify from '../../services/normalizers/SlugNormalizer'
 
 @ObjectType()
 @Entity({ name: 'questions' })
 export default class Question extends Base {
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  private updateSlug(): void {
+    this.slug = slugify(this.title, this.id.toString())
+  }
+
+  @Column({ unique: true, nullable: true })
+  @Field()
+  public slug: string
 
   @Column({ type: 'varchar', length: 24, transformer: ObjectIdTransformer })
   @Field(_type => ObjectIdScalar)

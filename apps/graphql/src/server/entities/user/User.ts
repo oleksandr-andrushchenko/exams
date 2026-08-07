@@ -1,4 +1,4 @@
-import { Column, Entity } from 'typeorm'
+import { BeforeInsert, BeforeUpdate, Column, Entity } from 'typeorm'
 import Permission from '../../enums/Permission'
 import { Authorized, Field, ObjectType } from 'type-graphql'
 import Base from '../Base'
@@ -6,10 +6,21 @@ import UserPermission from '../../enums/user/UserPermission'
 import { ObjectId } from 'bson'
 import ObjectIdJsonTransformer from '../../database/ObjectIdJsonTransformer'
 import Rating from '../rating/Rating'
+import slugify from '../../services/normalizers/SlugNormalizer'
 
 @ObjectType()
 @Entity({ name: 'users' })
 export default class User extends Base {
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  private updateSlug(): void {
+    this.slug = slugify(this.name, this.id.toString())
+  }
+
+  @Column({ unique: true, nullable: true })
+  @Field({ nullable: true })
+  public slug?: string
 
   @Column({ nullable: true })
   @Field({ nullable: true })

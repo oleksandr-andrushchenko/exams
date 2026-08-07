@@ -67,6 +67,7 @@ type Exam {
   questionCount: Int
   rating: RatingSchema
   requiredScore: Int
+  slug: String!
   tags: [ExamTag!]!
   updatedAt: Timestamp
 }
@@ -211,6 +212,7 @@ type Question {
   isOwner: Boolean
   ownerId: ObjectId
   rating: RatingSchema
+  slug: String!
   title: String!
   type: String!
   updatedAt: Timestamp
@@ -279,5 +281,6 @@ type User {
   ownerId: ObjectId
   permissions: [String!]
   rating: RatingSchema
+  slug: String
   updatedAt: Timestamp
 }

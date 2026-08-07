@@ -150,6 +150,33 @@ app.post('/questions/:questionId/rating', (request, response, next) => {
   submitRating(request, response, request.params.questionId).catch(next)
 })
 
+async function renderEdit(request: Request, response: Response, resource: 'user' | 'exam' | 'question', id: string) {
+  const permission = resource === 'user' ? 'updateUser' : resource === 'exam' ? 'updateExam' : 'updateQuestion'
+  if (!response.locals.currentUser || !canViewUnapproved(response.locals.currentUser, permission)) { response.status(403).render('edit.html', { resource, error: 'You are not authorized to edit this resource' }); return }
+  const data = resource === 'user' ? { user: await getUser(id) } : resource === 'exam' ? { exam: await getExam(id, true) } : { question: await getQuestion(id, response.locals.currentUser.id, true) }
+  const entity = (data as any)[resource]
+  response.status(entity ? 200 : 404).render('edit.html', { resource, ...data })
+}
+async function updateResource(request: Request, response: Response, resource: 'user' | 'exam' | 'question', id: string) {
+  const token = request.headers.cookie?.split(';').map(cookie => cookie.trim()).find(cookie => cookie.startsWith('authenticationToken='))?.slice('authenticationToken='.length)
+  if (!token) { response.status(401).render('edit.html', { resource, error: 'Authentication required' }); return }
+  const definitions: Record<string, { query: string; input: Record<string, unknown>; target: string }> = {
+    user: { query: 'mutation Update($id: ID!, $input: UpdateUser!) { updateUser(userId: $id, updateUser: $input) { id } }', input: { name: request.body.name, email: request.body.email }, target: '/users/' + id },
+    exam: { query: 'mutation Update($id: ID!, $input: UpdateExam!) { updateExam(examId: $id, updateExam: $input) { id } }', input: { name: request.body.name, requiredScore: Number(request.body.requiredScore) }, target: '/exams/' + id },
+    question: { query: 'mutation Update($id: ID!, $input: UpdateQuestion!) { updateQuestion(questionId: $id, updateQuestion: $input) { id } }', input: { title: request.body.title, difficulty: request.body.difficulty, type: request.body.type }, target: '/questions/' + id },
+  }
+  const definition = definitions[resource]
+  const result = await fetch(process.env.GRAPHQL_URL || 'http://localhost:8080/graphql', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token }, body: JSON.stringify({ query: definition.query, variables: { id, input: definition.input } }) })
+  const payload = await result.json() as { errors?: Array<{ message?: string }> }
+  if (!result.ok || payload.errors?.length) { response.status(400).render('edit.html', { resource, error: payload.errors?.[0]?.message || 'Unable to update resource' }); return }
+  response.redirect(definition.target)
+}
+app.get('/users/:userId/edit', (request, response, next) => renderEdit(request, response, 'user', request.params.userId).catch(next))
+app.post('/users/:userId/edit', (request, response, next) => updateResource(request, response, 'user', request.params.userId).catch(next))
+app.get('/exams/:examId/edit', (request, response, next) => renderEdit(request, response, 'exam', request.params.examId).catch(next))
+app.post('/exams/:examId/edit', (request, response, next) => updateResource(request, response, 'exam', request.params.examId).catch(next))
+app.get('/questions/:questionId/edit', (request, response, next) => renderEdit(request, response, 'question', request.params.questionId).catch(next))
+app.post('/questions/:questionId/edit', (request, response, next) => updateResource(request, response, 'question', request.params.questionId).catch(next))
 app.get('/exams/:examId', async (request, response, next) => {
   try {
     const exam = await getExam(request.params.examId, canViewUnapproved(response.locals.currentUser, 'getExam'));
@@ -172,7 +199,7 @@ app.get('/questions/:questionId', async (request, response, next) => {
 app.get('/users/:userId', async (request, response, next) => {
   try {
     const user = await getUser(request.params.userId)
-    const [exams, sessions] = user ? await Promise.all([getUserExams(request.params.userId), getUserExamSessions(request.params.userId)]) : [undefined, []]
+    const [exams, sessions] = user ? await Promise.all([getUserExams(user.id), getUserExamSessions(user.id)]) : [undefined, []]
     response.status(user ? 200 : 404).render('user.html', {user, exams, sessions, title: user?.name || 'User not found'})
   } catch (error) {
     next(error)
@@ -237,6 +264,33 @@ app.post('/register', async (request, response) => {
       title: 'Register',
       error: error instanceof Error ? error.message : 'Registration failed'
     })
+  }
+})
+app.get('/:userSlug/:examSlug/:questionSlug', async (request, response, next) => {
+  try {
+    const question = await getQuestion(request.params.questionSlug, response.locals.currentUser?.id, canViewUnapproved(response.locals.currentUser, 'getQuestion'))
+    const matches = !!question && question.exam?.slug === request.params.examSlug && question.exam.userSlug === request.params.userSlug
+    response.status(matches ? 200 : 404).render('question.html', { question: matches ? question : undefined, title: matches ? question.title : 'Question not found' })
+  } catch (error) {
+    next(error)
+  }
+})
+app.get('/:userSlug/:examSlug', async (request, response, next) => {
+  try {
+    const exam = await getExam(request.params.examSlug, canViewUnapproved(response.locals.currentUser, 'getExam'))
+    const matches = !!exam && exam.slug === request.params.examSlug && exam.userSlug === request.params.userSlug
+    response.status(matches ? 200 : 404).render('exam.html', { exam: matches ? exam : undefined, title: matches ? exam.name : 'Exam not found' })
+  } catch (error) {
+    next(error)
+  }
+})
+app.get('/:userSlug', async (request, response, next) => {
+  try {
+    const user = await getUser(request.params.userSlug)
+    const [exams, sessions] = user ? await Promise.all([getUserExams(user.id), getUserExamSessions(user.id)]) : [undefined, []]
+    response.status(user ? 200 : 404).render('user.html', {user, exams, sessions, title: user?.name || 'User not found'})
+  } catch (error) {
+    next(error)
   }
 })
 app.use((error: Error, _request: Request, response: Response, _next: express.NextFunction) => {

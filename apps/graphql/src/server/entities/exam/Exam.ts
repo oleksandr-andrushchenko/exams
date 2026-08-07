@@ -1,12 +1,23 @@
-import { Column, Entity, JoinTable, ManyToMany } from 'typeorm'
+import { BeforeInsert, BeforeUpdate, Column, Entity, JoinTable, ManyToMany } from 'typeorm'
 import { Field, Int, ObjectType } from 'type-graphql'
 import Base from '../Base'
 import Rating from '../rating/Rating'
 import ExamTag from '../examTag/ExamTag'
+import slugify from '../../services/normalizers/SlugNormalizer'
 
 @ObjectType()
 @Entity({ name: 'exams' })
 export default class Exam extends Base {
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  private updateSlug(): void {
+    this.slug = slugify(this.name, this.id.toString())
+  }
+
+  @Column({ unique: true, nullable: true })
+  @Field()
+  public slug: string
 
   @Column({ unique: true })
   @Field()

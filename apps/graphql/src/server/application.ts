@@ -29,6 +29,7 @@ import compression from 'compression'
 import morgan from 'morgan'
 import { DataSource } from 'typeorm/data-source/DataSource'
 import { Client } from 'pg'
+import slugify from './services/normalizers/SlugNormalizer'
 
 const serverlessExpress = require('@vendia/serverless-express')
 
@@ -121,6 +122,20 @@ export const initializeDb = async (db: DataSource): Promise<void> => {
   await client.query('CREATE SCHEMA IF NOT EXISTS \"' + schema + '\"')
   await client.end()
   await db.initialize()
+
+  const tables: Array<[string, string]> = [['users', 'name'], ['exams', 'name'], ['questions', 'title']]
+  for (const [table, source] of tables) {
+    const rows = await db.query(`SELECT "id", "${source}" FROM "${table}" WHERE "slug" IS NULL`)
+    for (const row of rows) {
+      const base = slugify(row[source], row.id)
+      try {
+        await db.query(`UPDATE "${table}" SET "slug" = $1 WHERE "id" = $2`, [base, row.id])
+      } catch (error: any) {
+        if (error?.code !== '23505') throw error
+        await db.query(`UPDATE "${table}" SET "slug" = $1 WHERE "id" = $2`, [`${base}-${row.id}`, row.id])
+      }
+    }
+  }
 }
 
 export const serverUp = async (): Promise<void> => {
