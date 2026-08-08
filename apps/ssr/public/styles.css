@@ -1,6 +1,24 @@
 body {
   color: #172033;
 }
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.h1,
+.h2,
+.h3,
+.h4,
+.h5,
+.h6,
+.navbar-brand {
+  font-family: 'Rethink Sans', sans-serif;
+  font-optical-sizing: auto;
+  font-weight: bold;
+  font-style: normal;
+}
 .border-start-lg {
   border-left: 1px solid var(--bs-border-color);
 }
