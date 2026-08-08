@@ -16,7 +16,6 @@ import QuestionEvent from '../../enums/question/QuestionEvent'
 
 @Service()
 export default class QuestionCreator {
-
   public constructor(
     @InjectEntityManager() private readonly entityManager: EntityManagerInterface,
     @Inject() private readonly examProvider: ExamProvider,
@@ -24,9 +23,8 @@ export default class QuestionCreator {
     @Inject() private readonly eventDispatcher: EventDispatcher,
     @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
     @Inject() private readonly questionRepository: QuestionRepository,
-    @Inject('validator') private readonly validator: ValidatorInterface,
-  ) {
-  }
+    @Inject('validator') private readonly validator: ValidatorInterface
+  ) {}
 
   /**
    * @param {CreateQuestion} createQuestion
@@ -59,9 +57,9 @@ export default class QuestionCreator {
     }
 
     question.createdAt = new Date()
-    exam.questionCount = await this.questionRepository.countByExam(exam) + 1
+    exam.questionCount = (await this.questionRepository.countByExam(exam)) + 1
 
-    await this.entityManager.save([ question, exam ])
+    await this.entityManager.save([question, exam])
     await this.eventDispatcher.dispatch(QuestionEvent.Created, { question })
 
     return question

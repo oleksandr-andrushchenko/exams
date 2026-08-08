@@ -10,13 +10,11 @@ import AuthorizationVerifier from '../auth/AuthorizationVerifier'
 
 @Service()
 export default class ExamSessionProvider {
-
   public constructor(
     @Inject() private readonly examSessionRepository: ExamSessionRepository,
     @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
-    @Inject('validator') private readonly validator: ValidatorInterface,
-  ) {
-  }
+    @Inject('validator') private readonly validator: ValidatorInterface
+  ) {}
 
   /**
    * @param {ObjectId | string} id

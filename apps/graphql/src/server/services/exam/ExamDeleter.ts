@@ -12,15 +12,13 @@ import ExamEvent from '../../enums/exam/ExamEvent'
 
 @Service()
 export default class ExamDeleter {
-
   public constructor(
     @InjectEntityManager() private readonly entityManager: EntityManagerInterface,
     @Inject() private readonly eventDispatcher: EventDispatcher,
     @Inject() private readonly examQuestionListProvider: ExamQuestionListProvider,
     @Inject() private readonly questionDeleter: QuestionDeleter,
-    @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
-  ) {
-  }
+    @Inject() private readonly authorizationVerifier: AuthorizationVerifier
+  ) {}
 
   /**
    * @param {Exam} exam
@@ -32,7 +30,7 @@ export default class ExamDeleter {
   public async deleteExam(exam: Exam, initiator: User): Promise<Exam> {
     await this.authorizationVerifier.verifyAuthorization(initiator, ExamPermission.Delete, exam)
 
-    const questions = await this.examQuestionListProvider.getExamQuestions(exam) as Question[]
+    const questions = (await this.examQuestionListProvider.getExamQuestions(exam)) as Question[]
 
     for (const question of questions) {
       await this.questionDeleter.deleteQuestion(question, initiator)

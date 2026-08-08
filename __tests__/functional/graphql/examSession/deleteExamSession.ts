@@ -7,6 +7,6 @@ export const deleteExamSession = (variables: GetExamSession) => {
         deleteExamSession(examSessionId: $examSessionId)
       }
   `,
-    variables,
+    variables
   }
 }

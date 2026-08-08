@@ -1,7 +1,6 @@
 import LoggerInterface from './LoggerInterface'
 
 export default abstract class Logger implements LoggerInterface {
-
   public debug(message: string, ...args: unknown[]): LoggerInterface {
     return this.log('debug', message, args)
   }
@@ -18,5 +17,5 @@ export default abstract class Logger implements LoggerInterface {
     return this.log('error', message, args)
   }
 
-  protected abstract log(level: string, message: string, args: unknown[]): LoggerInterface;
+  protected abstract log(level: string, message: string, args: unknown[]): LoggerInterface
 }

@@ -5,7 +5,7 @@ enum QuestionPermission {
   Update = 'updateQuestion',
   Delete = 'deleteQuestion',
   Approve = 'approveQuestion',
-  Rate = 'rateQuestion',
+  Rate = 'rateQuestion'
 }
 
 export default QuestionPermission

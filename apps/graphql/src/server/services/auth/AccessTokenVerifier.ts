@@ -4,11 +4,7 @@ import { Request } from 'express'
 
 @Service()
 export default class AccessTokenVerifier {
-
-  public constructor(
-    @Inject() private readonly tokenService: TokenService,
-  ) {
-  }
+  public constructor(@Inject() private readonly tokenService: TokenService) {}
 
   public async verifyAccessToken(req: Request): Promise<string | null> {
     const header: string | undefined = req.header('Authorization')

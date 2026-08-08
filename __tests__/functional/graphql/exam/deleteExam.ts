@@ -7,6 +7,6 @@ export const deleteExam = (variables: GetExam) => {
         deleteExam(examId: $examId)
       }
   `,
-    variables,
+    variables
   }
 }

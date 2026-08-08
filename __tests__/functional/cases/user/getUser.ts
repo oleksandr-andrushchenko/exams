@@ -16,7 +16,7 @@ describe('Get user', () => {
       id: user.id.toString(),
       name: user.name,
       createdAt: user.createdAt.getTime(),
-      updatedAt: user.updatedAt?.getTime() ?? null,
+      updatedAt: user.updatedAt?.getTime() ?? null
     })
   })
 

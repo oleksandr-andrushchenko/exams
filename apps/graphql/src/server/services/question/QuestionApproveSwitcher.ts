@@ -11,15 +11,13 @@ import QuestionEvent from '../../enums/question/QuestionEvent'
 
 @Service()
 export default class QuestionApproveSwitcher {
-
   public constructor(
     @Inject() private readonly eventDispatcher: EventDispatcher,
     @Inject() private readonly examProvider: ExamProvider,
     @Inject() private readonly questionRepository: QuestionRepository,
     @Inject() private readonly examRepository: ExamRepository,
-    @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
-  ) {
-  }
+    @Inject() private readonly authorizationVerifier: AuthorizationVerifier
+  ) {}
 
   /**
    * @param {Question} question
@@ -39,14 +37,14 @@ export default class QuestionApproveSwitcher {
       const newApprovedQuestionCount = Math.max(0, approvedQuestionCount - 1)
       await this.examRepository.updateOneByEntity(exam, {
         approvedQuestionCount: newApprovedQuestionCount === 0 ? undefined : newApprovedQuestionCount,
-        updatedAt: new Date(),
+        updatedAt: new Date()
       })
     } else {
       await this.questionRepository.updateOneByEntity(question, { ownerId: undefined, updatedAt: new Date() })
 
       await this.examRepository.updateOneByEntity(exam, {
         approvedQuestionCount: approvedQuestionCount + 1,
-        updatedAt: new Date(),
+        updatedAt: new Date()
       })
     }
 

@@ -34,11 +34,12 @@ describe('Get users', () => {
     { case: 'zero size', query: { size: 0 } },
     { case: 'size greater them max', query: { size: 1000 } },
     { case: 'invalid order type', query: { order: 1 } },
-    { case: 'not allowed order', query: { order: 'any' } },
+    { case: 'not allowed order', query: { order: 'any' } }
   ])('Bad request ($case)', async ({ query }) => {
-    const user = await framework.fixture<User>(User, { permissions: [ UserPermission.Get ] })
+    const user = await framework.fixture<User>(User, { permissions: [UserPermission.Get] })
     const token = (await framework.auth(user)).token
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(getUsers(query as GetUsers))
       .auth(token, { type: 'bearer' })
 
@@ -47,17 +48,14 @@ describe('Get users', () => {
   })
   test('No filter', async () => {
     framework.clear()
-    const user = await framework.fixture<User>(User, { permissions: [ UserPermission.Get, UserPermission.GetEmail, UserPermission.GetPermissions ] })
+    const user = await framework.fixture<User>(User, {
+      permissions: [UserPermission.Get, UserPermission.GetEmail, UserPermission.GetPermissions]
+    })
     const token = (await framework.auth(user)).token
-    const users = await Promise.all([
-      framework.fixture<User>(User),
-      framework.fixture<User>(User),
-    ])
+    const users = await Promise.all([framework.fixture<User>(User), framework.fixture<User>(User)])
     users.unshift(user)
-    const fields = [ 'id', 'name', 'email', 'permissions', 'createdAt', 'updatedAt' ]
-    const res = await request(framework.app).post('/')
-      .send(getUsers({}, fields))
-      .auth(token, { type: 'bearer' })
+    const fields = ['id', 'name', 'email', 'permissions', 'createdAt', 'updatedAt']
+    const res = await request(framework.app).post('/').send(getUsers({}, fields)).auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
     expect(res.body.data.users).toHaveLength(users.length)
@@ -70,23 +68,23 @@ describe('Get users', () => {
         email: users[index].email,
         permissions: users[index].permissions,
         createdAt: users[index].createdAt.getTime(),
-        updatedAt: users[index].updatedAt?.getTime() ?? null,
+        updatedAt: users[index].updatedAt?.getTime() ?? null
       })
-      expect(resUsers[index]).not.toHaveProperty([ 'creatorId', 'deletedAt', 'creatorId', 'ownerId' ])
+      expect(resUsers[index]).not.toHaveProperty(['creatorId', 'deletedAt', 'creatorId', 'ownerId'])
     }
   })
   test('Search filter', async () => {
     framework.clear()
-    const user = await framework.fixture<User>(User, { permissions: [ UserPermission.Get, UserPermission.GetEmail, UserPermission.GetPermissions ] })
+    const user = await framework.fixture<User>(User, {
+      permissions: [UserPermission.Get, UserPermission.GetEmail, UserPermission.GetPermissions]
+    })
     const token = (await framework.auth(user)).token
-    const users = await Promise.all([
-      framework.fixture<User>(User),
-      framework.fixture<User>(User),
-    ])
-    const fields = [ 'id', 'name', 'email', 'permissions', 'createdAt', 'updatedAt' ]
+    const users = await Promise.all([framework.fixture<User>(User), framework.fixture<User>(User)])
+    const fields = ['id', 'name', 'email', 'permissions', 'createdAt', 'updatedAt']
     const index = 0
     const search = users[index].name.slice(0, -1)
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(getUsers({ search }, fields))
       .auth(token, { type: 'bearer' })
 
@@ -100,8 +98,8 @@ describe('Get users', () => {
       email: users[index].email,
       permissions: users[index].permissions,
       createdAt: users[index].createdAt.getTime(),
-      updatedAt: users[index].updatedAt?.getTime() ?? null,
+      updatedAt: users[index].updatedAt?.getTime() ?? null
     })
-    expect(resUsers[index]).not.toHaveProperty([ 'creatorId', 'deletedAt', 'creatorId', 'ownerId' ])
+    expect(resUsers[index]).not.toHaveProperty(['creatorId', 'deletedAt', 'creatorId', 'ownerId'])
   })
 })

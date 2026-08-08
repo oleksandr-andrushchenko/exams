@@ -13,13 +13,17 @@ const framework: TestFramework = globalThis.framework
 describe('Get question', () => {
   test('Not found (question)', async () => {
     const questionId = await framework.fakeId()
-    const res = await request(framework.app).post('/').send(getQuestion({ questionId: questionId.toString() }))
+    const res = await request(framework.app)
+      .post('/')
+      .send(getQuestion({ questionId: questionId.toString() }))
 
     expect(res.status).toEqual(200)
     expect(res.body).toMatchObject(framework.graphqlError('NotFoundError'))
   })
   test('Bad request (invalid id)', async () => {
-    const res = await request(framework.app).post('/').send(getQuestion({ questionId: 'invalid' }))
+    const res = await request(framework.app)
+      .post('/')
+      .send(getQuestion({ questionId: 'invalid' }))
 
     expect(res.status).toEqual(200)
     expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
@@ -38,9 +42,10 @@ describe('Get question', () => {
       'rating {markCount averageMark}',
       'ownerId',
       'createdAt',
-      'updatedAt',
+      'updatedAt'
     ]
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(getQuestion({ questionId: question.id.toString() }, fields))
       .auth(token, { type: 'bearer' })
 
@@ -56,9 +61,9 @@ describe('Get question', () => {
           rating: question.rating ?? null,
           ownerId: question.ownerId.toString(),
           createdAt: question.createdAt.getTime(),
-          updatedAt: question.updatedAt?.getTime() ?? null,
-        },
-      },
+          updatedAt: question.updatedAt?.getTime() ?? null
+        }
+      }
     })
 
     if (question.type === QuestionType.CHOICE) {
@@ -68,6 +73,6 @@ describe('Get question', () => {
       })
     }
 
-    expect(res.body.data.question).not.toHaveProperty([ 'creatorId', 'deletedAt' ])
+    expect(res.body.data.question).not.toHaveProperty(['creatorId', 'deletedAt'])
   })
 })

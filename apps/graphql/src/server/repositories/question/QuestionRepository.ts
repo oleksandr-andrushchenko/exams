@@ -5,7 +5,6 @@ import Exam from '../../entities/exam/Exam'
 
 @Repository(Question)
 export default class QuestionRepository extends EntityRepository<Question> {
-
   public async findOneByTitle(title: string): Promise<Question | null> {
     return await this.findOneBy({ title })
   }

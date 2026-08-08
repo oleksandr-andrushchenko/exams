@@ -8,12 +8,10 @@ import AuthorizationVerifier from '../auth/AuthorizationVerifier'
 
 @Service()
 export default class ExamSessionLastRequestedQuestionNumberSetter {
-
   public constructor(
     @InjectEntityManager() private readonly entityManager: EntityManagerInterface,
-    @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
-  ) {
-  }
+    @Inject() private readonly authorizationVerifier: AuthorizationVerifier
+  ) {}
 
   /**
    * @param {ExamSession} examSession
@@ -23,7 +21,11 @@ export default class ExamSessionLastRequestedQuestionNumberSetter {
    * @throws {AuthorizationFailedError}
    * @throws {ExamSessionQuestionNumberNotFoundError}
    */
-  public async setExamSessionLastRequestedQuestionNumber(examSession: ExamSession, questionNumber: number, initiator: User): Promise<ExamSession> {
+  public async setExamSessionLastRequestedQuestionNumber(
+    examSession: ExamSession,
+    questionNumber: number,
+    initiator: User
+  ): Promise<ExamSession> {
     await this.authorizationVerifier.verifyAuthorization(initiator, ExamSessionPermission.GetQuestion, examSession)
 
     const questions = examSession.questions

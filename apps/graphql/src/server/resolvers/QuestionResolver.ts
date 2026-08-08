@@ -24,7 +24,6 @@ import QuestionRatingProvider from '../services/question/QuestionRatingProvider'
 @Service()
 @Resolver(Question)
 export class QuestionResolver {
-
   public constructor(
     @Inject() private readonly questionProvider: QuestionProvider,
     @Inject() private readonly questionListProvider: QuestionListProvider,
@@ -35,50 +34,44 @@ export class QuestionResolver {
     @Inject() private readonly questionApproveSwitcher: QuestionApproveSwitcher,
     @Inject('validator') private readonly validator: ValidatorInterface,
     @Inject() private readonly questionRatingMarkCreator: QuestionRatingMarkCreator,
-    @Inject() private readonly questionRatingProvider: QuestionRatingProvider,
-  ) {
-  }
+    @Inject() private readonly questionRatingProvider: QuestionRatingProvider
+  ) {}
 
-  @Query(_returns => Question, { name: 'question' })
-  public async getQuestion(
-    @Args() getQuestion: GetQuestion,
-  ): Promise<Question> {
+  @Query((_returns) => Question, { name: 'question' })
+  public async getQuestion(@Args() getQuestion: GetQuestion): Promise<Question> {
     await this.validator.validate(getQuestion)
 
     return await this.questionProvider.getQuestion(getQuestion.questionId)
   }
 
-  @Query(_returns => [ Question ], { name: 'questions' })
-  public async getQuestions(
-    @Args() getQuestions: GetQuestions,
-    @Ctx('user') user: User,
-  ): Promise<Question[]> {
-    return await this.questionListProvider.getQuestions(getQuestions, false, user) as Question[]
+  @Query((_returns) => [Question], { name: 'questions' })
+  public async getQuestions(@Args() getQuestions: GetQuestions, @Ctx('user') user: User): Promise<Question[]> {
+    return (await this.questionListProvider.getQuestions(getQuestions, false, user)) as Question[]
   }
 
-  @Query(_returns => PaginatedQuestions, { name: 'paginatedQuestions' })
+  @Query((_returns) => PaginatedQuestions, { name: 'paginatedQuestions' })
   public async getPaginatedQuestions(
     @Args() getQuestions: GetQuestions,
-    @Ctx('user') user: User,
+    @Ctx('user') user: User
   ): Promise<PaginatedQuestions> {
-    return await this.questionListProvider.getQuestions(getQuestions, true, user) as PaginatedQuestions
+    return (await this.questionListProvider.getQuestions(getQuestions, true, user)) as PaginatedQuestions
   }
 
   @Authorized()
-  @Mutation(_returns => Question)
+  @Mutation((_returns) => Question)
   public async createQuestion(
     @Arg('createQuestion') question: CreateQuestion,
-    @Ctx('user') user: User,
+    @Ctx('user') user: User
   ): Promise<Question> {
     return await this.questionCreator.createQuestion(question, user)
   }
 
   @Authorized()
-  @Mutation(_returns => Question)
+  @Mutation((_returns) => Question)
   public async updateQuestion(
     @Args() getQuestion: GetQuestion,
     @Arg('updateQuestion') updateQuestion: UpdateQuestion,
-    @Ctx('user') user: User,
+    @Ctx('user') user: User
   ): Promise<Question> {
     await this.validator.validate(getQuestion)
     const question = await this.questionProvider.getQuestion(getQuestion.questionId)
@@ -87,11 +80,8 @@ export class QuestionResolver {
   }
 
   @Authorized()
-  @Mutation(_returns => Boolean)
-  public async deleteQuestion(
-    @Args() getQuestion: GetQuestion,
-    @Ctx('user') user: User,
-  ): Promise<boolean> {
+  @Mutation((_returns) => Boolean)
+  public async deleteQuestion(@Args() getQuestion: GetQuestion, @Ctx('user') user: User): Promise<boolean> {
     await this.validator.validate(getQuestion)
     const question = await this.questionProvider.getQuestion(getQuestion.questionId)
 
@@ -101,11 +91,8 @@ export class QuestionResolver {
   }
 
   @Authorized()
-  @Mutation(_returns => Question)
-  public async toggleQuestionApprove(
-    @Args() getQuestion: GetQuestion,
-    @Ctx('user') user: User,
-  ): Promise<Question> {
+  @Mutation((_returns) => Question)
+  public async toggleQuestionApprove(@Args() getQuestion: GetQuestion, @Ctx('user') user: User): Promise<Question> {
     await this.validator.validate(getQuestion)
     const question = await this.questionProvider.getQuestion(getQuestion.questionId)
 
@@ -114,36 +101,31 @@ export class QuestionResolver {
     return question
   }
 
-  @FieldResolver(_returns => Exam, { name: 'exam' })
-  public async getQuestionExam(
-    @Root() question: Question,
-  ): Promise<Exam> {
+  @FieldResolver((_returns) => Exam, { name: 'exam' })
+  public async getQuestionExam(@Root() question: Question): Promise<Exam> {
     return await this.examProvider.getExam(question.examId)
   }
 
   @Authorized()
-  @FieldResolver(_returns => Boolean, { name: 'isOwner', nullable: true })
-  public async getIsAuthorizedUserQuestionOwner(
-    @Root() question: Question,
-    @Ctx('user') user: User,
-  ): Promise<boolean> {
+  @FieldResolver((_returns) => Boolean, { name: 'isOwner', nullable: true })
+  public async getIsAuthorizedUserQuestionOwner(@Root() question: Question, @Ctx('user') user: User): Promise<boolean> {
     return user && user.id.toString() === question?.ownerId?.toString()
   }
 
   @Authorized()
-  @FieldResolver(_returns => Boolean, { name: 'isCreator', nullable: true })
+  @FieldResolver((_returns) => Boolean, { name: 'isCreator', nullable: true })
   public async getIsAuthorizedUserQuestionCreator(
     @Root() question: Question,
-    @Ctx('user') user: User,
+    @Ctx('user') user: User
   ): Promise<boolean> {
     return user && user.id.toString() === question.creatorId.toString()
   }
 
   @Authorized()
-  @Mutation(_returns => Question)
+  @Mutation((_returns) => Question)
   public async rateQuestion(
     @Args() rateQuestionRequest: RateQuestionRequest,
-    @Ctx('user') user: User,
+    @Ctx('user') user: User
   ): Promise<Question> {
     await this.validator.validate(rateQuestionRequest)
     const question = await this.questionProvider.getQuestion(rateQuestionRequest.questionId)
@@ -153,11 +135,8 @@ export class QuestionResolver {
     return question
   }
 
-  @FieldResolver(_returns => RatingSchema, { name: 'rating', nullable: true })
-  public async getQuestionRating(
-    @Root() question: Question,
-    @Ctx('user') user: User,
-  ): Promise<RatingSchema> {
+  @FieldResolver((_returns) => RatingSchema, { name: 'rating', nullable: true })
+  public async getQuestionRating(@Root() question: Question, @Ctx('user') user: User): Promise<RatingSchema> {
     return this.questionRatingProvider.getQuestionRating(question, user)
   }
 }

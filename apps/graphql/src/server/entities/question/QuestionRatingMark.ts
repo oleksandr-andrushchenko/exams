@@ -8,12 +8,11 @@ import ObjectIdTransformer from '../../database/ObjectIdTransformer'
 @ObjectType()
 @Entity({ name: 'questionRatingMarks' })
 export default class QuestionRatingMark extends Base {
-
   @Column({ type: 'varchar', length: 24, transformer: ObjectIdTransformer })
-  @Field(_type => ObjectIdScalar)
+  @Field((_type) => ObjectIdScalar)
   public questionId: ObjectId
 
   @Column()
-  @Field(_type => Int)
+  @Field((_type) => Int)
   public mark: number
 }

@@ -1,1 +1,37 @@
-{% extends "layout.html" %}{% block content %}{% if exam %}<nav class="small mb-3"><a href="/">Home</a> / <a href="/exams">Exams</a> / {{ exam.name }}</nav><h1>{{ exam.name }}</h1><div class="rating-summary" aria-label="{{ exam.rating.averageMark or 0 }} out of 5"><span class="rating-stars" style="--rating: {{ exam.rating.averageMark or 0 }}">★★★★★</span> <span class="text-secondary">{{ (exam.rating.averageMark or 0) | round(1) }}/5 ({{ exam.rating.markCount or 0 }} votes)</span></div><p class="lead">{{ exam.questionCount or 0 }} questions</p><dl class="row"><dt class="col-sm-3">Required score</dt><dd class="col-sm-9">{{ exam.requiredScore or 0 }}</dd><dt class="col-sm-3">Approved questions</dt><dd class="col-sm-9">{{ exam.approvedQuestionCount or 0 }}</dd></dl><h2 class="h4 mt-4">Questions</h2><div class="list-group">{% for question in exam.questions %}<a class="list-group-item list-group-item-action" href="/{{ exam.userSlug }}/{{ exam.slug }}/{{ question.slug }}"><strong>{{ question.title }}</strong><span class="d-block small text-secondary">{{ question.difficulty or '' }}{% if question.type %} · {{ question.type }}{% endif %}</span></a>{% else %}<div class="list-group-item">No questions found.</div>{% endfor %}</div><h2 class="h4 mt-4">Topics</h2><div class="d-flex gap-2">{% for tag in exam.tags %}<a class="btn btn-light border" href="/tags/{{ tag.slug }}">{{ tag.name }}</a>{% else %}<span class="text-secondary">No topics.</span>{% endfor %}</div>{% else %}<h1>Exam not found</h1><a href="/exams">Back to exams</a>{% endif %}{% endblock %}
+{% extends "layout.html" %}{% block content %}{% if exam %}
+<nav class="small mb-3"><a href="/">Home</a> / <a href="/exams">Exams</a> / {{ exam.name }}</nav>
+<h1>{{ exam.name }}</h1>
+<div class="rating-summary" aria-label="{{ exam.rating.averageMark or 0 }} out of 5">
+  <span class="rating-stars" style="--rating: {{ exam.rating.averageMark or 0 }}">★★★★★</span>
+  <span class="text-secondary"
+    >{{ (exam.rating.averageMark or 0) | round(1) }}/5 ({{ exam.rating.markCount or 0 }} votes)</span
+  >
+</div>
+<p class="lead">{{ exam.questionCount or 0 }} questions</p>
+<dl class="row">
+  <dt class="col-sm-3">Required score</dt>
+  <dd class="col-sm-9">{{ exam.requiredScore or 0 }}</dd>
+  <dt class="col-sm-3">Approved questions</dt>
+  <dd class="col-sm-9">{{ exam.approvedQuestionCount or 0 }}</dd>
+</dl>
+<h2 class="h4 mt-4">Questions</h2>
+<div class="list-group">
+  {% for question in exam.questions %}<a
+    class="list-group-item list-group-item-action"
+    href="/{{ exam.userSlug }}/{{ exam.slug }}/{{ question.slug }}"
+    ><strong>{{ question.title }}</strong
+    ><span class="d-block small text-secondary"
+      >{{ question.difficulty or '' }}{% if question.type %} · {{ question.type }}{% endif %}</span
+    ></a
+  >{% else %}
+  <div class="list-group-item">No questions found.</div>
+  {% endfor %}
+</div>
+<h2 class="h4 mt-4">Topics</h2>
+<div class="d-flex gap-2">
+  {% for tag in exam.tags %}<a class="btn btn-light border" href="/tags/{{ tag.slug }}">{{ tag.name }}</a>{% else
+  %}<span class="text-secondary">No topics.</span>{% endfor %}
+</div>
+{% else %}
+<h1>Exam not found</h1>
+<a href="/exams">Back to exams</a>{% endif %}{% endblock %}

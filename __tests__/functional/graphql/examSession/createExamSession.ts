@@ -1,14 +1,14 @@
 import CreateExamSession from '../../../../apps/graphql/src/server/schema/examSession/CreateExamSession'
 
-export const createExamSession = (variables: { createExamSession: CreateExamSession }, fields: string[] = [ 'id' ]) => {
+export const createExamSession = (variables: { createExamSession: CreateExamSession }, fields: string[] = ['id']) => {
   return {
     query: `
       mutation CreateExamSession($createExamSession: CreateExamSession!) {
         createExamSession(createExamSession: $createExamSession) {
-          ${ fields.join('\r') }
+          ${fields.join('\r')}
         }
       }
   `,
-    variables,
+    variables
   }
 }

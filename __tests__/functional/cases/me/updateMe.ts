@@ -11,7 +11,8 @@ const framework: TestFramework = globalThis.framework
 
 describe('Update me', () => {
   test('Unauthorized', async () => {
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(updateMe({ updateMe: { name: 'any' } }))
 
     expect(res.status).toEqual(200)
@@ -20,7 +21,8 @@ describe('Update me', () => {
   test('Bad request (empty body)', async () => {
     const user = await framework.fixture<User>(User)
     const token = (await framework.auth(user)).token
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(updateMe({} as { updateMe: UpdateMe }))
       .auth(token, { type: 'bearer' })
 
@@ -31,7 +33,8 @@ describe('Update me', () => {
     const user1 = await framework.fixture<User>(User)
     const user = await framework.fixture<User>(User)
     const token = (await framework.auth(user)).token
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(updateMe({ updateMe: { email: user1.email } }))
       .auth(token, { type: 'bearer' })
 
@@ -39,12 +42,13 @@ describe('Update me', () => {
     expect(res.body).toMatchObject(framework.graphqlError('ConflictError'))
   })
   test('Updated', async () => {
-    const user = await framework.fixture<User>(User, { permissions: [ Permission.Root ] })
+    const user = await framework.fixture<User>(User, { permissions: [Permission.Root] })
     const token = (await framework.auth(user)).token
     const update = { name: 'any' }
     const now = Date.now()
-    const res = await request(framework.app).post('/')
-      .send(updateMe({ updateMe: update }, [ 'id', 'name', 'email', 'permissions', 'createdAt', 'updatedAt' ]))
+    const res = await request(framework.app)
+      .post('/')
+      .send(updateMe({ updateMe: update }, ['id', 'name', 'email', 'permissions', 'createdAt', 'updatedAt']))
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
@@ -56,15 +60,15 @@ describe('Update me', () => {
             name: user.name,
             email: user.email,
             permissions: user.permissions,
-            createdAt: user.createdAt.getTime(),
+            createdAt: user.createdAt.getTime()
           },
-          ...update,
-        },
-      },
+          ...update
+        }
+      }
     })
-    expect(res.body.data.updateMe).toHaveProperty([ 'updatedAt' ])
+    expect(res.body.data.updateMe).toHaveProperty(['updatedAt'])
     expect(res.body.data.updateMe.updatedAt).toBeGreaterThanOrEqual(now)
-    expect(res.body.data.updateMe).not.toHaveProperty([ 'password', 'creatorId', 'deletedAt' ])
+    expect(res.body.data.updateMe).not.toHaveProperty(['password', 'creatorId', 'deletedAt'])
 
     const updatedMe = await framework.load<User>(User, user.id)
     expect(updatedMe).toMatchObject(update)
@@ -73,7 +77,7 @@ describe('Update me', () => {
     expect(updatedMe).toMatchObject({
       email: user.email,
       permissions: user.permissions,
-      password: user.password,
+      password: user.password
     })
   })
 })

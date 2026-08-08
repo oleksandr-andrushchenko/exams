@@ -3,7 +3,6 @@ import { Column } from 'typeorm'
 
 @ObjectType()
 export default class QuestionChoice {
-
   @Column()
   @Field()
   public title: string

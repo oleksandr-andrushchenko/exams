@@ -1,6 +1,6 @@
 import GetExams from '../../../../apps/graphql/src/server/schema/exam/GetExams'
 
-export const getExams = (variables: GetExams = {}, fields: string[] = [ 'id' ]) => {
+export const getExams = (variables: GetExams = {}, fields: string[] = ['id']) => {
   return {
     query: `
       query GetExams(
@@ -25,10 +25,10 @@ export const getExams = (variables: GetExams = {}, fields: string[] = [ 'id' ]) 
           search: $search,
           tag: $tag
         ) {
-          ${ fields.join('\r') }
+          ${fields.join('\r')}
         }
       }
   `,
-    variables,
+    variables
   }
 }

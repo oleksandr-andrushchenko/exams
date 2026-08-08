@@ -5,11 +5,7 @@ import { ObjectId } from 'bson'
 
 @Service()
 export default class UserVerifier {
-
-  public constructor(
-    @Inject() private readonly userRepository: UserRepository,
-  ) {
-  }
+  public constructor(@Inject() private readonly userRepository: UserRepository) {}
 
   /**
    * @param {string} email

@@ -8,13 +8,12 @@ import ObjectIdTransformer from '../../database/ObjectIdTransformer'
 @ObjectType()
 @Entity({ name: 'activities' })
 export default class Activity extends Base {
-
   @Column({ type: 'varchar' })
-  @Field(_type => String!)
+  @Field((_type) => String!)
   public event: string
 
   @Column({ type: 'varchar', length: 24, nullable: true, transformer: ObjectIdTransformer })
-  @Field(_type => ObjectIdScalar, { nullable: true })
+  @Field((_type) => ObjectIdScalar, { nullable: true })
   public examId?: ObjectId
 
   @Column({ nullable: true })

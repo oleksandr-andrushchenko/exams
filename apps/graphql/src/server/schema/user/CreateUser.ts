@@ -5,10 +5,9 @@ import { Field, InputType } from 'type-graphql'
 
 @InputType()
 export default class CreateUser extends CreateMe {
-
   @IsOptional()
   @IsEnum(Permission, { each: true })
   @ArrayUnique()
-  @Field(_type => [ String ])
-  public readonly permissions?: Permission[] = [ Permission.Regular ]
+  @Field((_type) => [String])
+  public readonly permissions?: Permission[] = [Permission.Regular]
 }

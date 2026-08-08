@@ -6,9 +6,8 @@ import { Field, ObjectType } from 'type-graphql'
 
 @ObjectType()
 export default class PaginatedExamSessions extends PaginatedSchema<ExamSession> {
-
   @ValidateNested({ each: true })
   @Type(() => ExamSession)
-  @Field(_type => [ ExamSession ])
+  @Field((_type) => [ExamSession])
   public data: ExamSession[]
 }

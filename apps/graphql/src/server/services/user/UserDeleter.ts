@@ -8,13 +8,11 @@ import UserEvent from '../../enums/user/UserEvent'
 
 @Service()
 export default class UserDeleter {
-
   public constructor(
     @InjectEntityManager() private readonly entityManager: EntityManagerInterface,
     @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
-    @Inject() private readonly eventDispatcher: EventDispatcher,
-  ) {
-  }
+    @Inject() private readonly eventDispatcher: EventDispatcher
+  ) {}
 
   /**
    * @param {User} user

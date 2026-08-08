@@ -11,14 +11,12 @@ import ExamTagRepository from '../../repositories/examTag/ExamTagRepository'
 
 @Service()
 export default class ExamListProvider {
-
   public constructor(
     @Inject() private readonly examRepository: ExamRepository,
     @Inject('validator') private readonly validator: ValidatorInterface,
     @Inject() private readonly idNormalizer: IdNormalizer,
-    @Inject() private readonly examTagRepository: ExamTagRepository,
-  ) {
-  }
+    @Inject() private readonly examTagRepository: ExamTagRepository
+  ) {}
 
   /**
    * @param {GetExams} getExams
@@ -27,11 +25,7 @@ export default class ExamListProvider {
    * @returns {Promise<Exam[] | PaginatedExams>}
    * @throws {ValidatorError}
    */
-  public async getExams(
-    getExams: GetExams,
-    meta: boolean = false,
-    initiator?: User,
-  ): Promise<Exam[] | PaginatedExams> {
+  public async getExams(getExams: GetExams, meta: boolean = false, initiator?: User): Promise<Exam[] | PaginatedExams> {
     await this.validator.validate(getExams)
 
     const cursor = new Cursor<Exam>(getExams, this.examRepository)
@@ -55,7 +49,7 @@ export default class ExamListProvider {
 
     if (getExams.tag) {
       const examIds = await this.examTagRepository.findExamIdsBySlug(getExams.tag)
-      where.id = { $in: examIds.map(id => this.idNormalizer.normalizeId(id)) }
+      where.id = { $in: examIds.map((id) => this.idNormalizer.normalizeId(id)) }
     }
 
     if ('creator' in getExams && initiator) {
@@ -70,7 +64,7 @@ export default class ExamListProvider {
   }
 
   public async getExamsByIds(examIds: string[]): Promise<Exam[]> {
-    const ids = examIds.map(examId => this.idNormalizer.normalizeId(examId))
+    const ids = examIds.map((examId) => this.idNormalizer.normalizeId(examId))
 
     return await this.examRepository.findByIds(ids)
   }

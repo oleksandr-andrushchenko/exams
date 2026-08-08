@@ -15,7 +15,9 @@ const framework: TestFramework = globalThis.framework
 
 describe('Create exam', () => {
   test('Unauthorized', async () => {
-    const res = await request(framework.app).post('/').send(createExam({ createExam: { name: 'any' } }))
+    const res = await request(framework.app)
+      .post('/')
+      .send(createExam({ createExam: { name: 'any' } }))
 
     expect(res.status).toEqual(200)
     expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
@@ -31,9 +33,9 @@ describe('Create exam', () => {
     { case: 'required score is string', exam: { name: 'Any exam', requiredScore: 'any' } },
     { case: 'required score is float', exam: { name: 'Any exam', requiredScore: 0.1 } },
     { case: 'required score is negative', exam: { name: 'Any exam', requiredScore: -1 } },
-    { case: 'required score is greater then 100', exam: { name: 'Any exam', requiredScore: 101 } },
+    { case: 'required score is greater then 100', exam: { name: 'Any exam', requiredScore: 101 } }
   ])('Bad request ($case)', async ({ exam }) => {
-    const user = await framework.fixture<User>(User, { permissions: [ ExamPermission.Create ] })
+    const user = await framework.fixture<User>(User, { permissions: [ExamPermission.Create] })
     const token = (await framework.auth(user)).token
     const res = await request(framework.app)
       .post('/')
@@ -57,7 +59,7 @@ describe('Create exam', () => {
   test('Conflict', async () => {
     await framework.clear(Exam)
     const exam = await framework.fixture<Exam>(Exam)
-    const user = await framework.fixture<User>(User, { permissions: [ ExamPermission.Create ] })
+    const user = await framework.fixture<User>(User, { permissions: [ExamPermission.Create] })
     const token = (await framework.auth(user)).token
     const res = await request(framework.app)
       .post('/')
@@ -69,12 +71,21 @@ describe('Create exam', () => {
   })
   test('Created', async () => {
     await framework.clear(Exam)
-    const user = await framework.fixture<User>(User, { permissions: [ ExamPermission.Create ] })
+    const user = await framework.fixture<User>(User, { permissions: [ExamPermission.Create] })
     const token = (await framework.auth(user)).token
     const exam = { name: 'any', requiredScore: 80 }
-    const fields = [ 'id', 'name', 'questionCount', 'requiredScore', 'rating {markCount averageMark}', 'createdAt', 'updatedAt' ]
+    const fields = [
+      'id',
+      'name',
+      'questionCount',
+      'requiredScore',
+      'rating {markCount averageMark}',
+      'createdAt',
+      'updatedAt'
+    ]
     const now = Date.now()
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(createExam({ createExam: exam }, fields))
       .auth(token, { type: 'bearer' })
 
@@ -92,10 +103,10 @@ describe('Create exam', () => {
       requiredScore: createdExam.requiredScore,
       rating: null,
       createdAt: createdExam.createdAt.getTime(),
-      updatedAt: null,
+      updatedAt: null
     })
     expect(createdExam.createdAt.getTime()).toBeGreaterThanOrEqual(now)
-    expect(res.body.data.createExam).not.toHaveProperty([ 'creatorId', 'deletedAt' ])
+    expect(res.body.data.createExam).not.toHaveProperty(['creatorId', 'deletedAt'])
 
     expect(await framework.repo(Activity).countBy({ event: ExamEvent.Created, examId: id })).toEqual(1)
   })

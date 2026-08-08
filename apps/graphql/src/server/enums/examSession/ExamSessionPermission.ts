@@ -5,7 +5,7 @@ enum ExamSessionPermission {
   CreateQuestionAnswer = 'createExamSessionQuestionAnswer',
   DeleteQuestionAnswer = 'deleteExamSessionQuestionAnswer',
   CreateCompletion = 'createExamSessionCompletion',
-  Delete = 'deleteExamSession',
+  Delete = 'deleteExamSession'
 }
 
 export default ExamSessionPermission

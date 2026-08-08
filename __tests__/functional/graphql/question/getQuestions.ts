@@ -1,6 +1,6 @@
 import GetQuestions from '../../../../apps/graphql/src/server/schema/question/GetQuestions'
 
-export const getQuestions = (variables: GetQuestions = {}, fields: string[] = [ 'id' ]) => {
+export const getQuestions = (variables: GetQuestions = {}, fields: string[] = ['id']) => {
   return {
     query: `
       query GetQuestions(
@@ -29,10 +29,10 @@ export const getQuestions = (variables: GetQuestions = {}, fields: string[] = [ 
           approved: $approved,
           search: $search
         ) {
-          ${ fields.join('\r') }
+          ${fields.join('\r')}
         }
       }
   `,
-    variables,
+    variables
   }
 }

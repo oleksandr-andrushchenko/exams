@@ -20,7 +20,7 @@ export default {
     name: pkg.name,
     version: pkg.version,
     description: pkg.description,
-    port: env.PORT,
+    port: env.PORT
   },
   auth: {
     permissions: {
@@ -29,23 +29,21 @@ export default {
         ExamPermission.Rate,
         QuestionPermission.Create,
         QuestionPermission.Rate,
-        ExamSessionPermission.Create,
+        ExamSessionPermission.Create
       ],
-      [Permission.Root]: [
-        Permission.All,
-      ],
-    },
+      [Permission.Root]: [Permission.All]
+    }
   },
   validator: {
     validationError: {
       target: false,
-      value: true,
-    },
+      value: true
+    }
   },
   logger: {
     enabled: environment !== 'test',
     level: environment === 'development' ? 'debug' : 'info',
-    format: environment === 'development' ? 'dev' : 'tiny',
+    format: environment === 'development' ? 'dev' : 'tiny'
   },
   db: {
     type: env.DATABASE_TYPE as 'postgres',
@@ -53,9 +51,9 @@ export default {
     schema: env.DATABASE_SCHEMA || (environment === 'test' ? 'test' : 'public'),
     dropSchema: environment === 'test',
     synchronize: true,
-    logging: environment === 'development',
+    logging: environment === 'development'
   },
   jwt: {
-    secret: 'any',
-  },
+    secret: 'any'
+  }
 }

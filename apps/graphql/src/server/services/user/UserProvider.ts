@@ -11,13 +11,11 @@ import UserPasswordManager from './UserPasswordManager'
 
 @Service()
 export default class UserProvider {
-
   public constructor(
     @Inject() private readonly userRepository: UserRepository,
     @Inject() private readonly userPasswordManager: UserPasswordManager,
-    @Inject('validator') private readonly validator: ValidatorInterface,
-  ) {
-  }
+    @Inject('validator') private readonly validator: ValidatorInterface
+  ) {}
 
   /**
    * @param {Credentials} credentials
@@ -31,7 +29,7 @@ export default class UserProvider {
     const email: string = credentials.email
     const user: User = await this.getUserByEmail(email)
 
-    if (!await this.userPasswordManager.compareUserPassword(user, credentials.password)) {
+    if (!(await this.userPasswordManager.compareUserPassword(user, credentials.password))) {
       throw new UserWrongCredentialsError()
     }
 

@@ -1,14 +1,14 @@
 import { Credentials } from '../../../../apps/graphql/src/server/schema/auth/Credentials'
 
-export const createAuthenticationToken = (variables: { credentials: Credentials }, fields: string[] = [ 'token' ]) => {
+export const createAuthenticationToken = (variables: { credentials: Credentials }, fields: string[] = ['token']) => {
   return {
     query: `
       mutation CreateAuthenticationToken($credentials: Credentials!) {
         createAuthenticationToken(credentials: $credentials) {
-          ${ fields.join('\r') }
+          ${fields.join('\r')}
         }
       }
   `,
-    variables,
+    variables
   }
 }

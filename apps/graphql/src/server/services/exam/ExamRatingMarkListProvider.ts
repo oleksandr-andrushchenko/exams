@@ -6,11 +6,7 @@ import ExamRatingMark from '../../entities/exam/ExamRatingMark'
 
 @Service()
 export default class ExamRatingMarkListProvider {
-
-  public constructor(
-    @Inject() private readonly examRatingMarkRepository: ExamRatingMarkRepository,
-  ) {
-  }
+  public constructor(@Inject() private readonly examRatingMarkRepository: ExamRatingMarkRepository) {}
 
   /**
    * @param {Exam[]} exams

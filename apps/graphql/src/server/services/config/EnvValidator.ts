@@ -2,7 +2,6 @@ import Env from '../../schema/config/Env'
 import { validateSync, ValidationError } from 'class-validator'
 
 export default class EnvValidator {
-
   /**
    * @param {Env} env
    * @throws {Error}
@@ -17,7 +16,7 @@ export default class EnvValidator {
         constraints = { ...constraints, ...error.constraints }
       }
 
-      throw new Error(`Config validation error: ${ JSON.stringify(constraints) }`)
+      throw new Error(`Config validation error: ${JSON.stringify(constraints)}`)
     }
   }
 }

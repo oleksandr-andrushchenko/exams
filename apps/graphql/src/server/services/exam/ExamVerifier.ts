@@ -9,12 +9,10 @@ import ExamNotApprovedError from '../../errors/exam/ExamNotApprovedError'
 
 @Service()
 export default class ExamVerifier {
-
   public constructor(
     @Inject() private readonly examRepository: ExamRepository,
-    @Inject() private readonly examApproveSwitcher: ExamApproveSwitcher,
-  ) {
-  }
+    @Inject() private readonly examApproveSwitcher: ExamApproveSwitcher
+  ) {}
 
   /**
    * @param {string} name

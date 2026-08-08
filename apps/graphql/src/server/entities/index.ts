@@ -7,13 +7,4 @@ import ExamRatingMark from './exam/ExamRatingMark'
 import QuestionRatingMark from './question/QuestionRatingMark'
 import ExamTag from './examTag/ExamTag'
 
-export const entities = [
-  Exam,
-  ExamSession,
-  Question,
-  User,
-  Activity,
-  ExamRatingMark,
-  QuestionRatingMark,
-  ExamTag,
-]
+export const entities = [Exam, ExamSession, Question, User, Activity, ExamRatingMark, QuestionRatingMark, ExamTag]

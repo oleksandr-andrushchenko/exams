@@ -3,7 +3,6 @@ import { ArgsType, Field, Int } from 'type-graphql'
 
 @ArgsType()
 export default class PaginationSchema {
-
   @IsOptional()
   @IsString()
   @IsMongoId()
@@ -17,7 +16,7 @@ export default class PaginationSchema {
   public readonly nextCursor?: string
 
   @IsOptional()
-  @IsIn([ 'id', 'createdAt', 'updatedAt' ])
+  @IsIn(['id', 'createdAt', 'updatedAt'])
   @Field({ nullable: true })
   public readonly cursor?: string = 'id'
 
@@ -25,11 +24,11 @@ export default class PaginationSchema {
   @Min(1)
   @Max(50)
   @IsNumber({ maxDecimalPlaces: 0 })
-  @Field(_type => Int, { nullable: true })
+  @Field((_type) => Int, { nullable: true })
   public readonly size?: number = 20
 
   @IsOptional()
-  @IsIn([ 'asc', 'desc' ])
+  @IsIn(['asc', 'desc'])
   @Field({ nullable: true })
   public readonly order?: 'asc' | 'desc' = 'desc'
 }

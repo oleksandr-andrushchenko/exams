@@ -1,15 +1,67 @@
 import { Pool, QueryResultRow } from 'pg'
 
 export type SsrRating = { averageMark?: number; markCount?: number }
-export type SsrExam = { id: string; slug: string; userSlug: string; name: string; questionCount?: number; approvedQuestionCount?: number; requiredScore?: number; rating?: SsrRating; questions?: SsrQuestion[] }
-export type SsrQuestion = { id: string; slug: string; examId?: string; title: string; difficulty?: string; type?: string; rating?: SsrRating; userMark?: number; exam?: { id: string; slug: string; userSlug: string; name: string } }
+export type SsrExam = {
+  id: string
+  slug: string
+  userSlug: string
+  name: string
+  questionCount?: number
+  approvedQuestionCount?: number
+  requiredScore?: number
+  rating?: SsrRating
+  questions?: SsrQuestion[]
+}
+export type SsrQuestion = {
+  id: string
+  slug: string
+  examId?: string
+  title: string
+  difficulty?: string
+  type?: string
+  rating?: SsrRating
+  userMark?: number
+  exam?: { id: string; slug: string; userSlug: string; name: string }
+}
 export type SsrTag = { id: string; name: string; slug: string }
-export type SsrUser = { id: string; slug: string; name?: string; email?: string; permissions?: string[]; createdAt?: string; updatedAt?: string; rating?: SsrRating }
-export type SsrExamSession = { id: string; examId: string; exam?: { id: string; slug: string; userSlug: string; name: string }; questionCount: number; answeredQuestionCount: number; correctAnswerCount?: number; completedAt?: string; createdAt?: string }
-export type SsrListFilters = { userId?: string; search?: string; approved?: string; exam?: string; difficulty?: string; type?: string; tag?: string; page?: number; size?: number; sort?: string; order?: string }
+export type SsrUser = {
+  id: string
+  slug: string
+  name?: string
+  email?: string
+  permissions?: string[]
+  createdAt?: string
+  updatedAt?: string
+  rating?: SsrRating
+}
+export type SsrExamSession = {
+  id: string
+  examId: string
+  exam?: { id: string; slug: string; userSlug: string; name: string }
+  questionCount: number
+  answeredQuestionCount: number
+  correctAnswerCount?: number
+  completedAt?: string
+  createdAt?: string
+}
+export type SsrListFilters = {
+  userId?: string
+  search?: string
+  approved?: string
+  exam?: string
+  difficulty?: string
+  type?: string
+  tag?: string
+  page?: number
+  size?: number
+  sort?: string
+  order?: string
+}
 export type SsrPage<T> = { data: T[]; page: number; size: number; hasNext: boolean }
 
-declare global { var __exammeSsrPool: Pool | undefined }
+declare global {
+  var __exammeSsrPool: Pool | undefined
+}
 const pool = globalThis.__exammeSsrPool ?? new Pool({ connectionString: process.env.DATABASE_URL, max: 2 })
 if (process.env.NODE_ENV !== 'production') globalThis.__exammeSsrPool = pool
 
@@ -19,93 +71,223 @@ async function query<T extends QueryResultRow>(text: string, values: unknown[] =
 
 const deletedFilter = '"deletedAt" IS NULL'
 
-const pageOptions = (f: SsrListFilters = {}) => ({ page: Math.max(1, Number(f.page) || 1), size: Math.min(50, Math.max(1, Number(f.size) || 20)) })
-const direction = (f: SsrListFilters = {}) => f.order === 'asc' ? 'ASC' : 'DESC'
-const sortColumn = (f: SsrListFilters, allowed: Record<string, string>, fallback: string) => allowed[f.sort || ''] || fallback
+const pageOptions = (f: SsrListFilters = {}) => ({
+  page: Math.max(1, Number(f.page) || 1),
+  size: Math.min(50, Math.max(1, Number(f.size) || 20))
+})
+const direction = (f: SsrListFilters = {}) => (f.order === 'asc' ? 'ASC' : 'DESC')
+const sortColumn = (f: SsrListFilters, allowed: Record<string, string>, fallback: string) =>
+  allowed[f.sort || ''] || fallback
 const userRatingSelect = 'u."rating" AS "rating"'
 
 export async function getHomeData(size = 8, includeUnapproved = false, includeUnapprovedQuestions = includeUnapproved) {
   const [tags, exams, questions] = await Promise.all([
     query<SsrTag>('SELECT "id", "name", "slug" FROM "examTags" ORDER BY "rating" DESC, "name" ASC LIMIT $1', [size]),
-    query<SsrExam>(`SELECT "id", COALESCE("slug", "id") AS "slug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = "exams"."creatorId"), "creatorId") AS "userSlug", "name", "questionCount", "approvedQuestionCount", "requiredScore", "rating" FROM "exams" WHERE ${deletedFilter} ${includeUnapproved ? "" : "AND \"ownerId\" IS NULL"} ORDER BY "id" DESC LIMIT $1`, [size]),
-    query<SsrQuestion & { examName?: string; examSlug?: string; userSlug?: string }>(`SELECT q."id", COALESCE(q."slug", q."id") AS "slug", q."examId", q."title", q."difficulty", COALESCE(e."slug", e."id") AS "examSlug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = e."creatorId"), e."creatorId") AS "userSlug", e."name" AS "examName", q."rating" FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId" WHERE q."deletedAt" IS NULL ${includeUnapprovedQuestions ? "" : "AND q.\"ownerId\" IS NULL"} ORDER BY q."id" DESC LIMIT $1`, [size]),
+    query<SsrExam>(
+      `SELECT "id", COALESCE("slug", "id") AS "slug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = "exams"."creatorId"), "creatorId") AS "userSlug", "name", "questionCount", "approvedQuestionCount", "requiredScore", "rating" FROM "exams" WHERE ${deletedFilter} ${includeUnapproved ? '' : 'AND "ownerId" IS NULL'} ORDER BY "id" DESC LIMIT $1`,
+      [size]
+    ),
+    query<SsrQuestion & { examName?: string; examSlug?: string; userSlug?: string }>(
+      `SELECT q."id", COALESCE(q."slug", q."id") AS "slug", q."examId", q."title", q."difficulty", COALESCE(e."slug", e."id") AS "examSlug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = e."creatorId"), e."creatorId") AS "userSlug", e."name" AS "examName", q."rating" FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId" WHERE q."deletedAt" IS NULL ${includeUnapprovedQuestions ? '' : 'AND q."ownerId" IS NULL'} ORDER BY q."id" DESC LIMIT $1`,
+      [size]
+    )
   ])
-  return { tags, exams, questions: questions.map(({ examName, examSlug, userSlug, ...q }) => ({ ...q, exam: examName ? { id: q.examId!, slug: examSlug!, userSlug: userSlug!, name: examName } : undefined })) }
+  return {
+    tags,
+    exams,
+    questions: questions.map(({ examName, examSlug, userSlug, ...q }) => ({
+      ...q,
+      exam: examName ? { id: q.examId!, slug: examSlug!, userSlug: userSlug!, name: examName } : undefined
+    }))
+  }
 }
 
-export async function getExams(size = 50) { return query<SsrExam>(`SELECT "id", COALESCE("slug", "id") AS "slug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = "exams"."creatorId"), "creatorId") AS "userSlug", "name", "questionCount", "approvedQuestionCount", "requiredScore", "rating" FROM "exams" WHERE ${deletedFilter} ORDER BY "id" DESC LIMIT $1`, [size]) }
+export async function getExams(size = 50) {
+  return query<SsrExam>(
+    `SELECT "id", COALESCE("slug", "id") AS "slug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = "exams"."creatorId"), "creatorId") AS "userSlug", "name", "questionCount", "approvedQuestionCount", "requiredScore", "rating" FROM "exams" WHERE ${deletedFilter} ORDER BY "id" DESC LIMIT $1`,
+    [size]
+  )
+}
 
 export async function getExamList(f: SsrListFilters = {}, includeUnapproved = false): Promise<SsrPage<SsrExam>> {
-  const { page, size } = pageOptions(f), conditions = [deletedFilter, ...(includeUnapproved ? [] : ['"ownerId" IS NULL'])], values: unknown[] = []
-  if (f.search) { values.push(`%${f.search}%`); conditions.push(`"name" ILIKE ${values.length}`) }
+  const { page, size } = pageOptions(f),
+    conditions = [deletedFilter, ...(includeUnapproved ? [] : ['"ownerId" IS NULL'])],
+    values: unknown[] = []
+  if (f.search) {
+    values.push(`%${f.search}%`)
+    conditions.push(`"name" ILIKE ${values.length}`)
+  }
   if (f.approved === 'yes') conditions.push('"ownerId" IS NULL')
   if (f.approved === 'no') conditions.push('"ownerId" IS NOT NULL')
-  if (f.userId) { values.push(f.userId); conditions.push(`"creatorId" = $${values.length}`) }
-  if (f.tag) { values.push(f.tag); conditions.push(`"id" IN (SELECT "examId" FROM "examExamTags" et INNER JOIN "examTags" t ON t."id" = et."examTagId" WHERE t."slug" = $${values.length})`) }
+  if (f.userId) {
+    values.push(f.userId)
+    conditions.push(`"creatorId" = $${values.length}`)
+  }
+  if (f.tag) {
+    values.push(f.tag)
+    conditions.push(
+      `"id" IN (SELECT "examId" FROM "examExamTags" et INNER JOIN "examTags" t ON t."id" = et."examTagId" WHERE t."slug" = $${values.length})`
+    )
+  }
   const column = sortColumn(f, { name: '"name"', createdAt: '"createdAt"' }, '"id"')
   values.push(size + 1, (page - 1) * size)
-  const rows = await query<SsrExam>(`SELECT "id", COALESCE("slug", "id") AS "slug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = "exams"."creatorId"), "creatorId") AS "userSlug", "name", "questionCount", "approvedQuestionCount", "requiredScore", "rating" FROM "exams" WHERE ${conditions.join(' AND ')} ORDER BY ${column} ${direction(f)} LIMIT $${values.length - 1} OFFSET $${values.length}`, values)
+  const rows = await query<SsrExam>(
+    `SELECT "id", COALESCE("slug", "id") AS "slug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = "exams"."creatorId"), "creatorId") AS "userSlug", "name", "questionCount", "approvedQuestionCount", "requiredScore", "rating" FROM "exams" WHERE ${conditions.join(' AND ')} ORDER BY ${column} ${direction(f)} LIMIT $${values.length - 1} OFFSET $${values.length}`,
+    values
+  )
   return { data: rows.slice(0, size), page, size, hasNext: rows.length > size }
 }
 
 export async function getQuestions(size = 50, includeUnapproved = false) {
-  const rows = await query<SsrQuestion & { examName?: string; examSlug?: string; userSlug?: string }>(`SELECT q."id", COALESCE(q."slug", q."id") AS "slug", q."examId", q."title", q."difficulty", q."type", COALESCE(e."slug", e."id") AS "examSlug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = e."creatorId"), e."creatorId") AS "userSlug", e."name" AS "examName", q."rating" FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId" WHERE q."deletedAt" IS NULL ${includeUnapproved ? "" : "AND q.\"ownerId\" IS NULL"} ORDER BY q."id" DESC LIMIT $1`, [size])
-  return rows.map(({ examName, examSlug, userSlug, ...q }) => ({ ...q, exam: examName ? { id: q.examId!, slug: examSlug!, userSlug: userSlug!, name: examName } : undefined }))
+  const rows = await query<SsrQuestion & { examName?: string; examSlug?: string; userSlug?: string }>(
+    `SELECT q."id", COALESCE(q."slug", q."id") AS "slug", q."examId", q."title", q."difficulty", q."type", COALESCE(e."slug", e."id") AS "examSlug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = e."creatorId"), e."creatorId") AS "userSlug", e."name" AS "examName", q."rating" FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId" WHERE q."deletedAt" IS NULL ${includeUnapproved ? '' : 'AND q."ownerId" IS NULL'} ORDER BY q."id" DESC LIMIT $1`,
+    [size]
+  )
+  return rows.map(({ examName, examSlug, userSlug, ...q }) => ({
+    ...q,
+    exam: examName ? { id: q.examId!, slug: examSlug!, userSlug: userSlug!, name: examName } : undefined
+  }))
 }
 
-export async function getQuestionList(f: SsrListFilters = {}, includeUnapproved = false): Promise<SsrPage<SsrQuestion>> {
-  const { page, size } = pageOptions(f), conditions = [`q.${deletedFilter}`, ...(includeUnapproved ? [] : ['q."ownerId" IS NULL'])], values: unknown[] = []
-  if (f.search) { values.push(`%${f.search}%`); conditions.push(`q."title" ILIKE $${values.length}`) }
-  if (f.exam) { values.push(f.exam); conditions.push(`q."examId" = $${values.length}`) }
-  if (f.difficulty) { values.push(f.difficulty); conditions.push(`q."difficulty" = $${values.length}`) }
-  if (f.type) { values.push(f.type); conditions.push(`q."type" = $${values.length}`) }
+export async function getQuestionList(
+  f: SsrListFilters = {},
+  includeUnapproved = false
+): Promise<SsrPage<SsrQuestion>> {
+  const { page, size } = pageOptions(f),
+    conditions = [`q.${deletedFilter}`, ...(includeUnapproved ? [] : ['q."ownerId" IS NULL'])],
+    values: unknown[] = []
+  if (f.search) {
+    values.push(`%${f.search}%`)
+    conditions.push(`q."title" ILIKE $${values.length}`)
+  }
+  if (f.exam) {
+    values.push(f.exam)
+    conditions.push(`q."examId" = $${values.length}`)
+  }
+  if (f.difficulty) {
+    values.push(f.difficulty)
+    conditions.push(`q."difficulty" = $${values.length}`)
+  }
+  if (f.type) {
+    values.push(f.type)
+    conditions.push(`q."type" = $${values.length}`)
+  }
   if (f.approved === 'yes') conditions.push('q."ownerId" IS NULL')
   if (f.approved === 'no') conditions.push('q."ownerId" IS NOT NULL')
   const column = sortColumn(f, { title: 'q."title"', createdAt: 'q."createdAt"' }, 'q."id"')
   values.push(size + 1, (page - 1) * size)
-  const rows = await query<SsrQuestion & { examName?: string; examSlug?: string; userSlug?: string }>(`SELECT q."id", COALESCE(q."slug", q."id") AS "slug", q."examId", q."title", q."difficulty", q."type", COALESCE(e."slug", e."id") AS "examSlug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = e."creatorId"), e."creatorId") AS "userSlug", e."name" AS "examName", q."rating" FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId" WHERE ${conditions.join(' AND ')} ORDER BY ${column} ${direction(f)} LIMIT $${values.length - 1} OFFSET $${values.length}`, values)
-  return { data: rows.slice(0, size).map(({ examName, examSlug, userSlug, ...q }) => ({ ...q, exam: examName ? { id: q.examId!, slug: examSlug!, userSlug: userSlug!, name: examName } : undefined })), page, size, hasNext: rows.length > size }
+  const rows = await query<SsrQuestion & { examName?: string; examSlug?: string; userSlug?: string }>(
+    `SELECT q."id", COALESCE(q."slug", q."id") AS "slug", q."examId", q."title", q."difficulty", q."type", COALESCE(e."slug", e."id") AS "examSlug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = e."creatorId"), e."creatorId") AS "userSlug", e."name" AS "examName", q."rating" FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId" WHERE ${conditions.join(' AND ')} ORDER BY ${column} ${direction(f)} LIMIT $${values.length - 1} OFFSET $${values.length}`,
+    values
+  )
+  return {
+    data: rows.slice(0, size).map(({ examName, examSlug, userSlug, ...q }) => ({
+      ...q,
+      exam: examName ? { id: q.examId!, slug: examSlug!, userSlug: userSlug!, name: examName } : undefined
+    })),
+    page,
+    size,
+    hasNext: rows.length > size
+  }
 }
 
-export async function getExamOptions(size = 100) { return query<{ id: string; name: string }>(`SELECT "id", "name" FROM "exams" WHERE ${deletedFilter} ORDER BY "name" ASC LIMIT $1`, [size]) }
+export async function getExamOptions(size = 100) {
+  return query<{ id: string; name: string }>(
+    `SELECT "id", "name" FROM "exams" WHERE ${deletedFilter} ORDER BY "name" ASC LIMIT $1`,
+    [size]
+  )
+}
 
 export async function getExam(examSlug: string, includeUnapproved = false) {
-  const exams = await query<SsrExam>(`SELECT "id", COALESCE("slug", "id") AS "slug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = "exams"."creatorId"), "creatorId") AS "userSlug", "name", "questionCount", "approvedQuestionCount", "requiredScore", "rating" FROM "exams" WHERE ("slug" = $1 OR "id" = $1) AND ${deletedFilter} ${includeUnapproved ? "" : "AND \"ownerId\" IS NULL"}`, [examSlug])
+  const exams = await query<SsrExam>(
+    `SELECT "id", COALESCE("slug", "id") AS "slug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = "exams"."creatorId"), "creatorId") AS "userSlug", "name", "questionCount", "approvedQuestionCount", "requiredScore", "rating" FROM "exams" WHERE ("slug" = $1 OR "id" = $1) AND ${deletedFilter} ${includeUnapproved ? '' : 'AND "ownerId" IS NULL'}`,
+    [examSlug]
+  )
   if (!exams[0]) return undefined
   const [tags, questions] = await Promise.all([
-    query<SsrTag>('SELECT t."id", t."name", t."slug" FROM "examTags" t INNER JOIN "examExamTags" et ON et."examTagId" = t."id" WHERE et."examId" = $1 ORDER BY t."name" ASC', [exams[0].id]),
-    query<SsrQuestion>(`SELECT "id", COALESCE("slug", "id") AS "slug", "examId", "title", "difficulty", "type", "rating", COALESCE((SELECT u."slug" FROM "users" u INNER JOIN "exams" e ON e."creatorId" = u."id" WHERE e."id" = "questions"."examId"), (SELECT e."creatorId" FROM "exams" e WHERE e."id" = "questions"."examId")) AS "userSlug" FROM "questions" WHERE "examId" = $1 AND "deletedAt" IS NULL ${includeUnapproved ? '' : 'AND "ownerId" IS NULL'} ORDER BY "id" ASC`, [exams[0].id]),
+    query<SsrTag>(
+      'SELECT t."id", t."name", t."slug" FROM "examTags" t INNER JOIN "examExamTags" et ON et."examTagId" = t."id" WHERE et."examId" = $1 ORDER BY t."name" ASC',
+      [exams[0].id]
+    ),
+    query<SsrQuestion>(
+      `SELECT "id", COALESCE("slug", "id") AS "slug", "examId", "title", "difficulty", "type", "rating", COALESCE((SELECT u."slug" FROM "users" u INNER JOIN "exams" e ON e."creatorId" = u."id" WHERE e."id" = "questions"."examId"), (SELECT e."creatorId" FROM "exams" e WHERE e."id" = "questions"."examId")) AS "userSlug" FROM "questions" WHERE "examId" = $1 AND "deletedAt" IS NULL ${includeUnapproved ? '' : 'AND "ownerId" IS NULL'} ORDER BY "id" ASC`,
+      [exams[0].id]
+    )
   ])
   return { ...exams[0], tags, questions }
 }
 
 export async function getQuestion(questionSlug: string, userId?: string, includeUnapproved = false) {
   const values: unknown[] = [questionSlug]
-  const userMark = userId ? ", m.\"mark\" AS \"userMark\"" : ''
+  const userMark = userId ? ', m."mark" AS "userMark"' : ''
   const userJoin = userId ? ' LEFT JOIN "questionRatingMarks" m ON m."questionId" = q."id" AND m."creatorId" = $2' : ''
   if (userId) values.push(userId)
-  const rows = await query<SsrQuestion & { examName?: string; examSlug?: string; userSlug?: string }>(`SELECT q."id", COALESCE(q."slug", q."id") AS "slug", q."examId", q."title", q."difficulty", q."type", COALESCE(e."slug", e."id") AS "examSlug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = e."creatorId"), e."creatorId") AS "userSlug", e."name" AS "examName", q."rating"${userMark} FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId"${userJoin} WHERE (q."slug" = $1 OR q."id" = $1) AND q."deletedAt" IS NULL ${includeUnapproved ? '' : 'AND q."ownerId" IS NULL'}`, values)
+  const rows = await query<SsrQuestion & { examName?: string; examSlug?: string; userSlug?: string }>(
+    `SELECT q."id", COALESCE(q."slug", q."id") AS "slug", q."examId", q."title", q."difficulty", q."type", COALESCE(e."slug", e."id") AS "examSlug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = e."creatorId"), e."creatorId") AS "userSlug", e."name" AS "examName", q."rating"${userMark} FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId"${userJoin} WHERE (q."slug" = $1 OR q."id" = $1) AND q."deletedAt" IS NULL ${includeUnapproved ? '' : 'AND q."ownerId" IS NULL'}`,
+    values
+  )
   if (!rows[0]) return undefined
   const { examName, examSlug, userSlug, ...q } = rows[0]
   return { ...q, exam: examName ? { id: q.examId!, slug: examSlug!, userSlug: userSlug!, name: examName } : undefined }
 }
-export async function getUsers(size = 50) { return query<SsrUser>(`SELECT u."id", COALESCE(u."slug", u."id") AS "slug", u."name", u."createdAt", u."updatedAt", ${userRatingSelect} FROM "users" u WHERE u."deletedAt" IS NULL ORDER BY u."id" DESC LIMIT $1`, [size]) }
+export async function getUsers(size = 50) {
+  return query<SsrUser>(
+    `SELECT u."id", COALESCE(u."slug", u."id") AS "slug", u."name", u."createdAt", u."updatedAt", ${userRatingSelect} FROM "users" u WHERE u."deletedAt" IS NULL ORDER BY u."id" DESC LIMIT $1`,
+    [size]
+  )
+}
 
 export async function getUserList(f: SsrListFilters = {}): Promise<SsrPage<SsrUser>> {
-  const { page, size } = pageOptions(f), conditions = ['u."deletedAt" IS NULL'], values: unknown[] = []
-  if (f.search) { values.push(`%${f.search}%`); conditions.push(`u."name" ILIKE $${values.length}`) }
+  const { page, size } = pageOptions(f),
+    conditions = ['u."deletedAt" IS NULL'],
+    values: unknown[] = []
+  if (f.search) {
+    values.push(`%${f.search}%`)
+    conditions.push(`u."name" ILIKE $${values.length}`)
+  }
   const column = sortColumn(f, { name: 'u."name"', createdAt: 'u."createdAt"' }, 'u."id"')
   values.push(size + 1, (page - 1) * size)
-  const rows = await query<SsrUser>(`SELECT u."id", COALESCE(u."slug", u."id") AS "slug", u."name", u."createdAt", u."updatedAt", ${userRatingSelect} FROM "users" u WHERE ${conditions.join(' AND ')} ORDER BY ${column} ${direction(f)} LIMIT $${values.length - 1} OFFSET $${values.length}`, values)
+  const rows = await query<SsrUser>(
+    `SELECT u."id", COALESCE(u."slug", u."id") AS "slug", u."name", u."createdAt", u."updatedAt", ${userRatingSelect} FROM "users" u WHERE ${conditions.join(' AND ')} ORDER BY ${column} ${direction(f)} LIMIT $${values.length - 1} OFFSET $${values.length}`,
+    values
+  )
   return { data: rows.slice(0, size), page, size, hasNext: rows.length > size }
 }
 
-export async function getUserExams(userId: string) { return getExamList({ userId, size: 50 }) }
-
-export async function getUserExamSessions(userId: string): Promise<SsrExamSession[]> {
-  const rows = await query<SsrExamSession & { questions?: Array<{ choice?: number; answer?: string }>; examName?: string; examSlug?: string; userSlug?: string }>(`SELECT s."id", s."examId", s."questions", s."correctAnswerCount", s."completedAt", s."createdAt", COALESCE(e."slug", e."id") AS "examSlug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = e."creatorId"), e."creatorId") AS "userSlug", e."name" AS "examName" FROM "examSessions" s LEFT JOIN "exams" e ON e."id" = s."examId" WHERE s."ownerId" = $1 AND s."deletedAt" IS NULL ORDER BY s."id" DESC LIMIT 50`, [userId])
-  return rows.map(({ questions = [], examName, examSlug, userSlug, ...session }) => ({ ...session, questionCount: questions.length, answeredQuestionCount: questions.filter(question => typeof question.choice === 'number' || typeof question.answer === 'string').length, exam: examName ? { id: session.examId, slug: examSlug!, userSlug: userSlug!, name: examName } : undefined }))
+export async function getUserExams(userId: string) {
+  return getExamList({ userId, size: 50 })
 }
 
-export async function getUser(userSlug: string) { return (await query<SsrUser>(`SELECT u."id", COALESCE(u."slug", u."id") AS "slug", u."name", u."email", u."permissions", u."createdAt", u."updatedAt", ${userRatingSelect} FROM "users" u WHERE (u."slug" = $1 OR u."id" = $1) AND u."deletedAt" IS NULL`, [userSlug]))[0] }
-export async function getTag(tagSlug: string) { return (await query<SsrTag>('SELECT "id", "name", "slug" FROM "examTags" WHERE "slug" = $1', [tagSlug]))[0] }
+export async function getUserExamSessions(userId: string): Promise<SsrExamSession[]> {
+  const rows = await query<
+    SsrExamSession & {
+      questions?: Array<{ choice?: number; answer?: string }>
+      examName?: string
+      examSlug?: string
+      userSlug?: string
+    }
+  >(
+    `SELECT s."id", s."examId", s."questions", s."correctAnswerCount", s."completedAt", s."createdAt", COALESCE(e."slug", e."id") AS "examSlug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = e."creatorId"), e."creatorId") AS "userSlug", e."name" AS "examName" FROM "examSessions" s LEFT JOIN "exams" e ON e."id" = s."examId" WHERE s."ownerId" = $1 AND s."deletedAt" IS NULL ORDER BY s."id" DESC LIMIT 50`,
+    [userId]
+  )
+  return rows.map(({ questions = [], examName, examSlug, userSlug, ...session }) => ({
+    ...session,
+    questionCount: questions.length,
+    answeredQuestionCount: questions.filter(
+      (question) => typeof question.choice === 'number' || typeof question.answer === 'string'
+    ).length,
+    exam: examName ? { id: session.examId, slug: examSlug!, userSlug: userSlug!, name: examName } : undefined
+  }))
+}
+
+export async function getUser(userSlug: string) {
+  return (
+    await query<SsrUser>(
+      `SELECT u."id", COALESCE(u."slug", u."id") AS "slug", u."name", u."email", u."permissions", u."createdAt", u."updatedAt", ${userRatingSelect} FROM "users" u WHERE (u."slug" = $1 OR u."id" = $1) AND u."deletedAt" IS NULL`,
+      [userSlug]
+    )
+  )[0]
+}
+export async function getTag(tagSlug: string) {
+  return (await query<SsrTag>('SELECT "id", "name", "slug" FROM "examTags" WHERE "slug" = $1', [tagSlug]))[0]
+}

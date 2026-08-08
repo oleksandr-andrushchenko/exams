@@ -8,12 +8,10 @@ import PaginatedActivityList from '../../schema/activity/PaginatedActivityList'
 
 @Service()
 export default class ActivityListProvider {
-
   public constructor(
     @Inject() private readonly activityRepository: ActivityRepository,
-    @Inject('validator') private readonly validator: ValidatorInterface,
-  ) {
-  }
+    @Inject('validator') private readonly validator: ValidatorInterface
+  ) {}
 
   /**
    * @param {ActivityQuery} activityQuery
@@ -23,7 +21,7 @@ export default class ActivityListProvider {
    */
   public async getActivities(
     activityQuery: ActivityQuery,
-    meta: boolean = false,
+    meta: boolean = false
   ): Promise<Activity[] | PaginatedActivityList> {
     await this.validator.validate(activityQuery)
 

@@ -4,9 +4,8 @@ import Logger from './Logger'
 import { Service } from 'typedi'
 import { WinstonLoggerFactory } from './WinstonLoggerFactory'
 
-@Service({ factory: [ WinstonLoggerFactory, 'create' ] })
+@Service({ factory: [WinstonLoggerFactory, 'create'] })
 export default class WinstonLogger extends Logger implements LoggerInterface {
-
   public constructor(private readonly winstonLogger: winston.Logger) {
     super()
   }

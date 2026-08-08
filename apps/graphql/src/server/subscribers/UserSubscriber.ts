@@ -6,11 +6,7 @@ import UserPasswordManager from '../services/user/UserPasswordManager'
 @Service()
 @EventSubscriber()
 export default class UserSubscriber implements EntitySubscriberInterface {
-
-  public constructor(
-    @Inject() private readonly userPasswordManager: UserPasswordManager,
-  ) {
-  }
+  public constructor(@Inject() private readonly userPasswordManager: UserPasswordManager) {}
 
   public listenTo(): typeof User {
     return User

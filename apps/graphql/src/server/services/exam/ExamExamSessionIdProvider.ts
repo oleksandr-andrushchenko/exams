@@ -5,7 +5,6 @@ import { ObjectId } from 'bson'
 
 @Service()
 export default class ExamExamSessionIdProvider {
-
   public getExamExamSessionId(exam: Exam, initiator: User): ObjectId | undefined {
     const examIdExamSessionIds = initiator.examExamSessions
 

@@ -8,12 +8,10 @@ import PaginatedUsers from '../../schema/user/PaginatedUsers'
 
 @Service()
 export default class UserListProvider {
-
   public constructor(
     @Inject() private readonly userRepository: UserRepository,
-    @Inject('validator') private readonly validator: ValidatorInterface,
-  ) {
-  }
+    @Inject('validator') private readonly validator: ValidatorInterface
+  ) {}
 
   /**
    * @param {GetUsers} getUsers
@@ -21,10 +19,7 @@ export default class UserListProvider {
    * @returns {Promise<User[] | PaginatedUsers>}
    * @throws {ValidatorError}
    */
-  public async getUsers(
-    getUsers: GetUsers,
-    meta: boolean,
-  ): Promise<User[] | PaginatedUsers> {
+  public async getUsers(getUsers: GetUsers, meta: boolean): Promise<User[] | PaginatedUsers> {
     await this.validator.validate(getUsers)
 
     const cursor = new Cursor<User>(getUsers, this.userRepository)
@@ -32,9 +27,7 @@ export default class UserListProvider {
     const where = {}
 
     if ('search' in getUsers) {
-      where['$or'] = [
-        { 'name': { $regex: getUsers.search, $options: 'i' } },
-      ]
+      where['$or'] = [{ name: { $regex: getUsers.search, $options: 'i' } }]
     }
 
     return await cursor.getPaginated({ where, meta })

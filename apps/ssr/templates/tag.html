@@ -1,1 +1,7 @@
-{% extends "layout.html" %}{% block content %}{% if tag %}<nav class="small mb-3"><a href="/">Home</a> / {{ tag.name }}</nav><h1>{{ tag.name }}</h1><p class="lead">Browse exams and questions for this topic.</p><a class="btn btn-primary" href="/exams?tag={{ tag.slug }}">View exams</a>{% else %}<h1>Topic not found</h1>{% endif %}{% endblock %}
+{% extends "layout.html" %}{% block content %}{% if tag %}
+<nav class="small mb-3"><a href="/">Home</a> / {{ tag.name }}</nav>
+<h1>{{ tag.name }}</h1>
+<p class="lead">Browse exams and questions for this topic.</p>
+<a class="btn btn-primary" href="/exams?tag={{ tag.slug }}">View exams</a>{% else %}
+<h1>Topic not found</h1>
+{% endif %}{% endblock %}

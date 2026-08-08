@@ -3,8 +3,7 @@ import { ArgsType, Field, ID } from 'type-graphql'
 
 @ArgsType()
 export default class GetExamSession {
-
   @IsMongoId()
-  @Field(_type => ID)
+  @Field((_type) => ID)
   public readonly examSessionId: string
 }

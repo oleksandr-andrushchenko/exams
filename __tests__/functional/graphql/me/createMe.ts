@@ -1,14 +1,14 @@
 import CreateMe from '../../../../apps/graphql/src/server/schema/user/CreateMe'
 
-export const createMe = (variables: { createMe: CreateMe }, fields: string[] = [ 'id' ]) => {
+export const createMe = (variables: { createMe: CreateMe }, fields: string[] = ['id']) => {
   return {
     query: `
       mutation CreateMe($createMe: CreateMe!) {
         createMe(createMe: $createMe) {
-          ${ fields.join('\r') }
+          ${fields.join('\r')}
         }
       }
   `,
-    variables,
+    variables
   }
 }

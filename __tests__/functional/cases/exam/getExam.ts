@@ -25,8 +25,18 @@ describe('Get exam', () => {
   })
   test('Found', async () => {
     const exam = await framework.fixture<Exam>(Exam)
-    const fields = [ 'id', 'name', 'questionCount', 'requiredScore', 'rating {markCount averageMark}', 'createdAt', 'updatedAt' ]
-    const res = await request(framework.app).post('/').send(getExam({ examId: exam.id.toString() }, fields))
+    const fields = [
+      'id',
+      'name',
+      'questionCount',
+      'requiredScore',
+      'rating {markCount averageMark}',
+      'createdAt',
+      'updatedAt'
+    ]
+    const res = await request(framework.app)
+      .post('/')
+      .send(getExam({ examId: exam.id.toString() }, fields))
 
     expect(res.status).toEqual(200)
     expect(res.body).toEqual({
@@ -38,10 +48,10 @@ describe('Get exam', () => {
           requiredScore: exam.requiredScore,
           rating: exam.rating ?? null,
           createdAt: exam.createdAt.getTime(),
-          updatedAt: exam.updatedAt?.getTime() ?? null,
-        },
-      },
+          updatedAt: exam.updatedAt?.getTime() ?? null
+        }
+      }
     })
-    expect(res.body.data.exam).not.toHaveProperty([ 'creatorId', 'deletedAt' ])
+    expect(res.body.data.exam).not.toHaveProperty(['creatorId', 'deletedAt'])
   })
 })

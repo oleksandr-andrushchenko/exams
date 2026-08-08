@@ -45,10 +45,15 @@ const serverless_http_1 = __importDefault(require("serverless-http"));
 const data_1 = require("./data");
 const app = (0, express_1.default)();
 exports.app = app;
+const canViewUnapproved = (user, permission) => user?.permissions?.some((userPermission) => userPermission === permission || userPermission === 'root' || userPermission === '*') ?? false;
 const templateDir = node_path_1.default.resolve(__dirname, '../templates');
 const sharedTemplateDir = node_path_1.default.resolve(__dirname, '../../../shared/templates');
 const publicDir = node_path_1.default.resolve(__dirname, '../public');
-nunjucks_1.default.configure([templateDir, sharedTemplateDir], { autoescape: true, express: app, noCache: process.env.NODE_ENV !== 'production' });
+nunjucks_1.default.configure([templateDir, sharedTemplateDir], {
+    autoescape: true,
+    express: app,
+    noCache: process.env.NODE_ENV !== 'production'
+});
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use('/static', express_1.default.static(publicDir, { maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0 }));
 app.use((request, response, next) => {
@@ -61,8 +66,8 @@ app.use((request, response, next) => {
 app.use(async (request, response, next) => {
     const token = request.headers.cookie
         ?.split(';')
-        .map(cookie => cookie.trim())
-        .find(cookie => cookie.startsWith('authenticationToken='))
+        .map((cookie) => cookie.trim())
+        .find((cookie) => cookie.startsWith('authenticationToken='))
         ?.slice('authenticationToken='.length);
     if (token) {
         try {
@@ -91,11 +96,14 @@ const queryFilters = (request) => ({
     page: number(request.query.page, 1),
     size: Math.min(50, number(request.query.size, 20)),
     sort: typeof request.query.sort === 'string' ? request.query.sort : undefined,
-    order: request.query.order === 'asc' ? 'asc' : 'desc',
+    order: request.query.order === 'asc' ? 'asc' : 'desc'
 });
 app.get('/', async (_request, response, next) => {
     try {
-        response.render('home.html', { data: await (0, data_1.getHomeData)(8), title: 'Home' });
+        response.render('home.html', {
+            data: await (0, data_1.getHomeData)(8, canViewUnapproved(response.locals.currentUser, 'getExam'), canViewUnapproved(response.locals.currentUser, 'getQuestion')),
+            title: 'Home'
+        });
     }
     catch (error) {
         next(error);
@@ -104,7 +112,7 @@ app.get('/', async (_request, response, next) => {
 app.get('/exams', async (request, response, next) => {
     try {
         response.render('exams.html', {
-            page: await (0, data_1.getExamList)(queryFilters(request)),
+            page: await (0, data_1.getExamList)(queryFilters(request), canViewUnapproved(response.locals.currentUser, 'getExam')),
             filters: queryFilters(request),
             title: 'Exams'
         });
@@ -116,7 +124,7 @@ app.get('/exams', async (request, response, next) => {
 app.get('/questions', async (request, response, next) => {
     try {
         response.render('questions.html', {
-            page: await (0, data_1.getQuestionList)(queryFilters(request)),
+            page: await (0, data_1.getQuestionList)(queryFilters(request), canViewUnapproved(response.locals.currentUser, 'getQuestion')),
             filters: queryFilters(request),
             title: 'Questions'
         });
@@ -141,8 +149,8 @@ async function submitRating(request, response, id) {
     const mark = Number(request.body.mark);
     const token = request.headers.cookie
         ?.split(';')
-        .map(cookie => cookie.trim())
-        .find(cookie => cookie.startsWith('authenticationToken='))
+        .map((cookie) => cookie.trim())
+        .find((cookie) => cookie.startsWith('authenticationToken='))
         ?.slice('authenticationToken='.length);
     const target = '/questions/' + id;
     const wantsJson = request.headers.accept?.includes('application/json');
@@ -160,11 +168,15 @@ async function submitRating(request, response, id) {
         method: 'POST',
         headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
         body: JSON.stringify({
-            query: 'mutation Rate($id: ID!, $mark: Int!) { ' + mutation + '(' + field + ': $id, mark: $mark) { id rating { html averageMark markCount } } }',
-            variables: { id, mark },
-        }),
+            query: 'mutation Rate($id: ID!, $mark: Int!) { ' +
+                mutation +
+                '(' +
+                field +
+                ': $id, mark: $mark) { id rating { html averageMark markCount } } }',
+            variables: { id, mark }
+        })
     });
-    const payload = await result.json();
+    const payload = (await result.json());
     if (wantsJson) {
         if (!result.ok || payload.errors?.length) {
             response.status(400).json({ ok: false, error: payload.errors?.[0] || 'Unable to save rating' });
@@ -178,9 +190,71 @@ async function submitRating(request, response, id) {
 app.post('/questions/:questionId/rating', (request, response, next) => {
     submitRating(request, response, request.params.questionId).catch(next);
 });
+async function renderEdit(request, response, resource, id) {
+    const permission = resource === 'user' ? 'updateUser' : resource === 'exam' ? 'updateExam' : 'updateQuestion';
+    if (!response.locals.currentUser || !canViewUnapproved(response.locals.currentUser, permission)) {
+        response.status(403).render('edit.html', { resource, error: 'You are not authorized to edit this resource' });
+        return;
+    }
+    const data = resource === 'user'
+        ? { user: await (0, data_1.getUser)(id) }
+        : resource === 'exam'
+            ? { exam: await (0, data_1.getExam)(id, true) }
+            : { question: await (0, data_1.getQuestion)(id, response.locals.currentUser.id, true) };
+    const entity = data[resource];
+    response.status(entity ? 200 : 404).render('edit.html', { resource, ...data });
+}
+async function updateResource(request, response, resource, id) {
+    const token = request.headers.cookie
+        ?.split(';')
+        .map((cookie) => cookie.trim())
+        .find((cookie) => cookie.startsWith('authenticationToken='))
+        ?.slice('authenticationToken='.length);
+    if (!token) {
+        response.status(401).render('edit.html', { resource, error: 'Authentication required' });
+        return;
+    }
+    const definitions = {
+        user: {
+            query: 'mutation Update($id: ID!, $input: UpdateUser!) { updateUser(userId: $id, updateUser: $input) { id } }',
+            input: { name: request.body.name, email: request.body.email },
+            target: '/users/' + id
+        },
+        exam: {
+            query: 'mutation Update($id: ID!, $input: UpdateExam!) { updateExam(examId: $id, updateExam: $input) { id } }',
+            input: { name: request.body.name, requiredScore: Number(request.body.requiredScore) },
+            target: '/exams/' + id
+        },
+        question: {
+            query: 'mutation Update($id: ID!, $input: UpdateQuestion!) { updateQuestion(questionId: $id, updateQuestion: $input) { id } }',
+            input: { title: request.body.title, difficulty: request.body.difficulty, type: request.body.type },
+            target: '/questions/' + id
+        }
+    };
+    const definition = definitions[resource];
+    const result = await fetch(process.env.GRAPHQL_URL || 'http://localhost:8080/graphql', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
+        body: JSON.stringify({ query: definition.query, variables: { id, input: definition.input } })
+    });
+    const payload = (await result.json());
+    if (!result.ok || payload.errors?.length) {
+        response
+            .status(400)
+            .render('edit.html', { resource, error: payload.errors?.[0]?.message || 'Unable to update resource' });
+        return;
+    }
+    response.redirect(definition.target);
+}
+app.get('/users/:userId/edit', (request, response, next) => renderEdit(request, response, 'user', request.params.userId).catch(next));
+app.post('/users/:userId/edit', (request, response, next) => updateResource(request, response, 'user', request.params.userId).catch(next));
+app.get('/exams/:examId/edit', (request, response, next) => renderEdit(request, response, 'exam', request.params.examId).catch(next));
+app.post('/exams/:examId/edit', (request, response, next) => updateResource(request, response, 'exam', request.params.examId).catch(next));
+app.get('/questions/:questionId/edit', (request, response, next) => renderEdit(request, response, 'question', request.params.questionId).catch(next));
+app.post('/questions/:questionId/edit', (request, response, next) => updateResource(request, response, 'question', request.params.questionId).catch(next));
 app.get('/exams/:examId', async (request, response, next) => {
     try {
-        const exam = await (0, data_1.getExam)(request.params.examId);
+        const exam = await (0, data_1.getExam)(request.params.examId, canViewUnapproved(response.locals.currentUser, 'getExam'));
         response.status(exam ? 200 : 404).render('exam.html', { exam, title: exam?.name || 'Exam not found' });
     }
     catch (error) {
@@ -189,7 +263,7 @@ app.get('/exams/:examId', async (request, response, next) => {
 });
 app.get('/questions/:questionId', async (request, response, next) => {
     try {
-        const question = await (0, data_1.getQuestion)(request.params.questionId, response.locals.currentUser?.id);
+        const question = await (0, data_1.getQuestion)(request.params.questionId, response.locals.currentUser?.id, canViewUnapproved(response.locals.currentUser, 'getQuestion'));
         response.status(question ? 200 : 404).render('question.html', {
             question,
             title: question?.title || 'Question not found'
@@ -202,8 +276,12 @@ app.get('/questions/:questionId', async (request, response, next) => {
 app.get('/users/:userId', async (request, response, next) => {
     try {
         const user = await (0, data_1.getUser)(request.params.userId);
-        const [exams, sessions] = user ? await Promise.all([(0, data_1.getUserExams)(request.params.userId), (0, data_1.getUserExamSessions)(request.params.userId)]) : [undefined, []];
-        response.status(user ? 200 : 404).render('user.html', { user, exams, sessions, title: user?.name || 'User not found' });
+        const [exams, sessions] = user
+            ? await Promise.all([(0, data_1.getUserExams)(user.id), (0, data_1.getUserExamSessions)(user.id)])
+            : [undefined, []];
+        response
+            .status(user ? 200 : 404)
+            .render('user.html', { user, exams, sessions, title: user?.name || 'User not found' });
     }
     catch (error) {
         next(error);
@@ -224,13 +302,13 @@ async function authenticate(response, credentials, register) {
     const query = register
         ? 'mutation Register($createMe: CreateMe!, $credentials: Credentials!) { createMe(createMe: $createMe) { id } createAuthenticationToken(credentials: $credentials) { token } }'
         : 'mutation Login($email: String!, $password: String!) { createAuthenticationToken(credentials: { email: $email, password: $password }) { token } }';
-    const variables = register
-        ? { createMe: credentials, credentials }
-        : credentials;
+    const variables = register ? { createMe: credentials, credentials } : credentials;
     const result = await fetch(process.env.GRAPHQL_URL || 'http://localhost:8080/graphql', {
-        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ query, variables }),
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ query, variables })
     });
-    const payload = await result.json();
+    const payload = (await result.json());
     if (!result.ok || payload.errors?.length || !payload.data?.createAuthenticationToken?.token) {
         throw new Error(payload.errors?.[0]?.message || 'Authentication failed');
     }
@@ -266,6 +344,47 @@ app.post('/register', async (request, response) => {
             title: 'Register',
             error: error instanceof Error ? error.message : 'Registration failed'
         });
+    }
+});
+app.get('/:userSlug/:examSlug/:questionSlug', async (request, response, next) => {
+    try {
+        const question = await (0, data_1.getQuestion)(request.params.questionSlug, response.locals.currentUser?.id, canViewUnapproved(response.locals.currentUser, 'getQuestion'));
+        const matches = !!question &&
+            question.exam?.slug === request.params.examSlug &&
+            question.exam.userSlug === request.params.userSlug;
+        response.status(matches ? 200 : 404).render('question.html', {
+            question: matches ? question : undefined,
+            title: matches ? question.title : 'Question not found'
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+});
+app.get('/:userSlug/:examSlug', async (request, response, next) => {
+    try {
+        const exam = await (0, data_1.getExam)(request.params.examSlug, canViewUnapproved(response.locals.currentUser, 'getExam'));
+        const matches = !!exam && exam.slug === request.params.examSlug && exam.userSlug === request.params.userSlug;
+        response
+            .status(matches ? 200 : 404)
+            .render('exam.html', { exam: matches ? exam : undefined, title: matches ? exam.name : 'Exam not found' });
+    }
+    catch (error) {
+        next(error);
+    }
+});
+app.get('/:userSlug', async (request, response, next) => {
+    try {
+        const user = await (0, data_1.getUser)(request.params.userSlug);
+        const [exams, sessions] = user
+            ? await Promise.all([(0, data_1.getUserExams)(user.id), (0, data_1.getUserExamSessions)(user.id)])
+            : [undefined, []];
+        response
+            .status(user ? 200 : 404)
+            .render('user.html', { user, exams, sessions, title: user?.name || 'User not found' });
+    }
+    catch (error) {
+        next(error);
     }
 });
 app.use((error, _request, response, _next) => {

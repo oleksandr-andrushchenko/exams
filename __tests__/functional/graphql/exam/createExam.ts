@@ -1,14 +1,14 @@
 import CreateExam from '../../../../apps/graphql/src/server/schema/exam/CreateExam'
 
-export const createExam = (variables: { createExam: CreateExam }, fields: string[] = [ 'id' ]) => {
+export const createExam = (variables: { createExam: CreateExam }, fields: string[] = ['id']) => {
   return {
     query: `
       mutation CreateExam($createExam: CreateExam!) {
         createExam(createExam: $createExam) {
-          ${ fields.join('\r') }
+          ${fields.join('\r')}
         }
       }
   `,
-    variables,
+    variables
   }
 }

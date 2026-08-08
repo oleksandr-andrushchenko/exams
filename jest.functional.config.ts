@@ -11,15 +11,13 @@ const config: Config = {
   restoreMocks: true,
   clearMocks: true,
   coverageProvider: 'v8',
-  moduleFileExtensions: [ 'js', 'jsx', 'ts', 'tsx', 'json', 'node' ],
-  testMatch: [
-    '<rootDir>/__tests__/functional/cases/**/*.ts',
-  ],
+  moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx', 'json', 'node'],
+  testMatch: ['<rootDir>/__tests__/functional/cases/**/*.ts'],
   transform: {
-    '^.+\\.(ts|tsx)$': [ 'ts-jest', { tsconfig: 'apps/graphql/tsconfig.json' } ],
+    '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: 'apps/graphql/tsconfig.json' }]
   },
   globalSetup: '<rootDir>/__tests__/functional/globalSetup.ts',
-  globalTeardown: '<rootDir>/__tests__/functional/globalTeardown.ts',
+  globalTeardown: '<rootDir>/__tests__/functional/globalTeardown.ts'
 }
 
 export default config

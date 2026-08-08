@@ -19,9 +19,10 @@ describe('Create authentication token', () => {
     { case: 'password is null', credentials: { email: 'any@any.com', password: null } },
     { case: 'password is integer', credentials: { email: 'any@any.com', password: 111 } },
     { case: 'password is too short', credentials: { email: 'any@any.com', password: 'a' } },
-    { case: 'password is too long', credentials: { email: 'any@any.com', password: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' } },
+    { case: 'password is too long', credentials: { email: 'any@any.com', password: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' } }
   ])('Bad request ($case)', async ({ credentials, times = 1 }) => {
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(createAuthenticationToken({ credentials: credentials as Credentials }))
 
     expect(res.status).toEqual(200)

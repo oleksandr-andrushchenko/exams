@@ -5,12 +5,10 @@ import QuestionRatingMarkRepository from '../../repositories/question/QuestionRa
 
 @Service()
 export default class UserQuestionRatingMarksSyncer {
-
   public constructor(
     @Inject() private readonly questionRatingMarkRepository: QuestionRatingMarkRepository,
-    @Inject() private readonly userRepository: UserRepository,
-  ) {
-  }
+    @Inject() private readonly userRepository: UserRepository
+  ) {}
 
   public async syncUserQuestionRatingMarks(user: User): Promise<User> {
     const ratingMarks = await this.questionRatingMarkRepository.findByCreator(user)

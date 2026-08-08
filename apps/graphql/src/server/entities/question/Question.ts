@@ -14,7 +14,6 @@ import slugify from '../../services/normalizers/SlugNormalizer'
 @ObjectType()
 @Entity({ name: 'questions' })
 export default class Question extends Base {
-
   @BeforeInsert()
   @BeforeUpdate()
   private updateSlug(): void {
@@ -26,7 +25,7 @@ export default class Question extends Base {
   public slug: string
 
   @Column({ type: 'varchar', length: 24, transformer: ObjectIdTransformer })
-  @Field(_type => ObjectIdScalar)
+  @Field((_type) => ObjectIdScalar)
   public examId: ObjectId
 
   @Column({ type: 'enum', enum: QuestionType })
@@ -43,13 +42,13 @@ export default class Question extends Base {
 
   @Authorized(QuestionPermission.GetChoices)
   @Column({ type: 'jsonb', nullable: true })
-  @Field(_type => [ QuestionChoice ], { nullable: true })
+  @Field((_type) => [QuestionChoice], { nullable: true })
   public choices?: QuestionChoice[]
 
   @Column({ type: 'jsonb', nullable: true })
   public rating?: Rating
 
-  @Field(_type => Boolean, { name: 'isApproved', nullable: true })
+  @Field((_type) => Boolean, { name: 'isApproved', nullable: true })
   public getIsApproved(): boolean {
     return !this.ownerId
   }

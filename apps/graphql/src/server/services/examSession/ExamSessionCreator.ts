@@ -17,7 +17,6 @@ import ExamSessionEvent from '../../enums/examSession/ExamSessionEvent'
 
 @Service()
 export default class ExamSessionCreator {
-
   public constructor(
     @InjectEntityManager() private readonly entityManager: EntityManagerInterface,
     @Inject() private readonly examProvider: ExamProvider,
@@ -26,9 +25,8 @@ export default class ExamSessionCreator {
     @Inject() private readonly questionRepository: QuestionRepository,
     @Inject() private readonly eventDispatcher: EventDispatcher,
     @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
-    @Inject('validator') private readonly validator: ValidatorInterface,
-  ) {
-  }
+    @Inject('validator') private readonly validator: ValidatorInterface
+  ) {}
 
   /**
    * @param {CreateExamSession} createExamSession
@@ -51,13 +49,14 @@ export default class ExamSessionCreator {
 
     await this.examSessionVerifier.verifyExamSessionNotTaken(exam, initiator)
 
-    const questions = (await this.questionRepository.findByExamWithoutOwner(exam))
-      .map((question: Question): ExamSessionQuestion => {
+    const questions = (await this.questionRepository.findByExamWithoutOwner(exam)).map(
+      (question: Question): ExamSessionQuestion => {
         const examSessionQuestion = new ExamSessionQuestion()
         examSessionQuestion.questionId = question.id
 
         return examSessionQuestion
-      })
+      }
+    )
 
     const examSession = new ExamSession()
     examSession.examId = exam.id

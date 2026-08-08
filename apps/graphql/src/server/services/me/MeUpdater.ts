@@ -9,14 +9,12 @@ import MeEvent from '../../enums/me/MeEvent'
 
 @Service()
 export default class MeUpdater {
-
   public constructor(
     @InjectEntityManager() private readonly entityManager: EntityManagerInterface,
     @Inject() private readonly eventDispatcher: EventDispatcher,
     @Inject('validator') private readonly validator: ValidatorInterface,
-    @Inject() private readonly userVerifier: UserVerifier,
-  ) {
-  }
+    @Inject() private readonly userVerifier: UserVerifier
+  ) {}
 
   public async updateMe(updateMe: UpdateMe, initiator: User): Promise<User> {
     await this.validator.validate(updateMe)

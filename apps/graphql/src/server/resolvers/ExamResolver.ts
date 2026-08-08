@@ -25,7 +25,6 @@ import ExamTagRepository from '../repositories/examTag/ExamTagRepository'
 @Service()
 @Resolver(Exam)
 export class ExamResolver {
-
   public constructor(
     @Inject() private readonly examProvider: ExamProvider,
     @Inject() private readonly examListProvider: ExamListProvider,
@@ -37,50 +36,38 @@ export class ExamResolver {
     @Inject('validator') private readonly validator: ValidatorInterface,
     @Inject() private readonly examRatingProvider: ExamRatingProvider,
     @Inject() private readonly examExamSessionIdProvider: ExamExamSessionIdProvider,
-    @Inject() private readonly examTagRepository: ExamTagRepository,
-  ) {
-  }
+    @Inject() private readonly examTagRepository: ExamTagRepository
+  ) {}
 
-  @Query(_returns => Exam, { name: 'exam' })
-  public async getExam(
-    @Args() getExam: GetExam,
-  ): Promise<Exam> {
+  @Query((_returns) => Exam, { name: 'exam' })
+  public async getExam(@Args() getExam: GetExam): Promise<Exam> {
     await this.validator.validate(getExam)
 
     return await this.examProvider.getExam(getExam.examId)
   }
 
-  @Query(_returns => [ Exam ], { name: 'exams' })
-  public async getExams(
-    @Args() getExams: GetExams,
-    @Ctx('user') user: User,
-  ): Promise<Exam[]> {
-    return await this.examListProvider.getExams(getExams, false, user) as Exam[]
+  @Query((_returns) => [Exam], { name: 'exams' })
+  public async getExams(@Args() getExams: GetExams, @Ctx('user') user: User): Promise<Exam[]> {
+    return (await this.examListProvider.getExams(getExams, false, user)) as Exam[]
   }
 
-  @Query(_returns => PaginatedExams, { name: 'paginatedExams' })
-  public async getPaginatedExams(
-    @Args() getExams: GetExams,
-    @Ctx('user') user: User,
-  ): Promise<PaginatedExams> {
-    return await this.examListProvider.getExams(getExams, true, user) as PaginatedExams
+  @Query((_returns) => PaginatedExams, { name: 'paginatedExams' })
+  public async getPaginatedExams(@Args() getExams: GetExams, @Ctx('user') user: User): Promise<PaginatedExams> {
+    return (await this.examListProvider.getExams(getExams, true, user)) as PaginatedExams
   }
 
   @Authorized()
-  @Mutation(_returns => Exam)
-  public async createExam(
-    @Arg('createExam') createExam: CreateExam,
-    @Ctx('user') user: User,
-  ): Promise<Exam> {
+  @Mutation((_returns) => Exam)
+  public async createExam(@Arg('createExam') createExam: CreateExam, @Ctx('user') user: User): Promise<Exam> {
     return await this.examCreator.createExam(createExam, user)
   }
 
   @Authorized()
-  @Mutation(_returns => Exam)
+  @Mutation((_returns) => Exam)
   public async updateExam(
     @Args() getExam: GetExam,
     @Arg('updateExam') updateExam: UpdateExam,
-    @Ctx('user') user: User,
+    @Ctx('user') user: User
   ): Promise<Exam> {
     await this.validator.validate(getExam)
     const exam = await this.examProvider.getExam(getExam.examId)
@@ -89,11 +76,8 @@ export class ExamResolver {
   }
 
   @Authorized()
-  @Mutation(_returns => Exam)
-  public async toggleExamApprove(
-    @Args() getExam: GetExam,
-    @Ctx('user') user: User,
-  ): Promise<Exam> {
+  @Mutation((_returns) => Exam)
+  public async toggleExamApprove(@Args() getExam: GetExam, @Ctx('user') user: User): Promise<Exam> {
     await this.validator.validate(getExam)
     const exam = await this.examProvider.getExam(getExam.examId)
 
@@ -103,11 +87,8 @@ export class ExamResolver {
   }
 
   @Authorized()
-  @Mutation(_returns => Boolean)
-  public async deleteExam(
-    @Args() getExam: GetExam,
-    @Ctx('user') user: User,
-  ): Promise<boolean> {
+  @Mutation((_returns) => Boolean)
+  public async deleteExam(@Args() getExam: GetExam, @Ctx('user') user: User): Promise<boolean> {
     await this.validator.validate(getExam)
     const exam = await this.examProvider.getExam(getExam.examId)
 
@@ -117,42 +98,30 @@ export class ExamResolver {
   }
 
   @Authorized()
-  @FieldResolver(_returns => Boolean, { name: 'isOwner', nullable: true })
-  public async getIsAuthorizedUserExamOwner(
-    @Root() exam: Exam,
-    @Ctx('user') user: User,
-  ): Promise<boolean> {
+  @FieldResolver((_returns) => Boolean, { name: 'isOwner', nullable: true })
+  public async getIsAuthorizedUserExamOwner(@Root() exam: Exam, @Ctx('user') user: User): Promise<boolean> {
     return user && user.id.toString() === exam?.ownerId?.toString()
   }
 
   @Authorized()
-  @FieldResolver(_returns => Boolean, { name: 'isCreator', nullable: true })
-  public async getIsAuthorizedUserExamCreator(
-    @Root() exam: Exam,
-    @Ctx('user') user: User,
-  ): Promise<boolean> {
+  @FieldResolver((_returns) => Boolean, { name: 'isCreator', nullable: true })
+  public async getIsAuthorizedUserExamCreator(@Root() exam: Exam, @Ctx('user') user: User): Promise<boolean> {
     return user && user.id.toString() === exam.creatorId.toString()
   }
 
-  @FieldResolver(_returns => RatingSchema, { name: 'rating', nullable: true })
-  public async getExamRating(
-    @Root() exam: Exam,
-    @Ctx('user') user: User,
-  ): Promise<RatingSchema> {
+  @FieldResolver((_returns) => RatingSchema, { name: 'rating', nullable: true })
+  public async getExamRating(@Root() exam: Exam, @Ctx('user') user: User): Promise<RatingSchema> {
     return this.examRatingProvider.getExamRating(exam, user)
   }
 
-  @FieldResolver(_returns => [ ExamTag ], { name: 'tags' })
+  @FieldResolver((_returns) => [ExamTag], { name: 'tags' })
   public getTags(@Root() exam: Exam): Promise<ExamTag[]> {
     return this.examTagRepository.findForExam(exam)
   }
 
   @Authorized()
-  @FieldResolver(_returns => ObjectId, { name: 'examSessionId', nullable: true })
-  public async getAuthorizedUserExamExamSessionId(
-    @Root() exam: Exam,
-    @Ctx('user') user: User,
-  ): Promise<ObjectId> {
+  @FieldResolver((_returns) => ObjectId, { name: 'examSessionId', nullable: true })
+  public async getAuthorizedUserExamExamSessionId(@Root() exam: Exam, @Ctx('user') user: User): Promise<ObjectId> {
     return this.examExamSessionIdProvider.getExamExamSessionId(exam, user)
   }
 }

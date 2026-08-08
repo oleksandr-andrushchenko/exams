@@ -15,16 +15,14 @@ import QuestionEvent from '../../enums/question/QuestionEvent'
 
 @Service()
 export default class QuestionUpdater {
-
   public constructor(
     @InjectEntityManager() private readonly entityManager: EntityManagerInterface,
     @Inject() private readonly examProvider: ExamProvider,
     @Inject() private readonly questionVerifier: QuestionVerifier,
     @Inject() private readonly eventDispatcher: EventDispatcher,
     @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
-    @Inject('validator') private readonly validator: ValidatorInterface,
-  ) {
-  }
+    @Inject('validator') private readonly validator: ValidatorInterface
+  ) {}
 
   /**
    * @param {Question} question

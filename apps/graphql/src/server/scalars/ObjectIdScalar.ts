@@ -36,5 +36,5 @@ export const ObjectIdScalar = new GraphQLScalarType({
     }
 
     return new ObjectId(ast.value)
-  },
+  }
 })

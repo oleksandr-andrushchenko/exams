@@ -1,26 +1,15 @@
 export const errors = {
   BadRequestError: {
-    types: [
-      'ParamRequiredError',
-      'ParamNormalizationError',
-      'ValidatorError',
-      'BAD_USER_INPUT',
-    ],
-    code: 400,
+    types: ['ParamRequiredError', 'ParamNormalizationError', 'ValidatorError', 'BAD_USER_INPUT'],
+    code: 400
   },
   AuthorizationRequiredError: {
-    types: [
-      'UNAUTHENTICATED',
-    ],
-    code: 401,
+    types: ['UNAUTHENTICATED'],
+    code: 401
   },
   ForbiddenError: {
-    types: [
-      'UNAUTHORIZED',
-      'UserWrongCredentialsError',
-      'AuthorizationFailedError',
-    ],
-    code: 403,
+    types: ['UNAUTHORIZED', 'UserWrongCredentialsError', 'AuthorizationFailedError'],
+    code: 403
   },
   NotFoundError: {
     types: [
@@ -29,9 +18,9 @@ export const errors = {
       'QuestionNotFoundError',
       'ExamSessionNotFoundError',
       'ExamSessionQuestionNumberNotFoundError',
-      'UserNotFoundError',
+      'UserNotFoundError'
     ],
-    code: 404,
+    code: 404
   },
   ConflictError: {
     types: [
@@ -40,8 +29,8 @@ export const errors = {
       'ExamSessionTakenError',
       'UserEmailTakenError',
       'ExamNotApprovedError',
-      'ExamWithoutApprovedQuestionsError',
+      'ExamWithoutApprovedQuestionsError'
     ],
-    code: 409,
-  },
+    code: 409
+  }
 }

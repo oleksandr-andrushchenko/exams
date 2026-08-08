@@ -12,6 +12,6 @@ export default class GetExamTags {
   @IsInt()
   @Min(1)
   @Max(50)
-  @Field(_type => Int, { nullable: true, defaultValue: 20 })
+  @Field((_type) => Int, { nullable: true, defaultValue: 20 })
   public readonly size?: number = 20
 }

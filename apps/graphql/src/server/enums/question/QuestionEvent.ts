@@ -3,7 +3,7 @@ enum QuestionEvent {
   Updated = 'questionUpdated',
   Deleted = 'questionDeleted',
   ApproveToggled = 'questionApproveToggled',
-  Rated = 'questionRated',
+  Rated = 'questionRated'
 }
 
 export default QuestionEvent

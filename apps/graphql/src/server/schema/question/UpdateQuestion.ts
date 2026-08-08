@@ -7,31 +7,30 @@ import QuestionDifficulty from '../../entities/question/QuestionDifficulty'
 
 @InputType()
 export default class UpdateQuestion {
-
-  @ValidateIf(target => 'examId' in target)
+  @ValidateIf((target) => 'examId' in target)
   @IsMongoId()
-  @Field(_type => ID, { nullable: true })
+  @Field((_type) => ID, { nullable: true })
   public readonly examId?: string
 
-  @ValidateIf(target => 'type' in target)
+  @ValidateIf((target) => 'type' in target)
   @IsEnum(QuestionType)
   @Field({ nullable: true })
   public readonly type?: QuestionType
 
-  @ValidateIf(target => 'difficulty' in target)
+  @ValidateIf((target) => 'difficulty' in target)
   @IsEnum(QuestionDifficulty)
   @Field({ nullable: true })
   public readonly difficulty?: QuestionDifficulty
 
-  @ValidateIf(target => 'title' in target)
+  @ValidateIf((target) => 'title' in target)
   @Length(10, 3000)
   @Field({ nullable: true })
   public readonly title?: string
 
-  @ValidateIf(target => 'choices' in target)
+  @ValidateIf((target) => 'choices' in target)
   @ArrayNotEmpty()
   @ValidateNested({ each: true })
   @Type(() => QuestionChoiceSchema)
-  @Field(_type => [ QuestionChoiceSchema! ], { nullable: true })
+  @Field((_type) => [QuestionChoiceSchema!], { nullable: true })
   public readonly choices?: QuestionChoiceSchema[]
 }

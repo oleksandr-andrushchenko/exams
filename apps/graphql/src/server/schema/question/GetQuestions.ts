@@ -6,19 +6,18 @@ import QuestionType from '../../entities/question/QuestionType'
 
 @ArgsType()
 export default class GetQuestions extends PaginationSchema {
-
   @IsOptional()
   @IsMongoId()
-  @Field(_type => ID, { nullable: true })
+  @Field((_type) => ID, { nullable: true })
   public exam?: string
 
   @IsOptional()
-  @IsIn([ 'yes', 'no' ])
+  @IsIn(['yes', 'no'])
   @Field({ nullable: true })
   public readonly subscription?: string
 
   @IsOptional()
-  @IsIn([ 'yes', 'no' ])
+  @IsIn(['yes', 'no'])
   @Field({ nullable: true })
   public approved?: string
 
@@ -38,7 +37,7 @@ export default class GetQuestions extends PaginationSchema {
   public readonly type?: QuestionType
 
   @IsOptional()
-  @IsIn([ 'i', 'somebody' ])
+  @IsIn(['i', 'somebody'])
   @Field({ nullable: true })
   public creator?: string
 }

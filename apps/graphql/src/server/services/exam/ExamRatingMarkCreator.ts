@@ -12,14 +12,12 @@ import ExamRatingMark from '../../entities/exam/ExamRatingMark'
 
 @Service()
 export default class ExamRatingMarkCreator {
-
   public constructor(
     @Inject() private readonly eventDispatcher: EventDispatcher,
     @Inject() private readonly examRatingMarkRepository: ExamRatingMarkRepository,
     @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
-    @InjectEntityManager() private readonly entityManager: EntityManagerInterface,
-  ) {
-  }
+    @InjectEntityManager() private readonly entityManager: EntityManagerInterface
+  ) {}
 
   /**
    * @param {Exam} exam

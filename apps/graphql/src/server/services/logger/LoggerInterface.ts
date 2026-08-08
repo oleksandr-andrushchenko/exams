@@ -1,5 +1,4 @@
 export default interface LoggerInterface {
-
   debug(message: string, ...args: unknown[]): LoggerInterface
 
   info(message: string, ...args: unknown[]): LoggerInterface

@@ -7,6 +7,6 @@ export const deleteQuestion = (variables: GetQuestion) => {
         deleteQuestion(questionId: $questionId)
       }
   `,
-    variables,
+    variables
   }
 }

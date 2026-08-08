@@ -8,11 +8,7 @@ import User from '../../entities/user/User'
 
 @Service()
 export default class ExamQuestionListProvider {
-
-  public constructor(
-    @Inject() private readonly questionListProvider: QuestionListProvider,
-  ) {
-  }
+  public constructor(@Inject() private readonly questionListProvider: QuestionListProvider) {}
 
   /**
    * @param {Exam} exam
@@ -26,7 +22,7 @@ export default class ExamQuestionListProvider {
     exam: Exam,
     getQuestions: GetQuestions = undefined,
     meta: boolean = false,
-    initiator?: User,
+    initiator?: User
   ): Promise<Question[] | PaginatedQuestions> {
     getQuestions = getQuestions === undefined ? new GetQuestions() : getQuestions
     getQuestions.exam = exam.id.toString()

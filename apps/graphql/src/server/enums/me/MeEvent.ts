@@ -1,7 +1,7 @@
 enum MeEvent {
   Created = 'meCreated',
   Updated = 'meUpdated',
-  Deleted = 'meDeleted',
+  Deleted = 'meDeleted'
 }
 
 export default MeEvent

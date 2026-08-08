@@ -1,7 +1,7 @@
 enum UserEvent {
   Created = 'userCreated',
   Updated = 'userUpdated',
-  Deleted = 'userDeleted',
+  Deleted = 'userDeleted'
 }
 
 export default UserEvent

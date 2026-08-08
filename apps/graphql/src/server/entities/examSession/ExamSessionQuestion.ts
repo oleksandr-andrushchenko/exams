@@ -5,13 +5,12 @@ import { ObjectId } from 'bson'
 
 @ObjectType()
 export default class ExamSessionQuestion {
-
   @Column()
-  @Field(_type => ObjectIdScalar)
+  @Field((_type) => ObjectIdScalar)
   public questionId: ObjectId
 
   @Column()
-  @Field(_type => Int, { nullable: true })
+  @Field((_type) => Int, { nullable: true })
   public choice?: number
 
   @Column()

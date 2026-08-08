@@ -3,7 +3,6 @@ import { Field, InputType } from 'type-graphql'
 
 @InputType()
 export class Credentials {
-
   @IsEmail()
   @Field()
   public readonly email: string

@@ -12,16 +12,18 @@ const framework: TestFramework = globalThis.framework
 describe('Get examSession', () => {
   test('Unauthorized', async () => {
     const examSession = await framework.fixture<ExamSession>(ExamSession)
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(getExamSession({ examSessionId: examSession.id.toString() }))
 
     expect(res.status).toEqual(200)
     expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
   })
   test('Bad request (invalid id)', async () => {
-    const user = await framework.fixture<User>(User, { permissions: [ ExamSessionPermission.Get ] })
+    const user = await framework.fixture<User>(User, { permissions: [ExamSessionPermission.Get] })
     const token = (await framework.auth(user)).token
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(getExamSession({ examSessionId: 'invalid' }))
       .auth(token, { type: 'bearer' })
 
@@ -29,10 +31,11 @@ describe('Get examSession', () => {
     expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
   })
   test('Not found', async () => {
-    const user = await framework.fixture<User>(User, { permissions: [ ExamSessionPermission.Get ] })
+    const user = await framework.fixture<User>(User, { permissions: [ExamSessionPermission.Get] })
     const token = (await framework.auth(user)).token
     const id = await framework.fakeId()
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(getExamSession({ examSessionId: id.toString() }))
       .auth(token, { type: 'bearer' })
 
@@ -43,7 +46,8 @@ describe('Get examSession', () => {
     const user = await framework.fixture<User>(User)
     const examSession = await framework.fixture<ExamSession>(ExamSession)
     const token = (await framework.auth(user)).token
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(getExamSession({ examSessionId: examSession.id.toString() }))
       .auth(token, { type: 'bearer' })
 
@@ -54,7 +58,8 @@ describe('Get examSession', () => {
     const examSession = await framework.fixture<ExamSession>(ExamSession)
     const user = await framework.load<User>(User, examSession.ownerId)
     const token = (await framework.auth(user)).token
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(getExamSession({ examSessionId: examSession.id.toString() }))
       .auth(token, { type: 'bearer' })
 
@@ -63,7 +68,7 @@ describe('Get examSession', () => {
   })
   test('Found (permission)', async () => {
     const examSession = await framework.fixture<ExamSession>(ExamSession)
-    const user = await framework.fixture<User>(User, { permissions: [ ExamSessionPermission.Get ] })
+    const user = await framework.fixture<User>(User, { permissions: [ExamSessionPermission.Get] })
     const token = (await framework.auth(user)).token
     const fields = [
       'id',
@@ -74,9 +79,10 @@ describe('Get examSession', () => {
       'questionCount',
       'answeredQuestionCount',
       'createdAt',
-      'updatedAt',
+      'updatedAt'
     ]
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(getExamSession({ examSessionId: examSession.id.toString() }, fields))
       .auth(token, { type: 'bearer' })
 
@@ -92,10 +98,10 @@ describe('Get examSession', () => {
           questionCount: examSession.questionCount(),
           answeredQuestionCount: examSession.answeredQuestionCount(),
           createdAt: examSession.createdAt.getTime(),
-          updatedAt: examSession.updatedAt?.getTime() ?? null,
-        },
-      },
+          updatedAt: examSession.updatedAt?.getTime() ?? null
+        }
+      }
     })
-    expect(res.body.data.examSession).not.toHaveProperty([ 'questions', 'correctAnswerCount', 'creatorId', 'deletedAt' ])
+    expect(res.body.data.examSession).not.toHaveProperty(['questions', 'correctAnswerCount', 'creatorId', 'deletedAt'])
   })
 })

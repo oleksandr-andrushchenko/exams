@@ -12,15 +12,13 @@ import ExamSessionEvent from '../../enums/examSession/ExamSessionEvent'
 
 @Service()
 export default class ExamSessionCompletionCreator {
-
   public constructor(
     @InjectEntityManager() private readonly entityManager: EntityManagerInterface,
     @Inject() private readonly examProvider: ExamProvider,
     @Inject() private readonly examQuestionListProvider: ExamQuestionListProvider,
     @Inject() private readonly eventDispatcher: EventDispatcher,
-    @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
-  ) {
-  }
+    @Inject() private readonly authorizationVerifier: AuthorizationVerifier
+  ) {}
 
   /**
    * @param {ExamSession} examSession
@@ -32,7 +30,7 @@ export default class ExamSessionCompletionCreator {
     await this.authorizationVerifier.verifyAuthorization(initiator, ExamSessionPermission.CreateCompletion, examSession)
 
     const exam = await this.examProvider.getExam(examSession.examId)
-    const questions = await this.examQuestionListProvider.getExamQuestions(exam) as Question[]
+    const questions = (await this.examQuestionListProvider.getExamQuestions(exam)) as Question[]
 
     const questionsHashedById = []
 

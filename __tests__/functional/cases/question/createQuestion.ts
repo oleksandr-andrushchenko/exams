@@ -23,10 +23,11 @@ describe('Create question', () => {
       examId: exam.id.toString(),
       title: 'any',
       type: QuestionType.CHOICE,
-      choices: [ { title: faker.lorem.sentences(3) }, { title: faker.lorem.sentences(3), correct: true } ],
-      difficulty: QuestionDifficulty.EASY,
+      choices: [{ title: faker.lorem.sentences(3) }, { title: faker.lorem.sentences(3), correct: true }],
+      difficulty: QuestionDifficulty.EASY
     }
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(createQuestion({ createQuestion: create }))
 
     expect(res.status).toEqual(200)
@@ -34,16 +35,17 @@ describe('Create question', () => {
   })
   test('Not found (exam)', async () => {
     const examId = await framework.fakeId()
-    const user = await framework.fixture<User>(User, { permissions: [ QuestionPermission.Create ] })
+    const user = await framework.fixture<User>(User, { permissions: [QuestionPermission.Create] })
     const token = (await framework.auth(user)).token
     const create = {
       examId: examId.toString(),
       title: 'Any valid title',
       type: QuestionType.CHOICE,
-      choices: [ { title: faker.lorem.sentences(3) }, { title: faker.lorem.sentences(3), correct: true } ],
-      difficulty: QuestionDifficulty.EASY,
+      choices: [{ title: faker.lorem.sentences(3) }, { title: faker.lorem.sentences(3), correct: true }],
+      difficulty: QuestionDifficulty.EASY
     }
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(createQuestion({ createQuestion: create }))
       .auth(token, { type: 'bearer' })
 
@@ -55,8 +57,8 @@ describe('Create question', () => {
       type: QuestionType.CHOICE,
       difficulty: QuestionDifficulty.EASY,
       title: 'ab c'.repeat(10),
-      choices: [ { title: 'a bc'.repeat(10), correct: true }, { title: 'a b c'.repeat(10) } ],
-      ...{ [key]: value },
+      choices: [{ title: 'a bc'.repeat(10), correct: true }, { title: 'a b c'.repeat(10) }],
+      ...{ [key]: value }
     }
   }
   test.each([
@@ -91,58 +93,59 @@ describe('Create question', () => {
     { case: 'choices as boolean', body: createBadRequestBody('choices', false) },
 
     { case: 'choice as undefined', body: createBadRequestBody('choices', undefined) },
-    { case: 'choice as string', body: createBadRequestBody('choices', [ 'any' ]) },
-    { case: 'choice as number', body: createBadRequestBody('choices', [ 123 ]) },
-    { case: 'choice as boolean', body: createBadRequestBody('choices', [ true ]) },
-    { case: 'choice as empty object', body: createBadRequestBody('choices', [ {} ]) },
-    { case: 'choice title as undefined', body: createBadRequestBody('choices', [ { title: undefined } ]) },
-    { case: 'choice title as object', body: createBadRequestBody('choices', [ { title: {} } ]) },
-    { case: 'choice title as number', body: createBadRequestBody('choices', [ { title: 123123123123 } ]) },
-    { case: 'choice title as short string', body: createBadRequestBody('choices', [ { title: 'a' } ]) },
-    { case: 'choice title as long string', body: createBadRequestBody('choices', [ { title: 'a'.repeat(4001) } ]) },
-    { case: 'choice title as boolean', body: createBadRequestBody('choices', [ { title: false } ]) },
+    { case: 'choice as string', body: createBadRequestBody('choices', ['any']) },
+    { case: 'choice as number', body: createBadRequestBody('choices', [123]) },
+    { case: 'choice as boolean', body: createBadRequestBody('choices', [true]) },
+    { case: 'choice as empty object', body: createBadRequestBody('choices', [{}]) },
+    { case: 'choice title as undefined', body: createBadRequestBody('choices', [{ title: undefined }]) },
+    { case: 'choice title as object', body: createBadRequestBody('choices', [{ title: {} }]) },
+    { case: 'choice title as number', body: createBadRequestBody('choices', [{ title: 123123123123 }]) },
+    { case: 'choice title as short string', body: createBadRequestBody('choices', [{ title: 'a' }]) },
+    { case: 'choice title as long string', body: createBadRequestBody('choices', [{ title: 'a'.repeat(4001) }]) },
+    { case: 'choice title as boolean', body: createBadRequestBody('choices', [{ title: false }]) },
     {
       case: 'choice correct as object',
-      body: createBadRequestBody('choices', [ { title: 'Any valid title', correct: {} } ]),
+      body: createBadRequestBody('choices', [{ title: 'Any valid title', correct: {} }])
     },
     {
       case: 'choice correct as number',
-      body: createBadRequestBody('choices', [ { title: 'Any valid title', correct: 1 } ]),
+      body: createBadRequestBody('choices', [{ title: 'Any valid title', correct: 1 }])
     },
     {
       case: 'choice correct as string',
-      body: createBadRequestBody('choices', [ { title: 'Any valid title', correct: 'any' } ]),
+      body: createBadRequestBody('choices', [{ title: 'Any valid title', correct: 'any' }])
     },
     {
       case: 'choice correct as null',
-      body: createBadRequestBody('choices', [ { title: 'Any valid title', correct: null } ]),
+      body: createBadRequestBody('choices', [{ title: 'Any valid title', correct: null }])
     },
     {
       case: 'choice explanation as object',
-      body: createBadRequestBody('choices', [ { title: 'Any valid title', explanation: {} } ]),
+      body: createBadRequestBody('choices', [{ title: 'Any valid title', explanation: {} }])
     },
     {
       case: 'choice explanation as number',
-      body: createBadRequestBody('choices', [ { title: 'Any valid title', explanation: 1 } ]),
+      body: createBadRequestBody('choices', [{ title: 'Any valid title', explanation: 1 }])
     },
     {
       case: 'choice explanation as string',
-      body: createBadRequestBody('choices', [ { title: 'Any valid title', explanation: 'any' } ]),
+      body: createBadRequestBody('choices', [{ title: 'Any valid title', explanation: 'any' }])
     },
     {
       case: 'choice explanation as null',
-      body: createBadRequestBody('choices', [ { title: 'Any valid title', explanation: null } ]),
+      body: createBadRequestBody('choices', [{ title: 'Any valid title', explanation: null }])
     },
     {
       case: 'choice explanation as boolean',
-      body: createBadRequestBody('choices', [ { title: 'Any valid title', explanation: true } ]),
-    },
+      body: createBadRequestBody('choices', [{ title: 'Any valid title', explanation: true }])
+    }
   ])('Bad request ($case)', async ({ body, times = 1 }) => {
     const exam = await framework.fixture<Exam>(Exam)
-    const user = await framework.fixture<User>(User, { permissions: [ QuestionPermission.Create ] })
+    const user = await framework.fixture<User>(User, { permissions: [QuestionPermission.Create] })
     const token = (await framework.auth(user)).token
     const create = { ...body, ...{ examId: exam.id.toString() } } as CreateQuestion
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(createQuestion({ createQuestion: create }))
       .auth(token, { type: 'bearer' })
 
@@ -150,7 +153,7 @@ describe('Create question', () => {
     expect(res.body).toMatchObject(framework.graphqlError(...Array(times).fill('BadRequestError')))
   })
   test.each([
-    { case: 'no permissions', permissions: [] },
+    { case: 'no permissions', permissions: [] }
     // { case: 'no add exam question permission', permissions: [ QuestionPermission.Create ] },
     // { case: 'no create question permission', permissions: [ ExamPermission.AddQuestion ] },
   ])('Forbidden ($case)', async ({ permissions }) => {
@@ -161,10 +164,11 @@ describe('Create question', () => {
       examId: exam.id.toString(),
       title: faker.lorem.sentences(3),
       type: QuestionType.CHOICE,
-      choices: [ { title: faker.lorem.sentences(3) }, { title: faker.lorem.sentences(3), correct: true } ],
-      difficulty: QuestionDifficulty.EASY,
+      choices: [{ title: faker.lorem.sentences(3) }, { title: faker.lorem.sentences(3), correct: true }],
+      difficulty: QuestionDifficulty.EASY
     }
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(createQuestion({ createQuestion: create }))
       .auth(token, { type: 'bearer' })
 
@@ -180,10 +184,11 @@ describe('Create question', () => {
       examId: exam.id.toString(),
       title: question1.title,
       type: QuestionType.CHOICE,
-      choices: [ { title: faker.lorem.sentences(3) }, { title: faker.lorem.sentences(3), correct: true } ],
-      difficulty: QuestionDifficulty.EASY,
+      choices: [{ title: faker.lorem.sentences(3) }, { title: faker.lorem.sentences(3), correct: true }],
+      difficulty: QuestionDifficulty.EASY
     }
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(createQuestion({ createQuestion: create }))
       .auth(token, { type: 'bearer' })
 
@@ -192,9 +197,12 @@ describe('Create question', () => {
   })
   test.each([
     { case: 'has exam ownership', ownership: true },
-    { case: 'has permission', permission: true },
+    { case: 'has permission', permission: true }
   ])('Created ($case)', async ({ ownership, permission }) => {
-    const user = await framework.fixture<User>(User, permission ? { permissions: [ QuestionPermission.Create, ExamPermission.AddQuestion ] } : {})
+    const user = await framework.fixture<User>(
+      User,
+      permission ? { permissions: [QuestionPermission.Create, ExamPermission.AddQuestion] } : {}
+    )
     const token = (await framework.auth(user)).token
     const exam = await framework.fixture<Exam>(Exam, ownership ? { ownerId: user.id } : {})
     const create = {
@@ -203,19 +211,19 @@ describe('Create question', () => {
       type: QuestionType.CHOICE,
       choices: [
         {
-          title: faker.lorem.sentence(),
+          title: faker.lorem.sentence()
         },
         {
           title: faker.lorem.sentences(3),
-          correct: faker.datatype.boolean(),
+          correct: faker.datatype.boolean()
         },
         {
           title: 'Any title 3',
           explanation: faker.lorem.sentence(),
-          correct: faker.datatype.boolean(),
-        },
+          correct: faker.datatype.boolean()
+        }
       ],
-      difficulty: QuestionDifficulty.EASY,
+      difficulty: QuestionDifficulty.EASY
     }
     const fields = [
       'id',
@@ -227,10 +235,11 @@ describe('Create question', () => {
       'rating {markCount averageMark}',
       'ownerId',
       'createdAt',
-      'updatedAt',
+      'updatedAt'
     ]
     const now = Date.now()
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(createQuestion({ createQuestion: create }, fields))
       .auth(token, { type: 'bearer' })
 
@@ -247,17 +256,18 @@ describe('Create question', () => {
       type: createdQuestion.type,
       difficulty: createdQuestion.difficulty,
       title: createdQuestion.title,
-      choices: createdQuestion.choices?.map(choice => ({
-        title: choice.title,
-        correct: choice.correct === undefined ? null : choice.correct,
-        explanation: choice.explanation === undefined ? null : choice.explanation,
-      })) ?? null,
+      choices:
+        createdQuestion.choices?.map((choice) => ({
+          title: choice.title,
+          correct: choice.correct === undefined ? null : choice.correct,
+          explanation: choice.explanation === undefined ? null : choice.explanation
+        })) ?? null,
       rating: null,
       ownerId: createdQuestion.ownerId.toString(),
       createdAt: createdQuestion.createdAt.getTime(),
-      updatedAt: null,
+      updatedAt: null
     })
     expect(createdQuestion.createdAt.getTime()).toBeGreaterThanOrEqual(now)
-    expect(res.body.data.createQuestion).not.toHaveProperty([ 'creatorId', 'deletedAt' ])
+    expect(res.body.data.createQuestion).not.toHaveProperty(['creatorId', 'deletedAt'])
   })
 })

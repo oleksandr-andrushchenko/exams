@@ -4,11 +4,7 @@ import { ObjectId } from 'bson'
 
 @Service()
 export default class IdNormalizer {
-
-  public constructor(
-    @Inject('validator') private readonly validator: ValidatorInterface,
-  ) {
-  }
+  public constructor(@Inject('validator') private readonly validator: ValidatorInterface) {}
 
   /**
    * @param {ObjectId | string} id

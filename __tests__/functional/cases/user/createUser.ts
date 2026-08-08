@@ -13,7 +13,8 @@ const framework: TestFramework = globalThis.framework
 
 describe('Create user', () => {
   test('Unauthorized', async () => {
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(createUser({ createUser: { email: 'a@a.com', password: 'password' } }))
 
     expect(res.status).toEqual(200)
@@ -40,11 +41,12 @@ describe('Create user', () => {
     { case: 'permissions is a string', user: { email: 'a@a.com', password: 'password', permissions: 'invalid' } },
     { case: 'permissions is an integer', user: { email: 'a@a.com', password: 'password', permissions: 123 } },
     { case: 'permissions is an object', user: { email: 'a@a.com', password: 'password', permissions: {} } },
-    { case: 'permissions is invalid', user: { email: 'a@a.com', password: 'password', permissions: [ 'any' ] } },
+    { case: 'permissions is invalid', user: { email: 'a@a.com', password: 'password', permissions: ['any'] } }
   ])('Bad request ($case)', async ({ user: userCreate, times = 1 }) => {
-    const user = await framework.fixture<User>(User, { permissions: [ UserPermission.Create ] })
+    const user = await framework.fixture<User>(User, { permissions: [UserPermission.Create] })
     const token = (await framework.auth(user)).token
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(createUser({ createUser: userCreate as CreateUser }))
       .auth(token, { type: 'bearer' })
 
@@ -54,14 +56,17 @@ describe('Create user', () => {
   test('Forbidden', async () => {
     const user = await framework.fixture<User>(User)
     const token = (await framework.auth(user)).token
-    const res = await request(framework.app).post('/')
-      .send(createUser({
-        createUser: {
-          name: 'any',
-          email: 'a@a.com',
-          password: '123123',
-        },
-      }))
+    const res = await request(framework.app)
+      .post('/')
+      .send(
+        createUser({
+          createUser: {
+            name: 'any',
+            email: 'a@a.com',
+            password: '123123'
+          }
+        })
+      )
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
@@ -69,16 +74,19 @@ describe('Create user', () => {
   })
   test('Conflict (email)', async () => {
     const user1 = await framework.fixture<User>(User)
-    const user = await framework.fixture<User>(User, { permissions: [ UserPermission.Create ] })
+    const user = await framework.fixture<User>(User, { permissions: [UserPermission.Create] })
     const token = (await framework.auth(user)).token
-    const res = await request(framework.app).post('/')
-      .send(createUser({
-        createUser: {
-          name: 'any',
-          email: user1.email,
-          password: '123123',
-        },
-      }))
+    const res = await request(framework.app)
+      .post('/')
+      .send(
+        createUser({
+          createUser: {
+            name: 'any',
+            email: user1.email,
+            password: '123123'
+          }
+        })
+      )
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
@@ -86,12 +94,15 @@ describe('Create user', () => {
   })
   test('Created', async () => {
     await framework.clear(User)
-    const user = await framework.fixture<User>(User, { permissions: [ UserPermission.Create, UserPermission.GetEmail, UserPermission.GetPermissions ] })
+    const user = await framework.fixture<User>(User, {
+      permissions: [UserPermission.Create, UserPermission.GetEmail, UserPermission.GetPermissions]
+    })
     const token = (await framework.auth(user)).token
     const userCreate = { name: 'any', email: 'a@a.com' }
-    const fields = [ 'id', 'name', 'email', 'permissions', 'createdAt', 'updatedAt' ]
+    const fields = ['id', 'name', 'email', 'permissions', 'createdAt', 'updatedAt']
     const now = Date.now()
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(createUser({ createUser: { ...userCreate, ...{ password: '123123' } } }, fields))
       .auth(token, { type: 'bearer' })
 
@@ -107,11 +118,11 @@ describe('Create user', () => {
       id: id.toString(),
       name: createdUser.name,
       email: createdUser.email,
-      permissions: [ Permission.Regular ],
+      permissions: [Permission.Regular],
       createdAt: createdUser.createdAt.getTime(),
-      updatedAt: null,
+      updatedAt: null
     })
     expect(createdUser.createdAt.getTime()).toBeGreaterThanOrEqual(now)
-    expect(res.body.data.createUser).not.toHaveProperty([ 'password', 'creatorId', 'deletedAt' ])
+    expect(res.body.data.createUser).not.toHaveProperty(['password', 'creatorId', 'deletedAt'])
   })
 })

@@ -6,9 +6,8 @@ import Activity from '../../entities/activity/Activity'
 
 @ObjectType()
 export default class PaginatedActivityList extends PaginatedSchema<Activity> {
-
   @ValidateNested({ each: true })
   @Type(() => Activity)
-  @Field(_type => [ Activity ])
+  @Field((_type) => [Activity])
   public data: Activity[]
 }

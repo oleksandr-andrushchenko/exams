@@ -8,7 +8,6 @@ import slugify from '../../services/normalizers/SlugNormalizer'
 @ObjectType()
 @Entity({ name: 'exams' })
 export default class Exam extends Base {
-
   @BeforeInsert()
   @BeforeUpdate()
   private updateSlug(): void {
@@ -24,29 +23,29 @@ export default class Exam extends Base {
   public name: string
 
   @Column({ nullable: true })
-  @Field(_type => Int, { nullable: true })
+  @Field((_type) => Int, { nullable: true })
   public questionCount?: number = 0
 
   @Column({ nullable: true })
-  @Field(_type => Int, { nullable: true })
+  @Field((_type) => Int, { nullable: true })
   public approvedQuestionCount?: number = 0
 
   @Column({ nullable: true })
-  @Field(_type => Int, { nullable: true })
+  @Field((_type) => Int, { nullable: true })
   public requiredScore?: number = 0
 
   @Column({ type: 'jsonb', nullable: true })
   public rating?: Rating
 
-  @ManyToMany(_type => ExamTag, tag => tag.exams)
+  @ManyToMany((_type) => ExamTag, (tag) => tag.exams)
   @JoinTable({
     name: 'examExamTags',
     joinColumn: { name: 'examId' },
-    inverseJoinColumn: { name: 'examTagId' },
+    inverseJoinColumn: { name: 'examTagId' }
   })
   public tags: ExamTag[]
 
-  @Field(_type => Boolean, { name: 'isApproved', nullable: true })
+  @Field((_type) => Boolean, { name: 'isApproved', nullable: true })
   public getIsApproved(): boolean {
     return !this.ownerId
   }

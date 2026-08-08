@@ -1,1 +1,22 @@
-{% extends "layout.html" %}{% block content %}<div class="row justify-content-center"><div class="col-12 col-md-7 col-lg-5"><h1>Register</h1>{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}<form class="card card-body d-flex gap-3" method="post" action="/register"><label>Email<input class="form-control" type="email" name="email" autocomplete="username" required></label><label>Password<input class="form-control" type="password" name="password" autocomplete="new-password" required></label><button class="btn btn-primary">Register</button></form><p class="mt-3">Already have an account? <a href="/login">Login</a></p></div></div>{% endblock %}
+{% extends "layout.html" %}{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-7 col-lg-5">
+    <h1>Register</h1>
+    {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+    <form class="card card-body d-flex gap-3" method="post" action="/register">
+      <label>Email<input class="form-control" type="email" name="email" autocomplete="username" required /></label
+      ><label
+        >Password<input
+          class="form-control"
+          type="password"
+          name="password"
+          autocomplete="new-password"
+          required /></label
+      ><button class="btn btn-primary">Register</button>
+    </form>
+    <p class="mt-3">Already have an account? <a href="/login">Login</a></p>
+  </div>
+</div>
+{% endblock %}

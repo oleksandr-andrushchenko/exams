@@ -3,7 +3,10 @@ import PaginatedSchema, { PaginatedMetaSchema } from '../schema/pagination/Pagin
 import EntityRepository from '../repositories/EntityRepository'
 
 export default class Cursor<Entity extends Record<string, any>> {
-  public constructor(private pagination: PaginationSchema, private repository: EntityRepository<Entity>) {}
+  public constructor(
+    private pagination: PaginationSchema,
+    private repository: EntityRepository<Entity>
+  ) {}
   public async getPaginated({ where = {}, meta = false }): Promise<Entity[] | PaginatedSchema<Entity>> {
     const key = this.pagination.cursor || 'id'
     const direction = this.pagination.order === 'desc' ? -1 : 1
@@ -16,7 +19,7 @@ export default class Cursor<Entity extends Record<string, any>> {
     })
     const rawCursor = this.pagination.nextCursor || this.pagination.prevCursor
     const cursorId = rawCursor?.split('_')[0]
-    const cursorIndex = cursorId ? all.findIndex(item => String(item.id) === cursorId) : -1
+    const cursorIndex = cursorId ? all.findIndex((item) => String(item.id) === cursorId) : -1
     let start = cursorIndex + 1
     let data = all.slice(start, start + this.pagination.size)
     if (this.pagination.prevCursor) {
@@ -32,9 +35,11 @@ export default class Cursor<Entity extends Record<string, any>> {
     const cursorFor = (item: Entity) => String(item.id) + (key === 'id' ? '' : '_' + item[key])
     if (data.length && start + data.length < all.length) result.meta.nextCursor = cursorFor(data[data.length - 1])
     if (data.length && start > 0) result.meta.prevCursor = cursorFor(data[0])
-    if (result.meta.nextCursor) result.meta.nextUrl = `${ this.url(result.meta) }&nextCursor=${ result.meta.nextCursor }`
-    if (result.meta.prevCursor) result.meta.prevUrl = `${ this.url(result.meta) }&prevCursor=${ result.meta.prevCursor }`
+    if (result.meta.nextCursor) result.meta.nextUrl = `${this.url(result.meta)}&nextCursor=${result.meta.nextCursor}`
+    if (result.meta.prevCursor) result.meta.prevUrl = `${this.url(result.meta)}&prevCursor=${result.meta.prevCursor}`
     return result
   }
-  private url(meta: PaginatedMetaSchema): string { return `?cursor=${ meta.cursor }&size=${ meta.size }&order=${ meta.order }` }
+  private url(meta: PaginatedMetaSchema): string {
+    return `?cursor=${meta.cursor}&size=${meta.size}&order=${meta.order}`
+  }
 }

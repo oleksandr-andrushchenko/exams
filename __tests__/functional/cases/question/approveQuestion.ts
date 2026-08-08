@@ -14,16 +14,16 @@ describe('Approve question', () => {
   test('Unauthorized', async () => {
     const question = await framework.fixture<Question>(Question)
     const questionId = question.id.toString()
-    const res = await request(framework.app).post('/')
-      .send(toggleQuestionApprove({ questionId }))
+    const res = await request(framework.app).post('/').send(toggleQuestionApprove({ questionId }))
 
     expect(res.status).toEqual(200)
     expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
   })
   test('Bad request (invalid question id)', async () => {
-    const user = await framework.fixture<User>(User, { permissions: [ QuestionPermission.Approve ] })
+    const user = await framework.fixture<User>(User, { permissions: [QuestionPermission.Approve] })
     const token = (await framework.auth(user)).token
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(toggleQuestionApprove({ questionId: 'invalid' }))
       .auth(token, { type: 'bearer' })
 
@@ -31,10 +31,11 @@ describe('Approve question', () => {
     expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
   })
   test('Not found', async () => {
-    const user = await framework.fixture<User>(User, { permissions: [ QuestionPermission.Approve ] })
+    const user = await framework.fixture<User>(User, { permissions: [QuestionPermission.Approve] })
     const token = (await framework.auth(user)).token
     const id = await framework.fakeId()
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(toggleQuestionApprove({ questionId: id.toString() }))
       .auth(token, { type: 'bearer' })
 
@@ -46,7 +47,8 @@ describe('Approve question', () => {
     const question = await framework.fixture<Question>(Question)
     const questionId = question.id.toString()
     const token = (await framework.auth(user)).token
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(toggleQuestionApprove({ questionId }))
       .auth(token, { type: 'bearer' })
 
@@ -58,7 +60,8 @@ describe('Approve question', () => {
     const question = await framework.fixture<Question>(Question, { creatorId: user.id, ownerId: user.id })
     const questionId = question.id.toString()
     const token = (await framework.auth(user)).token
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(toggleQuestionApprove({ questionId }))
       .auth(token, { type: 'bearer' })
 
@@ -71,14 +74,15 @@ describe('Approve question', () => {
     await Promise.all([
       framework.fixture<Question>(Question, { examId: exam.id, ownerId: undefined }),
       framework.fixture<Question>(Question, { examId: exam.id, ownerId: undefined }),
-      framework.fixture<Question>(Question, { examId: exam.id }),
+      framework.fixture<Question>(Question, { examId: exam.id })
     ])
     const question = await framework.fixture<Question>(Question, { examId: exam.id })
-    const user = await framework.fixture<User>(User, { permissions: [ QuestionPermission.Approve ] })
+    const user = await framework.fixture<User>(User, { permissions: [QuestionPermission.Approve] })
     const token = (await framework.auth(user)).token
     const questionId = question.id.toString()
-    const res = await request(framework.app).post('/')
-      .send(toggleQuestionApprove({ questionId }, [ 'id', 'ownerId' ]))
+    const res = await request(framework.app)
+      .post('/')
+      .send(toggleQuestionApprove({ questionId }, ['id', 'ownerId']))
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
@@ -97,14 +101,15 @@ describe('Approve question', () => {
     await Promise.all([
       framework.fixture<Question>(Question, { examId: exam.id, ownerId: undefined }),
       framework.fixture<Question>(Question, { examId: exam.id, ownerId: undefined }),
-      framework.fixture<Question>(Question, { examId: exam.id }),
+      framework.fixture<Question>(Question, { examId: exam.id })
     ])
     const question = await framework.fixture<Question>(Question, { examId: exam.id, ownerId: undefined })
-    const user = await framework.fixture<User>(User, { permissions: [ QuestionPermission.Approve ] })
+    const user = await framework.fixture<User>(User, { permissions: [QuestionPermission.Approve] })
     const token = (await framework.auth(user)).token
     const questionId = question.id.toString()
-    const res = await request(framework.app).post('/')
-      .send(toggleQuestionApprove({ questionId }, [ 'id', 'ownerId' ]))
+    const res = await request(framework.app)
+      .post('/')
+      .send(toggleQuestionApprove({ questionId }, ['id', 'ownerId']))
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
@@ -112,9 +117,9 @@ describe('Approve question', () => {
       data: {
         toggleQuestionApprove: {
           id: questionId,
-          ownerId: question.creatorId.toString(),
-        },
-      },
+          ownerId: question.creatorId.toString()
+        }
+      }
     })
 
     const updatedQuestion = await framework.load<Question>(Question, question.id)

@@ -13,14 +13,12 @@ import AuthorizationVerifier from '../auth/AuthorizationVerifier'
 
 @Service()
 export default class ExamSessionQuestionAnswerCreator {
-
   public constructor(
     @InjectEntityManager() private readonly entityManager: EntityManagerInterface,
     @Inject() private readonly questionProvider: QuestionProvider,
     @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
-    @Inject('validator') private readonly validator: ValidatorInterface,
-  ) {
-  }
+    @Inject('validator') private readonly validator: ValidatorInterface
+  ) {}
 
   /**
    * @param {ExamSession} examSession
@@ -36,9 +34,13 @@ export default class ExamSessionQuestionAnswerCreator {
     examSession: ExamSession,
     questionNumber: number,
     createExamSessionQuestionAnswer: CreateExamSessionQuestionAnswer,
-    initiator: User,
+    initiator: User
   ): Promise<ExamSessionQuestion> {
-    await this.authorizationVerifier.verifyAuthorization(initiator, ExamSessionPermission.CreateQuestionAnswer, examSession)
+    await this.authorizationVerifier.verifyAuthorization(
+      initiator,
+      ExamSessionPermission.CreateQuestionAnswer,
+      examSession
+    )
     await this.validator.validate(createExamSessionQuestionAnswer)
 
     const questions = examSession.questions

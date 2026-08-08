@@ -19,12 +19,14 @@ export default class ExamTagManager {
   }
 
   public async attach(examId: string, tags: ExamTag[], manager: EntityManager): Promise<void> {
-    await manager.query('DELETE FROM \"' + config.db.schema + '\".\"examExamTags\" WHERE \"examId\" = $1', [ examId ])
+    await manager.query('DELETE FROM \"' + config.db.schema + '\".\"examExamTags\" WHERE \"examId\" = $1', [examId])
     for (const tag of tags) {
-      const [ row ] = await manager.query('SELECT id FROM \"' + config.db.schema + '\".\"examTags\" WHERE slug = $1', [ tag.slug ])
+      const [row] = await manager.query('SELECT id FROM \"' + config.db.schema + '\".\"examTags\" WHERE slug = $1', [
+        tag.slug
+      ])
       await manager.query(
         'INSERT INTO \"' + config.db.schema + '\".\"examExamTags\" (\"examId\", \"examTagId\") VALUES ($1, $2)',
-        [ examId, row.id ],
+        [examId, row.id]
       )
     }
   }
@@ -36,20 +38,22 @@ export default class ExamTagManager {
       const slug = this.slugify(name)
       if (slug && !bySlug.has(slug)) bySlug.set(slug, name)
     }
-    const slugs = [ ...bySlug.keys() ]
+    const slugs = [...bySlug.keys()]
     if (!slugs.length) return []
 
     const repository = manager.getRepository(ExamTag)
     const existing = await repository.findBy({ slug: In(slugs) })
-    const existingSlugs = new Set(existing.map(tag => tag.slug))
-    const missing = slugs.filter(slug => !existingSlugs.has(slug)).map(slug => {
-      const tag = new ExamTag()
-      tag.name = bySlug.get(slug)
-      tag.slug = slug
-      return tag
-    })
-    const resolved = [ ...existing, ...(missing.length ? await repository.save(missing) : []) ]
-    const resolvedBySlug = new Map(resolved.map(tag => [ tag.slug, tag ]))
-    return slugs.map(slug => resolvedBySlug.get(slug)!)
+    const existingSlugs = new Set(existing.map((tag) => tag.slug))
+    const missing = slugs
+      .filter((slug) => !existingSlugs.has(slug))
+      .map((slug) => {
+        const tag = new ExamTag()
+        tag.name = bySlug.get(slug)
+        tag.slug = slug
+        return tag
+      })
+    const resolved = [...existing, ...(missing.length ? await repository.save(missing) : [])]
+    const resolvedBySlug = new Map(resolved.map((tag) => [tag.slug, tag]))
+    return slugs.map((slug) => resolvedBySlug.get(slug)!)
   }
 }

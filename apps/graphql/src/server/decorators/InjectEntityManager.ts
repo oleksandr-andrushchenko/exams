@@ -7,7 +7,7 @@ export default function InjectEntityManager(connection: string = 'default'): Par
       object: target,
       propertyName: propertyKey as string,
       index: parameterIndex,
-      value: container => container.get(ConnectionManager).get(connection).manager,
+      value: (container) => container.get(ConnectionManager).get(connection).manager
     })
   }
 }

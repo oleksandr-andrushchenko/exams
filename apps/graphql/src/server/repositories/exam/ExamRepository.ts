@@ -5,7 +5,6 @@ import User from '../../entities/user/User'
 
 @Repository(Exam)
 export default class ExamRepository extends EntityRepository<Exam> {
-
   public async findOneByName(name: string): Promise<Exam | null> {
     return await this.findOneBy({ name })
   }
@@ -16,7 +15,7 @@ export default class ExamRepository extends EntityRepository<Exam> {
 
   public async findByOwner(owner: User): Promise<Exam[]> {
     return await this.findBy({
-      ownerId: owner.id,
+      ownerId: owner.id
     })
   }
 }

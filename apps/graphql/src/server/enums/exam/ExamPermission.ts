@@ -5,7 +5,7 @@ enum ExamPermission {
   Delete = 'deleteExam',
   Approve = 'approveExam',
   AddQuestion = 'addExamQuestion',
-  Rate = 'rateExam',
+  Rate = 'rateExam'
 }
 
 export default ExamPermission

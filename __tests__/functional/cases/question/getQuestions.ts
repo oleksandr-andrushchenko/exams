@@ -26,9 +26,11 @@ describe('Get questions', () => {
     { case: 'zero size', query: { size: 0 } },
     { case: 'size greater them max', query: { size: 1000 } },
     { case: 'invalid order type', query: { order: 1 } },
-    { case: 'not allowed order', query: { order: 'any' } },
+    { case: 'not allowed order', query: { order: 'any' } }
   ])('Bad request ($case)', async ({ query }) => {
-    const res = await request(framework.app).post('/').send(getQuestions(query as GetQuestions))
+    const res = await request(framework.app)
+      .post('/')
+      .send(getQuestions(query as GetQuestions))
 
     expect(res.status).toEqual(200)
     expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
@@ -36,7 +38,8 @@ describe('Get questions', () => {
   test('Empty by exam', async () => {
     await framework.clear(Question)
     const exam = await framework.fixture<Exam>(Exam)
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(getQuestions({ exam: exam.id.toString() }))
 
     expect(res.status).toEqual(200)
@@ -49,17 +52,11 @@ describe('Get questions', () => {
     const exam = await framework.fixture<Exam>(Exam, { creatorId: user.id })
     const questions = await Promise.all([
       framework.fixture<Question>(Question, { examId: exam.id, creatorId: user.id }),
-      framework.fixture<Question>(Question, { examId: exam.id, creatorId: user.id }),
+      framework.fixture<Question>(Question, { examId: exam.id, creatorId: user.id })
     ])
-    const fields = [
-      'id',
-      'title',
-      'examId',
-      'type',
-      'difficulty',
-      'choices {title correct explanation}',
-    ]
-    const res = await request(framework.app).post('/')
+    const fields = ['id', 'title', 'examId', 'type', 'difficulty', 'choices {title correct explanation}']
+    const res = await request(framework.app)
+      .post('/')
       .send(getQuestions({ exam: exam.id.toString() }, fields))
       .auth(token, { type: 'bearer' })
 
@@ -74,7 +71,7 @@ describe('Get questions', () => {
           examId: question.examId.toString(),
           type: question.type,
           difficulty: question.difficulty,
-          title: question.title,
+          title: question.title
         })
 
         if (question.type === QuestionType.CHOICE) {

@@ -52,7 +52,9 @@ const projectDir = config.projectDir
 const connectionManager = new ConnectionManager()
 Container.set(ConnectionManager, connectionManager)
 
-const tokenStrategy: TokenStrategyInterface = Container.get<JwtTokenStrategyFactory>(JwtTokenStrategyFactory).create(config.jwt)
+const tokenStrategy: TokenStrategyInterface = Container.get<JwtTokenStrategyFactory>(JwtTokenStrategyFactory).create(
+  config.jwt
+)
 Container.set('tokenStrategy', tokenStrategy)
 
 const dataSourceOptions: PostgresConnectionOptions = {
@@ -63,7 +65,7 @@ const dataSourceOptions: PostgresConnectionOptions = {
   entities,
   subscribers,
   schema: config.db.schema,
-  dropSchema: config.db.dropSchema,
+  dropSchema: config.db.dropSchema
 }
 
 export const db = connectionManager.create(dataSourceOptions)
@@ -76,7 +78,7 @@ export const buildApolloServer = async (server: Server = undefined): Promise<Apo
     scalarsMap: scalars,
     container: Container,
     authChecker: authChecker.getTypeGraphqlAuthChecker(),
-    emitSchemaFile: `${ projectDir }/schema.graphql`,
+    emitSchemaFile: `${projectDir}/schema.graphql`
   })
   const plugins = []
 
@@ -89,7 +91,7 @@ export const buildApolloServer = async (server: Server = undefined): Promise<Apo
     plugins,
     formatError: (formattedError: GraphQLFormattedError, error: GraphQLError) => {
       for (const name in errors) {
-        for (const key of [ error.originalError.constructor.name, formattedError.extensions.code as string ]) {
+        for (const key of [error.originalError.constructor.name, formattedError.extensions.code as string]) {
           if (key && errors[name].types.includes(key)) {
             return { ...formattedError, extensions: { name, code: errors[name].code } }
           }
@@ -97,7 +99,7 @@ export const buildApolloServer = async (server: Server = undefined): Promise<Apo
       }
 
       return formattedError
-    },
+    }
   })
 }
 const prepareExpress = async (app: Application, apolloServer: ApolloServer): Promise<Application> => {
@@ -105,13 +107,15 @@ const prepareExpress = async (app: Application, apolloServer: ApolloServer): Pro
   app.use(cors({ origin: config.client_url }))
   app.use(express.json())
   app.use(compression())
-  app.use(expressMiddleware(apolloServer, {
-    context: async ({ req }) => {
-      return {
-        user: await authChecker.getApolloContextUser(req),
+  app.use(
+    expressMiddleware(apolloServer, {
+      context: async ({ req }) => {
+        return {
+          user: await authChecker.getApolloContextUser(req)
+        }
       }
-    },
-  }))
+    })
+  )
 
   return app
 }
@@ -123,7 +127,11 @@ export const initializeDb = async (db: DataSource): Promise<void> => {
   await client.end()
   await db.initialize()
 
-  const tables: Array<[string, string]> = [['users', 'name'], ['exams', 'name'], ['questions', 'title']]
+  const tables: Array<[string, string]> = [
+    ['users', 'name'],
+    ['exams', 'name'],
+    ['questions', 'title']
+  ]
   for (const [table, source] of tables) {
     const rows = await db.query(`SELECT "id", "${source}" FROM "${table}" WHERE "slug" IS NULL`)
     for (const row of rows) {
@@ -150,7 +158,7 @@ export const serverUp = async (): Promise<void> => {
   await prepareExpress(app, apolloServer)
 
   const port = config.app.port
-  server.listen({ port }, () => logger.info(`Server is running on port ${ port }`))
+  server.listen({ port }, () => logger.info(`Server is running on port ${port}`))
 
   const failureHandler = (error: string) => {
     logger.error(error)

@@ -3,11 +3,10 @@ import { Field, InputType, Int } from 'type-graphql'
 
 @InputType()
 export default class CreateExamSessionQuestionAnswer {
-
   @IsOptional()
   @Min(0)
   @IsNumber({ maxDecimalPlaces: 0 })
-  @Field(_type => Int, { nullable: true })
+  @Field((_type) => Int, { nullable: true })
   public readonly choice?: number
 
   @IsOptional()

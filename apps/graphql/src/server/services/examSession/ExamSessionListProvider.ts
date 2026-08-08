@@ -16,10 +16,14 @@ export default class ExamSessionListProvider {
   public constructor(
     @Inject() private readonly examSessionRepository: ExamSessionRepository,
     @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
-    @Inject('validator') private readonly validator: ValidatorInterface,
+    @Inject('validator') private readonly validator: ValidatorInterface
   ) {}
 
-  public async getExamSessions(getExamSessions: GetExamSessions, initiator: User, meta: boolean = false): Promise<ExamSession[] | PaginatedExamSessions> {
+  public async getExamSessions(
+    getExamSessions: GetExamSessions,
+    initiator: User,
+    meta: boolean = false
+  ): Promise<ExamSession[] | PaginatedExamSessions> {
     await this.validator.validate(getExamSessions)
     const cursor = new Cursor<ExamSession>(getExamSessions, this.examSessionRepository)
     const where: Record<string, any> = {}

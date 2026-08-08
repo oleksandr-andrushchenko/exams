@@ -11,16 +11,18 @@ const framework: TestFramework = globalThis.framework
 describe('Delete user', () => {
   test('Unauthorized', async () => {
     const user = await framework.fixture<User>(User)
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(deleteUser({ userId: user.id.toString() }))
 
     expect(res.status).toEqual(200)
     expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
   })
   test('Bad request (invalid id)', async () => {
-    const user = await framework.fixture<User>(User, { permissions: [ UserPermission.Delete ] })
+    const user = await framework.fixture<User>(User, { permissions: [UserPermission.Delete] })
     const token = (await framework.auth(user)).token
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(deleteUser({ userId: 'invalid' }))
       .auth(token, { type: 'bearer' })
 
@@ -28,10 +30,11 @@ describe('Delete user', () => {
     expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
   })
   test('Not found', async () => {
-    const user = await framework.fixture<User>(User, { permissions: [ UserPermission.Delete ] })
+    const user = await framework.fixture<User>(User, { permissions: [UserPermission.Delete] })
     const token = (await framework.auth(user)).token
     const id = await framework.fakeId()
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(deleteUser({ userId: id.toString() }))
       .auth(token, { type: 'bearer' })
 
@@ -41,7 +44,8 @@ describe('Delete user', () => {
   test('Forbidden', async () => {
     const user = await framework.fixture<User>(User)
     const token = (await framework.auth(await framework.fixture<User>(User))).token
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(deleteUser({ userId: user.id.toString() }))
       .auth(token, { type: 'bearer' })
 
@@ -51,7 +55,8 @@ describe('Delete user', () => {
   test('Deleted (has ownership)', async () => {
     const user = await framework.fixture<User>(User)
     const token = (await framework.auth(user)).token
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(deleteUser({ userId: user.id.toString() }))
       .auth(token, { type: 'bearer' })
 
@@ -61,10 +66,10 @@ describe('Delete user', () => {
   })
   test('Deleted (has permission)', async () => {
     const user = await framework.fixture<User>(User)
-    const token = (await framework.auth(
-      await framework.fixture<User>(User, { permissions: [ UserPermission.Delete ] }),
-    )).token
-    const res = await request(framework.app).post('/')
+    const token = (await framework.auth(await framework.fixture<User>(User, { permissions: [UserPermission.Delete] })))
+      .token
+    const res = await request(framework.app)
+      .post('/')
       .send(deleteUser({ userId: user.id.toString() }))
       .auth(token, { type: 'bearer' })
 

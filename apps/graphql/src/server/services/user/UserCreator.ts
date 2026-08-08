@@ -12,15 +12,13 @@ import UserEvent from '../../enums/user/UserEvent'
 
 @Service()
 export default class UserCreator {
-
   public constructor(
     @InjectEntityManager() private readonly entityManager: EntityManagerInterface,
     @Inject() private readonly userVerifier: UserVerifier,
     @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
     @Inject() private readonly eventDispatcher: EventDispatcher,
-    @Inject('validator') private readonly validator: ValidatorInterface,
-  ) {
-  }
+    @Inject('validator') private readonly validator: ValidatorInterface
+  ) {}
 
   /**
    * @param {CreateUser} createUser
@@ -40,7 +38,7 @@ export default class UserCreator {
     const user = new User()
     user.email = email
     user.password = createUser.password
-    user.permissions = createUser.permissions ?? [ Permission.Regular ]
+    user.permissions = createUser.permissions ?? [Permission.Regular]
     user.creatorId = initiator.id
 
     if ('name' in createUser) {

@@ -14,16 +14,20 @@ const framework: TestFramework = globalThis.framework
 describe('Get examSession question', () => {
   test('Unauthorized', async () => {
     const examSession = await framework.fixture<ExamSession>(ExamSession)
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(getExamSessionQuestion({ examSessionId: examSession.id.toString(), question: 0 }))
 
     expect(res.status).toEqual(200)
     expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
   })
   test('Bad request (invalid examSession id)', async () => {
-    const user = await framework.fixture<User>(User, { permissions: [ ExamSessionPermission.Get, ExamSessionPermission.GetQuestion ] })
+    const user = await framework.fixture<User>(User, {
+      permissions: [ExamSessionPermission.Get, ExamSessionPermission.GetQuestion]
+    })
     const token = (await framework.auth(user)).token
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(getExamSessionQuestion({ examSessionId: 'invalid', question: 0 }))
       .auth(token, { type: 'bearer' })
 
@@ -32,12 +36,15 @@ describe('Get examSession question', () => {
   })
   test.each([
     { case: 'invalid question number type', question: 'any' },
-    { case: 'negative question number', question: -1 },
+    { case: 'negative question number', question: -1 }
   ])('Bad request ($case)', async ({ question }) => {
-    const user = await framework.fixture<User>(User, { permissions: [ ExamSessionPermission.Get, ExamSessionPermission.GetQuestion ] })
+    const user = await framework.fixture<User>(User, {
+      permissions: [ExamSessionPermission.Get, ExamSessionPermission.GetQuestion]
+    })
     const token = (await framework.auth(user)).token
     const examSession = await framework.fixture<ExamSession>(ExamSession)
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(getExamSessionQuestion({ examSessionId: examSession.id.toString(), question: question as number }))
       .auth(token, { type: 'bearer' })
 
@@ -45,10 +52,13 @@ describe('Get examSession question', () => {
     expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
   })
   test('Not found (examSession)', async () => {
-    const user = await framework.fixture<User>(User, { permissions: [ ExamSessionPermission.Get, ExamSessionPermission.GetQuestion ] })
+    const user = await framework.fixture<User>(User, {
+      permissions: [ExamSessionPermission.Get, ExamSessionPermission.GetQuestion]
+    })
     const token = (await framework.auth(user)).token
     const id = await framework.fakeId()
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(getExamSessionQuestion({ examSessionId: id.toString(), question: 0 }))
       .auth(token, { type: 'bearer' })
 
@@ -59,7 +69,8 @@ describe('Get examSession question', () => {
     const examSession = await framework.fixture<ExamSession>(ExamSession)
     const user = await framework.load<User>(User, examSession.ownerId)
     const token = (await framework.auth(user)).token
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(getExamSessionQuestion({ examSessionId: examSession.id.toString(), question: 999 }))
       .auth(token, { type: 'bearer' })
 
@@ -70,7 +81,8 @@ describe('Get examSession question', () => {
     const user = await framework.fixture<User>(User)
     const examSession = await framework.fixture<ExamSession>(ExamSession)
     const token = (await framework.auth(user)).token
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(getExamSessionQuestion({ examSessionId: examSession.id.toString(), question: 0 }))
       .auth(token, { type: 'bearer' })
 
@@ -82,11 +94,18 @@ describe('Get examSession question', () => {
     const user = await framework.load<User>(User, examSession.ownerId)
     const token = (await framework.auth(user)).token
     const questionNumber = examSession.questionCount() - 1
-    const res = await request(framework.app).post('/')
-      .send(getExamSessionQuestion(
-        { examSessionId: examSession.id.toString(), question: questionNumber },
-        [ 'examSession {id}', 'question {id title type difficulty}', 'choices', 'number', 'choice', 'answer' ],
-      ))
+    const res = await request(framework.app)
+      .post('/')
+      .send(
+        getExamSessionQuestion({ examSessionId: examSession.id.toString(), question: questionNumber }, [
+          'examSession {id}',
+          'question {id title type difficulty}',
+          'choices',
+          'number',
+          'choice',
+          'answer'
+        ])
+      )
       .auth(token, { type: 'bearer' })
 
     const examSessionQuestion = examSession.questions[questionNumber]
@@ -96,16 +115,16 @@ describe('Get examSession question', () => {
       data: {
         examSessionQuestion: {
           examSession: {
-            id: examSession.id.toString(),
+            id: examSession.id.toString()
           },
           question: {
             title: question.title,
             type: question.type,
-            difficulty: question.difficulty,
+            difficulty: question.difficulty
           },
-          number: questionNumber,
-        },
-      },
+          number: questionNumber
+        }
+      }
     })
 
     if (question.type === QuestionType.CHOICE) {
@@ -114,7 +133,7 @@ describe('Get examSession question', () => {
       }
 
       expect(res.body.data.examSessionQuestion).toMatchObject({
-        choices: question.choices.map(choice => choice.title),
+        choices: question.choices.map((choice) => choice.title)
       })
     }
 
@@ -122,14 +141,23 @@ describe('Get examSession question', () => {
   })
   test('Found (permission)', async () => {
     const examSession = await framework.fixture<ExamSession>(ExamSession)
-    const user = await framework.fixture<User>(User, { permissions: [ ExamSessionPermission.Get, ExamSessionPermission.GetQuestion ] })
+    const user = await framework.fixture<User>(User, {
+      permissions: [ExamSessionPermission.Get, ExamSessionPermission.GetQuestion]
+    })
     const token = (await framework.auth(user)).token
     const questionNumber = 0
-    const res = await request(framework.app).post('/')
-      .send(getExamSessionQuestion(
-        { examSessionId: examSession.id.toString(), question: questionNumber },
-        [ 'examSession {id}', 'question {id title type difficulty}', 'choices', 'number', 'choice', 'answer' ],
-      ))
+    const res = await request(framework.app)
+      .post('/')
+      .send(
+        getExamSessionQuestion({ examSessionId: examSession.id.toString(), question: questionNumber }, [
+          'examSession {id}',
+          'question {id title type difficulty}',
+          'choices',
+          'number',
+          'choice',
+          'answer'
+        ])
+      )
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
@@ -140,16 +168,16 @@ describe('Get examSession question', () => {
       data: {
         examSessionQuestion: {
           examSession: {
-            id: examSession.id.toString(),
+            id: examSession.id.toString()
           },
           question: {
             title: question.title,
             type: question.type,
-            difficulty: question.difficulty,
+            difficulty: question.difficulty
           },
-          number: questionNumber,
-        },
-      },
+          number: questionNumber
+        }
+      }
     })
 
     if (question.type === QuestionType.CHOICE) {
@@ -158,10 +186,12 @@ describe('Get examSession question', () => {
       }
 
       expect(res.body.data.examSessionQuestion).toMatchObject({
-        choices: question.choices.map(choice => choice.title),
+        choices: question.choices.map((choice) => choice.title)
       })
     }
 
-    expect((await framework.load<ExamSession>(ExamSession, examSession.id)).questionNumber).toEqual(examSession.questionNumber)
+    expect((await framework.load<ExamSession>(ExamSession, examSession.id)).questionNumber).toEqual(
+      examSession.questionNumber
+    )
   })
 })

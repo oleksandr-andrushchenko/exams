@@ -7,12 +7,10 @@ import QuestionNotFoundError from '../../errors/question/QuestionNotFoundError'
 
 @Service()
 export default class QuestionProvider {
-
   public constructor(
     @Inject() private readonly questionRepository: QuestionRepository,
-    @Inject('validator') private readonly validator: ValidatorInterface,
-  ) {
-  }
+    @Inject('validator') private readonly validator: ValidatorInterface
+  ) {}
 
   /**
    * @param {ObjectId | string} id

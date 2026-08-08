@@ -11,16 +11,17 @@ export default class UserRatingSyncer {
   public constructor(
     @InjectEntityManager() private readonly entityManager: EntityManagerInterface,
     @Inject() private readonly examRepository: ExamRepository,
-    @Inject() private readonly userRepository: UserRepository,
+    @Inject() private readonly userRepository: UserRepository
   ) {}
 
   public async syncUserRating(user: User): Promise<User> {
     const exams = await this.examRepository.findByCreator(user)
-    const ratedExams = exams.filter(exam => exam.rating && exam.rating.markCount > 0)
+    const ratedExams = exams.filter((exam) => exam.rating && exam.rating.markCount > 0)
     const rating = new Rating()
     rating.markCount = ratedExams.reduce((sum, exam) => sum + (exam.rating?.markCount || 0), 0)
     rating.averageMark = rating.markCount
-      ? ratedExams.reduce((sum, exam) => sum + (exam.rating?.averageMark || 0) * (exam.rating?.markCount || 0), 0) / rating.markCount
+      ? ratedExams.reduce((sum, exam) => sum + (exam.rating?.averageMark || 0) * (exam.rating?.markCount || 0), 0) /
+        rating.markCount
       : 0
     user.rating = rating
     user.updatedAt = new Date()

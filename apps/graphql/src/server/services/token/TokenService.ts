@@ -3,27 +3,23 @@ import User from '../../entities/user/User'
 import TokenStrategyInterface from './strategy/TokenStrategyInterface'
 
 export type GeneratedToken = {
-  token: string;
-  expires: number;
-};
+  token: string
+  expires: number
+}
 
 export enum TokenType {
-  ACCESS = 'access',
+  ACCESS = 'access'
 }
 
 export type TokenPayload = {
-  userId: string;
-  type: TokenType;
-  expires?: number,
-};
+  userId: string
+  type: TokenType
+  expires?: number
+}
 
 @Service()
 export default class TokenService {
-
-  public constructor(
-    @Inject('tokenStrategy') private readonly tokenStrategy: TokenStrategyInterface,
-  ) {
-  }
+  public constructor(@Inject('tokenStrategy') private readonly tokenStrategy: TokenStrategyInterface) {}
 
   public async generateAccessToken(user: User, expiresIn: number): Promise<GeneratedToken> {
     const expires = Date.now() + expiresIn

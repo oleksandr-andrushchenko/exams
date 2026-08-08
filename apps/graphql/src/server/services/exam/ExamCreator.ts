@@ -20,7 +20,7 @@ export default class ExamCreator {
     @Inject() private readonly examTagManager: ExamTagManager,
     @Inject() private readonly eventDispatcher: EventDispatcher,
     @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
-    @Inject('validator') private readonly validator: ValidatorInterface,
+    @Inject('validator') private readonly validator: ValidatorInterface
   ) {}
 
   public async createExam(createExam: CreateExam, initiator: User): Promise<Exam> {
@@ -36,7 +36,9 @@ export default class ExamCreator {
     exam.createdAt = new Date()
     await this.entityManager.save(exam)
     const persistedExam = await this.entityManager.getRepository(Exam).findOneByOrFail({ name: exam.name })
-    const [ row ] = await this.entityManager.query('SELECT id FROM \"' + config.db.schema + '\".exams WHERE name = $1', [ exam.name ])
+    const [row] = await this.entityManager.query('SELECT id FROM \"' + config.db.schema + '\".exams WHERE name = $1', [
+      exam.name
+    ])
     const examId = row.id
     const tags = await this.examTagManager.resolve(createExam.tags, this.entityManager)
     await this.examTagManager.attach(examId, tags, this.entityManager)

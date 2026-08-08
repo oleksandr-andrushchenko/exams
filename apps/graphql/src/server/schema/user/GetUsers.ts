@@ -4,7 +4,6 @@ import { ArgsType, Field } from 'type-graphql'
 
 @ArgsType()
 export default class GetUsers extends PaginationSchema {
-
   @IsOptional()
   @IsString()
   @Field({ nullable: true })

@@ -17,7 +17,7 @@ export default class Base {
 
   @IsMongoId()
   @PrimaryColumn({ type: 'varchar', length: 24, transformer: ObjectIdTransformer })
-  @Field(_type => ObjectIdScalar)
+  @Field((_type) => ObjectIdScalar)
   public readonly id: ObjectId = new ObjectId()
 
   @IsMongoId()
@@ -26,18 +26,18 @@ export default class Base {
 
   @IsMongoId()
   @Column({ type: 'varchar', length: 24, nullable: true, transformer: ObjectIdTransformer })
-  @Field(_type => ObjectIdScalar, { nullable: true })
+  @Field((_type) => ObjectIdScalar, { nullable: true })
   public ownerId?: ObjectId
 
   @IsNumber()
   @Column({ type: 'timestamptz', update: false })
-  @Field(_type => GraphQLTimestamp)
+  @Field((_type) => GraphQLTimestamp)
   public createdAt: Date
 
   @IsOptional()
   @IsNumber()
   @Column({ type: 'timestamptz', nullable: true })
-  @Field(_type => GraphQLTimestamp, { nullable: true })
+  @Field((_type) => GraphQLTimestamp, { nullable: true })
   public updatedAt?: Date
 
   @IsOptional()

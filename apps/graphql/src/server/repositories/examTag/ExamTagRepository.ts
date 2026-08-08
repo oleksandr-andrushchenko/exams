@@ -18,14 +18,14 @@ export default class ExamTagRepository extends TypeOrmRepository<ExamTag> {
       .select('exam.id', 'id')
       .where('tag.slug = :slug', { slug })
       .getRawMany()
-    return rows.map(row => row.id)
+    return rows.map((row) => row.id)
   }
 
   public findMatching(search: string = '', size: number = 20): Promise<ExamTag[]> {
     return this.find({
-      where: search ? [ { name: ILike(`%${search}%`) }, { slug: ILike(`%${search}%`) } ] : {},
+      where: search ? [{ name: ILike(`%${search}%`) }, { slug: ILike(`%${search}%`) }] : {},
       order: { rating: 'DESC', name: 'ASC' },
-      take: size,
+      take: size
     })
   }
 

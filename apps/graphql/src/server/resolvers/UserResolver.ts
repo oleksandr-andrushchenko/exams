@@ -18,7 +18,6 @@ import RatingSchema from '../schema/rating/RatingSchema'
 @Service()
 @Resolver(User)
 export class UserResolver {
-
   public constructor(
     @Inject() private readonly userProvider: UserProvider,
     @Inject() private readonly userListProvider: UserListProvider,
@@ -26,25 +25,21 @@ export class UserResolver {
     @Inject() private readonly userUpdater: UserUpdater,
     @Inject() private readonly userDeleter: UserDeleter,
     @Inject() private readonly userRatingProvider: UserRatingProvider,
-    @Inject('validator') private readonly validator: ValidatorInterface,
-  ) {
-  }
+    @Inject('validator') private readonly validator: ValidatorInterface
+  ) {}
 
   @Authorized()
-  @Mutation(_returns => User)
-  public async createUser(
-    @Arg('createUser') createUser: CreateUser,
-    @Ctx('user') currentUser: User,
-  ): Promise<User> {
+  @Mutation((_returns) => User)
+  public async createUser(@Arg('createUser') createUser: CreateUser, @Ctx('user') currentUser: User): Promise<User> {
     return await this.userCreator.createUser(createUser, currentUser)
   }
 
   @Authorized()
-  @Mutation(_returns => User)
+  @Mutation((_returns) => User)
   public async updateUser(
     @Args() getUser: GetUser,
     @Arg('updateUser') updateUser: UpdateUser,
-    @Ctx('user') currentUser: User,
+    @Ctx('user') currentUser: User
   ): Promise<User> {
     await this.validator.validate(getUser)
     const user = await this.userProvider.getUser(getUser.userId)
@@ -52,40 +47,31 @@ export class UserResolver {
     return await this.userUpdater.updateUser(user, updateUser, currentUser)
   }
 
-  @Query(_returns => [ User ], { name: 'users' })
-  public async getUsers(
-    @Args() getUsers: GetUsers,
-  ): Promise<User[]> {
-    return await this.userListProvider.getUsers(getUsers, false) as User[]
+  @Query((_returns) => [User], { name: 'users' })
+  public async getUsers(@Args() getUsers: GetUsers): Promise<User[]> {
+    return (await this.userListProvider.getUsers(getUsers, false)) as User[]
   }
 
-  @Query(_returns => PaginatedUsers, { name: 'paginatedUsers' })
-  public async getPaginatedUsers(
-    @Args() getUsers: GetUsers,
-  ): Promise<PaginatedUsers> {
-    return await this.userListProvider.getUsers(getUsers, true) as PaginatedUsers
+  @Query((_returns) => PaginatedUsers, { name: 'paginatedUsers' })
+  public async getPaginatedUsers(@Args() getUsers: GetUsers): Promise<PaginatedUsers> {
+    return (await this.userListProvider.getUsers(getUsers, true)) as PaginatedUsers
   }
 
-  @Query(_returns => User, { name: 'user' })
-  public async getUser(
-    @Args() getUser: GetUser,
-  ): Promise<User> {
+  @Query((_returns) => User, { name: 'user' })
+  public async getUser(@Args() getUser: GetUser): Promise<User> {
     await this.validator.validate(getUser)
 
     return await this.userProvider.getUser(getUser.userId)
   }
 
-  @FieldResolver(_returns => RatingSchema, { name: 'rating', nullable: true })
+  @FieldResolver((_returns) => RatingSchema, { name: 'rating', nullable: true })
   public async getUserRating(@Root() user: User): Promise<RatingSchema | undefined> {
     return await this.userRatingProvider.getUserRating(user)
   }
 
   @Authorized()
-  @Mutation(_returns => Boolean)
-  public async deleteUser(
-    @Args() getUser: GetUser,
-    @Ctx('user') currentUser: User,
-  ): Promise<boolean> {
+  @Mutation((_returns) => Boolean)
+  public async deleteUser(@Args() getUser: GetUser, @Ctx('user') currentUser: User): Promise<boolean> {
     await this.validator.validate(getUser)
     const user = await this.userProvider.getUser(getUser.userId)
 

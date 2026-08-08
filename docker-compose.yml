@@ -17,7 +17,7 @@ services:
       DATABASE_SCHEMA: public
       CLIENT_URL: http://localhost:${FE_PORT}
     ports:
-      - "${BE_PORT}:8080"
+      - '${BE_PORT}:8080'
 
   ssr:
     build:
@@ -35,7 +35,7 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/examme
       GRAPHQL_URL: http://graphql:8080/graphql
     ports:
-      - "${FE_PORT}:3000"
+      - '${FE_PORT}:3000'
 
   postgres:
     image: postgres:17-alpine
@@ -47,7 +47,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - '${POSTGRES_PORT:-5432}:5432'
 
 volumes:
   postgres-data:

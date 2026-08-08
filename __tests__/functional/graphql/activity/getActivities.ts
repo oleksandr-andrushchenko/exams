@@ -1,6 +1,6 @@
 import ActivityQuery from '../../../../apps/graphql/src/server/schema/activity/ActivityQuery'
 
-export const getActivities = (variables: ActivityQuery = {}, fields: string[] = [ 'id' ]) => {
+export const getActivities = (variables: ActivityQuery = {}, fields: string[] = ['id']) => {
   return {
     query: `
       query GetActivities(
@@ -17,10 +17,10 @@ export const getActivities = (variables: ActivityQuery = {}, fields: string[] = 
           size: $size,
           order: $order
         ) {
-          ${ fields.join('\r') }
+          ${fields.join('\r')}
         }
       }
   `,
-    variables,
+    variables
   }
 }

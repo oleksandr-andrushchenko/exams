@@ -17,14 +17,21 @@ import {
 } from './data'
 
 const app = express()
-const canViewUnapproved = (user: { permissions?: string[] } | undefined, permission: string) => user?.permissions?.some(userPermission => userPermission === permission || userPermission === 'root' || userPermission === '*') ?? false
+const canViewUnapproved = (user: { permissions?: string[] } | undefined, permission: string) =>
+  user?.permissions?.some(
+    (userPermission) => userPermission === permission || userPermission === 'root' || userPermission === '*'
+  ) ?? false
 const templateDir = path.resolve(__dirname, '../templates')
 const sharedTemplateDir = path.resolve(__dirname, '../../../shared/templates')
 const publicDir = path.resolve(__dirname, '../public')
 
-nunjucks.configure([templateDir, sharedTemplateDir], {autoescape: true, express: app, noCache: process.env.NODE_ENV !== 'production'})
-app.use(express.urlencoded({extended: true}))
-app.use('/static', express.static(publicDir, {maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0}))
+nunjucks.configure([templateDir, sharedTemplateDir], {
+  autoescape: true,
+  express: app,
+  noCache: process.env.NODE_ENV !== 'production'
+})
+app.use(express.urlencoded({ extended: true }))
+app.use('/static', express.static(publicDir, { maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0 }))
 app.use((request, response, next) => {
   response.locals.siteName = 'ExamMe'
   response.locals.siteDescription = 'Practice exams and explore questions.'
@@ -35,8 +42,8 @@ app.use((request, response, next) => {
 app.use(async (request, response, next) => {
   const token = request.headers.cookie
     ?.split(';')
-    .map(cookie => cookie.trim())
-    .find(cookie => cookie.startsWith('authenticationToken='))
+    .map((cookie) => cookie.trim())
+    .find((cookie) => cookie.startsWith('authenticationToken='))
     ?.slice('authenticationToken='.length)
 
   if (token) {
@@ -67,12 +74,19 @@ const queryFilters = (request: Request) => ({
   page: number(request.query.page, 1),
   size: Math.min(50, number(request.query.size, 20)),
   sort: typeof request.query.sort === 'string' ? request.query.sort : undefined,
-  order: request.query.order === 'asc' ? 'asc' : 'desc',
+  order: request.query.order === 'asc' ? 'asc' : 'desc'
 })
 
 app.get('/', async (_request, response, next) => {
   try {
-    response.render('home.html', {data: await getHomeData(8, canViewUnapproved(response.locals.currentUser, 'getExam'), canViewUnapproved(response.locals.currentUser, 'getQuestion')), title: 'Home'})
+    response.render('home.html', {
+      data: await getHomeData(
+        8,
+        canViewUnapproved(response.locals.currentUser, 'getExam'),
+        canViewUnapproved(response.locals.currentUser, 'getQuestion')
+      ),
+      title: 'Home'
+    })
   } catch (error) {
     next(error)
   }
@@ -115,14 +129,17 @@ async function submitRating(request: Request, response: Response, id: string) {
   const mark = Number(request.body.mark)
   const token = request.headers.cookie
     ?.split(';')
-    .map(cookie => cookie.trim())
-    .find(cookie => cookie.startsWith('authenticationToken='))
+    .map((cookie) => cookie.trim())
+    .find((cookie) => cookie.startsWith('authenticationToken='))
     ?.slice('authenticationToken='.length)
   const target = '/questions/' + id
 
   const wantsJson = request.headers.accept?.includes('application/json')
   if (!Number.isInteger(mark) || mark < 0 || mark > 5 || !token) {
-    if (wantsJson) { response.status(400).json({ ok: false, error: 'Invalid rating request' }); return }
+    if (wantsJson) {
+      response.status(400).json({ ok: false, error: 'Invalid rating request' })
+      return
+    }
     response.redirect(target + '?ratingError=1')
     return
   }
@@ -133,13 +150,21 @@ async function submitRating(request: Request, response: Response, id: string) {
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
     body: JSON.stringify({
-      query: 'mutation Rate($id: ID!, $mark: Int!) { ' + mutation + '(' + field + ': $id, mark: $mark) { id rating { html averageMark markCount } } }',
-      variables: { id, mark },
-    }),
+      query:
+        'mutation Rate($id: ID!, $mark: Int!) { ' +
+        mutation +
+        '(' +
+        field +
+        ': $id, mark: $mark) { id rating { html averageMark markCount } } }',
+      variables: { id, mark }
+    })
   })
-  const payload = await result.json() as { errors?: unknown[] }
+  const payload = (await result.json()) as { errors?: unknown[] }
   if (wantsJson) {
-    if (!result.ok || payload.errors?.length) { response.status(400).json({ ok: false, error: payload.errors?.[0] || 'Unable to save rating' }); return }
+    if (!result.ok || payload.errors?.length) {
+      response.status(400).json({ ok: false, error: payload.errors?.[0] || 'Unable to save rating' })
+      return
+    }
     response.json({ ok: true, html: (payload as any).data?.rateQuestion?.rating?.html })
     return
   }
@@ -152,42 +177,100 @@ app.post('/questions/:questionId/rating', (request, response, next) => {
 
 async function renderEdit(request: Request, response: Response, resource: 'user' | 'exam' | 'question', id: string) {
   const permission = resource === 'user' ? 'updateUser' : resource === 'exam' ? 'updateExam' : 'updateQuestion'
-  if (!response.locals.currentUser || !canViewUnapproved(response.locals.currentUser, permission)) { response.status(403).render('edit.html', { resource, error: 'You are not authorized to edit this resource' }); return }
-  const data = resource === 'user' ? { user: await getUser(id) } : resource === 'exam' ? { exam: await getExam(id, true) } : { question: await getQuestion(id, response.locals.currentUser.id, true) }
+  if (!response.locals.currentUser || !canViewUnapproved(response.locals.currentUser, permission)) {
+    response.status(403).render('edit.html', { resource, error: 'You are not authorized to edit this resource' })
+    return
+  }
+  const data =
+    resource === 'user'
+      ? { user: await getUser(id) }
+      : resource === 'exam'
+        ? { exam: await getExam(id, true) }
+        : { question: await getQuestion(id, response.locals.currentUser.id, true) }
   const entity = (data as any)[resource]
   response.status(entity ? 200 : 404).render('edit.html', { resource, ...data })
 }
-async function updateResource(request: Request, response: Response, resource: 'user' | 'exam' | 'question', id: string) {
-  const token = request.headers.cookie?.split(';').map(cookie => cookie.trim()).find(cookie => cookie.startsWith('authenticationToken='))?.slice('authenticationToken='.length)
-  if (!token) { response.status(401).render('edit.html', { resource, error: 'Authentication required' }); return }
+async function updateResource(
+  request: Request,
+  response: Response,
+  resource: 'user' | 'exam' | 'question',
+  id: string
+) {
+  const token = request.headers.cookie
+    ?.split(';')
+    .map((cookie) => cookie.trim())
+    .find((cookie) => cookie.startsWith('authenticationToken='))
+    ?.slice('authenticationToken='.length)
+  if (!token) {
+    response.status(401).render('edit.html', { resource, error: 'Authentication required' })
+    return
+  }
   const definitions: Record<string, { query: string; input: Record<string, unknown>; target: string }> = {
-    user: { query: 'mutation Update($id: ID!, $input: UpdateUser!) { updateUser(userId: $id, updateUser: $input) { id } }', input: { name: request.body.name, email: request.body.email }, target: '/users/' + id },
-    exam: { query: 'mutation Update($id: ID!, $input: UpdateExam!) { updateExam(examId: $id, updateExam: $input) { id } }', input: { name: request.body.name, requiredScore: Number(request.body.requiredScore) }, target: '/exams/' + id },
-    question: { query: 'mutation Update($id: ID!, $input: UpdateQuestion!) { updateQuestion(questionId: $id, updateQuestion: $input) { id } }', input: { title: request.body.title, difficulty: request.body.difficulty, type: request.body.type }, target: '/questions/' + id },
+    user: {
+      query: 'mutation Update($id: ID!, $input: UpdateUser!) { updateUser(userId: $id, updateUser: $input) { id } }',
+      input: { name: request.body.name, email: request.body.email },
+      target: '/users/' + id
+    },
+    exam: {
+      query: 'mutation Update($id: ID!, $input: UpdateExam!) { updateExam(examId: $id, updateExam: $input) { id } }',
+      input: { name: request.body.name, requiredScore: Number(request.body.requiredScore) },
+      target: '/exams/' + id
+    },
+    question: {
+      query:
+        'mutation Update($id: ID!, $input: UpdateQuestion!) { updateQuestion(questionId: $id, updateQuestion: $input) { id } }',
+      input: { title: request.body.title, difficulty: request.body.difficulty, type: request.body.type },
+      target: '/questions/' + id
+    }
   }
   const definition = definitions[resource]
-  const result = await fetch(process.env.GRAPHQL_URL || 'http://localhost:8080/graphql', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token }, body: JSON.stringify({ query: definition.query, variables: { id, input: definition.input } }) })
-  const payload = await result.json() as { errors?: Array<{ message?: string }> }
-  if (!result.ok || payload.errors?.length) { response.status(400).render('edit.html', { resource, error: payload.errors?.[0]?.message || 'Unable to update resource' }); return }
+  const result = await fetch(process.env.GRAPHQL_URL || 'http://localhost:8080/graphql', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
+    body: JSON.stringify({ query: definition.query, variables: { id, input: definition.input } })
+  })
+  const payload = (await result.json()) as { errors?: Array<{ message?: string }> }
+  if (!result.ok || payload.errors?.length) {
+    response
+      .status(400)
+      .render('edit.html', { resource, error: payload.errors?.[0]?.message || 'Unable to update resource' })
+    return
+  }
   response.redirect(definition.target)
 }
-app.get('/users/:userId/edit', (request, response, next) => renderEdit(request, response, 'user', request.params.userId).catch(next))
-app.post('/users/:userId/edit', (request, response, next) => updateResource(request, response, 'user', request.params.userId).catch(next))
-app.get('/exams/:examId/edit', (request, response, next) => renderEdit(request, response, 'exam', request.params.examId).catch(next))
-app.post('/exams/:examId/edit', (request, response, next) => updateResource(request, response, 'exam', request.params.examId).catch(next))
-app.get('/questions/:questionId/edit', (request, response, next) => renderEdit(request, response, 'question', request.params.questionId).catch(next))
-app.post('/questions/:questionId/edit', (request, response, next) => updateResource(request, response, 'question', request.params.questionId).catch(next))
+app.get('/users/:userId/edit', (request, response, next) =>
+  renderEdit(request, response, 'user', request.params.userId).catch(next)
+)
+app.post('/users/:userId/edit', (request, response, next) =>
+  updateResource(request, response, 'user', request.params.userId).catch(next)
+)
+app.get('/exams/:examId/edit', (request, response, next) =>
+  renderEdit(request, response, 'exam', request.params.examId).catch(next)
+)
+app.post('/exams/:examId/edit', (request, response, next) =>
+  updateResource(request, response, 'exam', request.params.examId).catch(next)
+)
+app.get('/questions/:questionId/edit', (request, response, next) =>
+  renderEdit(request, response, 'question', request.params.questionId).catch(next)
+)
+app.post('/questions/:questionId/edit', (request, response, next) =>
+  updateResource(request, response, 'question', request.params.questionId).catch(next)
+)
 app.get('/exams/:examId', async (request, response, next) => {
   try {
-    const exam = await getExam(request.params.examId, canViewUnapproved(response.locals.currentUser, 'getExam'));
-    response.status(exam ? 200 : 404).render('exam.html', {exam, title: exam?.name || 'Exam not found'})
+    const exam = await getExam(request.params.examId, canViewUnapproved(response.locals.currentUser, 'getExam'))
+    response.status(exam ? 200 : 404).render('exam.html', { exam, title: exam?.name || 'Exam not found' })
   } catch (error) {
     next(error)
   }
 })
 app.get('/questions/:questionId', async (request, response, next) => {
   try {
-    const question = await getQuestion(request.params.questionId, response.locals.currentUser?.id, canViewUnapproved(response.locals.currentUser, 'getQuestion'));
+    const question = await getQuestion(
+      request.params.questionId,
+      response.locals.currentUser?.id,
+      canViewUnapproved(response.locals.currentUser, 'getQuestion')
+    )
     response.status(question ? 200 : 404).render('question.html', {
       question,
       title: question?.title || 'Question not found'
@@ -199,35 +282,39 @@ app.get('/questions/:questionId', async (request, response, next) => {
 app.get('/users/:userId', async (request, response, next) => {
   try {
     const user = await getUser(request.params.userId)
-    const [exams, sessions] = user ? await Promise.all([getUserExams(user.id), getUserExamSessions(user.id)]) : [undefined, []]
-    response.status(user ? 200 : 404).render('user.html', {user, exams, sessions, title: user?.name || 'User not found'})
+    const [exams, sessions] = user
+      ? await Promise.all([getUserExams(user.id), getUserExamSessions(user.id)])
+      : [undefined, []]
+    response
+      .status(user ? 200 : 404)
+      .render('user.html', { user, exams, sessions, title: user?.name || 'User not found' })
   } catch (error) {
     next(error)
   }
 })
 app.get('/tags/:slug', async (request, response, next) => {
   try {
-    const tag = await getTag(request.params.slug);
-    response.status(tag ? 200 : 404).render('tag.html', {tag, title: tag?.name || 'Tag not found'})
+    const tag = await getTag(request.params.slug)
+    response.status(tag ? 200 : 404).render('tag.html', { tag, title: tag?.name || 'Tag not found' })
   } catch (error) {
     next(error)
   }
 })
-app.get('/login', (_request, response) => response.render('login.html', {title: 'Login'}))
-app.get('/register', (_request, response) => response.render('register.html', {title: 'Register'}))
+app.get('/login', (_request, response) => response.render('login.html', { title: 'Login' }))
+app.get('/register', (_request, response) => response.render('register.html', { title: 'Register' }))
 
 async function authenticate(response: Response, credentials: { email: string; password: string }, register: boolean) {
   const query = register
     ? 'mutation Register($createMe: CreateMe!, $credentials: Credentials!) { createMe(createMe: $createMe) { id } createAuthenticationToken(credentials: $credentials) { token } }'
     : 'mutation Login($email: String!, $password: String!) { createAuthenticationToken(credentials: { email: $email, password: $password }) { token } }'
-  const variables = register
-    ? {createMe: credentials, credentials}
-    : credentials
+  const variables = register ? { createMe: credentials, credentials } : credentials
   const result = await fetch(process.env.GRAPHQL_URL || 'http://localhost:8080/graphql', {
-    method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({query, variables}),
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ query, variables })
   })
-  const payload = await result.json() as {
-    data?: { createAuthenticationToken?: { token?: string } };
+  const payload = (await result.json()) as {
+    data?: { createAuthenticationToken?: { token?: string } }
     errors?: Array<{ message?: string }>
   }
   if (!result.ok || payload.errors?.length || !payload.data?.createAuthenticationToken?.token) {
@@ -242,7 +329,7 @@ async function authenticate(response: Response, credentials: { email: string; pa
 
 app.post('/login', async (request, response) => {
   try {
-    await authenticate(response, {email: request.body.email, password: request.body.password}, false);
+    await authenticate(response, { email: request.body.email, password: request.body.password }, false)
     response.redirect('/')
   } catch (error) {
     response.status(401).render('login.html', {
@@ -257,7 +344,7 @@ app.post('/logout', (_request, response) => {
 })
 app.post('/register', async (request, response) => {
   try {
-    await authenticate(response, {email: request.body.email, password: request.body.password}, true);
+    await authenticate(response, { email: request.body.email, password: request.body.password }, true)
     response.redirect('/')
   } catch (error) {
     response.status(400).render('register.html', {
@@ -268,9 +355,19 @@ app.post('/register', async (request, response) => {
 })
 app.get('/:userSlug/:examSlug/:questionSlug', async (request, response, next) => {
   try {
-    const question = await getQuestion(request.params.questionSlug, response.locals.currentUser?.id, canViewUnapproved(response.locals.currentUser, 'getQuestion'))
-    const matches = !!question && question.exam?.slug === request.params.examSlug && question.exam.userSlug === request.params.userSlug
-    response.status(matches ? 200 : 404).render('question.html', { question: matches ? question : undefined, title: matches ? question.title : 'Question not found' })
+    const question = await getQuestion(
+      request.params.questionSlug,
+      response.locals.currentUser?.id,
+      canViewUnapproved(response.locals.currentUser, 'getQuestion')
+    )
+    const matches =
+      !!question &&
+      question.exam?.slug === request.params.examSlug &&
+      question.exam.userSlug === request.params.userSlug
+    response.status(matches ? 200 : 404).render('question.html', {
+      question: matches ? question : undefined,
+      title: matches ? question.title : 'Question not found'
+    })
   } catch (error) {
     next(error)
   }
@@ -279,7 +376,9 @@ app.get('/:userSlug/:examSlug', async (request, response, next) => {
   try {
     const exam = await getExam(request.params.examSlug, canViewUnapproved(response.locals.currentUser, 'getExam'))
     const matches = !!exam && exam.slug === request.params.examSlug && exam.userSlug === request.params.userSlug
-    response.status(matches ? 200 : 404).render('exam.html', { exam: matches ? exam : undefined, title: matches ? exam.name : 'Exam not found' })
+    response
+      .status(matches ? 200 : 404)
+      .render('exam.html', { exam: matches ? exam : undefined, title: matches ? exam.name : 'Exam not found' })
   } catch (error) {
     next(error)
   }
@@ -287,8 +386,12 @@ app.get('/:userSlug/:examSlug', async (request, response, next) => {
 app.get('/:userSlug', async (request, response, next) => {
   try {
     const user = await getUser(request.params.userSlug)
-    const [exams, sessions] = user ? await Promise.all([getUserExams(user.id), getUserExamSessions(user.id)]) : [undefined, []]
-    response.status(user ? 200 : 404).render('user.html', {user, exams, sessions, title: user?.name || 'User not found'})
+    const [exams, sessions] = user
+      ? await Promise.all([getUserExams(user.id), getUserExamSessions(user.id)])
+      : [undefined, []]
+    response
+      .status(user ? 200 : 404)
+      .render('user.html', { user, exams, sessions, title: user?.name || 'User not found' })
   } catch (error) {
     next(error)
   }

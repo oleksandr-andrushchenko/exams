@@ -7,12 +7,10 @@ import ValidatorInterface from '../validator/ValidatorInterface'
 
 @Service()
 export default class ExamProvider {
-
   public constructor(
     @Inject() private readonly examRepository: ExamRepository,
-    @Inject('validator') private readonly validator: ValidatorInterface,
-  ) {
-  }
+    @Inject('validator') private readonly validator: ValidatorInterface
+  ) {}
 
   /**
    * @param {ObjectId | string} id

@@ -17,5 +17,5 @@ export const resolvers = [
   UserResolver,
   PermissionResolver,
   ActivityResolver,
-  ExamTagResolver,
+  ExamTagResolver
 ]

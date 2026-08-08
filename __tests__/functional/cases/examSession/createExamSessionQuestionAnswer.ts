@@ -23,27 +23,35 @@ describe('Create examSession question answer', () => {
       create['choice'] = 0
     }
 
-    const res = await request(framework.app).post('/')
-      .send(createExamSessionQuestionAnswer({
-        examSessionId: examSession.id.toString(),
-        question: questionNumber,
-        createExamSessionQuestionAnswer: create,
-      }))
+    const res = await request(framework.app)
+      .post('/')
+      .send(
+        createExamSessionQuestionAnswer({
+          examSessionId: examSession.id.toString(),
+          question: questionNumber,
+          createExamSessionQuestionAnswer: create
+        })
+      )
 
     expect(res.status).toEqual(200)
     expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
   })
   test('Not found (examSession)', async () => {
-    const user = await framework.fixture<User>(User, { permissions: [ ExamSessionPermission.Get, ExamSessionPermission.CreateQuestionAnswer ] })
+    const user = await framework.fixture<User>(User, {
+      permissions: [ExamSessionPermission.Get, ExamSessionPermission.CreateQuestionAnswer]
+    })
     const token = (await framework.auth(user)).token
     const id = await framework.fakeId()
     const questionNumber = 0
-    const res = await request(framework.app).post('/')
-      .send(createExamSessionQuestionAnswer({
-        examSessionId: id.toString(),
-        question: questionNumber,
-        createExamSessionQuestionAnswer: { choice: 0 },
-      }))
+    const res = await request(framework.app)
+      .post('/')
+      .send(
+        createExamSessionQuestionAnswer({
+          examSessionId: id.toString(),
+          question: questionNumber,
+          createExamSessionQuestionAnswer: { choice: 0 }
+        })
+      )
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
@@ -54,28 +62,36 @@ describe('Create examSession question answer', () => {
     const user = await framework.load<User>(User, examSession.ownerId)
     const token = (await framework.auth(user)).token
     const questionNumber = 999
-    const res = await request(framework.app).post('/')
-      .send(createExamSessionQuestionAnswer({
-        examSessionId: examSession.id.toString(),
-        question: questionNumber,
-        createExamSessionQuestionAnswer: { choice: 0 },
-      }))
+    const res = await request(framework.app)
+      .post('/')
+      .send(
+        createExamSessionQuestionAnswer({
+          examSessionId: examSession.id.toString(),
+          question: questionNumber,
+          createExamSessionQuestionAnswer: { choice: 0 }
+        })
+      )
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
     expect(res.body).toMatchObject(framework.graphqlError('NotFoundError'))
   })
   test('Bad request (empty body)', async () => {
-    const user = await framework.fixture<User>(User, { permissions: [ ExamSessionPermission.Get, ExamSessionPermission.CreateQuestionAnswer ] })
+    const user = await framework.fixture<User>(User, {
+      permissions: [ExamSessionPermission.Get, ExamSessionPermission.CreateQuestionAnswer]
+    })
     const token = (await framework.auth(user)).token
     const examSession = await framework.fixture<ExamSession>(ExamSession)
     const create = undefined as CreateExamSessionQuestionAnswer
-    const res = await request(framework.app).post('/')
-      .send(createExamSessionQuestionAnswer({
-        examSessionId: examSession.id.toString(),
-        question: 0,
-        createExamSessionQuestionAnswer: create,
-      }))
+    const res = await request(framework.app)
+      .post('/')
+      .send(
+        createExamSessionQuestionAnswer({
+          examSessionId: examSession.id.toString(),
+          question: 0,
+          createExamSessionQuestionAnswer: create
+        })
+      )
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
@@ -92,12 +108,15 @@ describe('Create examSession question answer', () => {
       create['choice'] = 0
     }
 
-    const res = await request(framework.app).post('/')
-      .send(createExamSessionQuestionAnswer({
-        examSessionId: examSession.id.toString(),
-        question: 0,
-        createExamSessionQuestionAnswer: create,
-      }))
+    const res = await request(framework.app)
+      .post('/')
+      .send(
+        createExamSessionQuestionAnswer({
+          examSessionId: examSession.id.toString(),
+          question: 0,
+          createExamSessionQuestionAnswer: create
+        })
+      )
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
@@ -117,12 +136,18 @@ describe('Create examSession question answer', () => {
     }
 
     let answeredQuestionCount = examSession.answeredQuestionCount()
-    const res = await request(framework.app).post('/')
-      .send(createExamSessionQuestionAnswer({
-        examSessionId: examSession.id.toString(),
-        question: questionNumber,
-        createExamSessionQuestionAnswer: create,
-      }, [ 'examSession {id questionNumber answeredQuestionCount}' ]))
+    const res = await request(framework.app)
+      .post('/')
+      .send(
+        createExamSessionQuestionAnswer(
+          {
+            examSessionId: examSession.id.toString(),
+            question: questionNumber,
+            createExamSessionQuestionAnswer: create
+          },
+          ['examSession {id questionNumber answeredQuestionCount}']
+        )
+      )
       .auth(token, { type: 'bearer' })
 
     if (typeof examSessionQuestion.choice !== 'number' && typeof examSessionQuestion.answer !== 'string') {
@@ -134,8 +159,8 @@ describe('Create examSession question answer', () => {
       examSession: {
         id: examSession.id.toString(),
         questionNumber: examSession.questionNumber,
-        answeredQuestionCount,
-      },
+        answeredQuestionCount
+      }
     })
   })
 })

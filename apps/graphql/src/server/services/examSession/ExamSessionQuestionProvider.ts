@@ -10,12 +10,10 @@ import AuthorizationVerifier from '../auth/AuthorizationVerifier'
 
 @Service()
 export default class ExamSessionQuestionProvider {
-
   public constructor(
     @Inject() private readonly questionProvider: QuestionProvider,
-    @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
-  ) {
-  }
+    @Inject() private readonly authorizationVerifier: AuthorizationVerifier
+  ) {}
 
   /**
    * @param {ExamSession} examSession
@@ -26,7 +24,11 @@ export default class ExamSessionQuestionProvider {
    * @throws {QuestionNotFoundError}
    * @throws {ExamSessionQuestionNumberNotFoundError}
    */
-  public async getExamSessionQuestion(examSession: ExamSession, questionNumber: number, initiator: User): Promise<ExamSessionQuestionSchema> {
+  public async getExamSessionQuestion(
+    examSession: ExamSession,
+    questionNumber: number,
+    initiator: User
+  ): Promise<ExamSessionQuestionSchema> {
     await this.authorizationVerifier.verifyAuthorization(initiator, ExamSessionPermission.GetQuestion, examSession)
 
     const questions = examSession.questions
@@ -44,7 +46,7 @@ export default class ExamSessionQuestionProvider {
 
     if (question.type === QuestionType.CHOICE) {
       examSessionQuestion.choice = questions[questionNumber].choice
-      examSessionQuestion.choices = question.choices.map(choice => choice.title)
+      examSessionQuestion.choices = question.choices.map((choice) => choice.title)
     }
 
     return examSessionQuestion

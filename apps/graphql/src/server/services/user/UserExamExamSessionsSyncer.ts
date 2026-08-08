@@ -5,12 +5,10 @@ import ExamSessionRepository from '../../repositories/ExamSessionRepository'
 
 @Service()
 export default class UserExamExamSessionsSyncer {
-
   public constructor(
     @Inject() private readonly examSessionRepository: ExamSessionRepository,
-    @Inject() private readonly userRepository: UserRepository,
-  ) {
-  }
+    @Inject() private readonly userRepository: UserRepository
+  ) {}
 
   public async syncUserExamExamSessions(user: User): Promise<User> {
     const examSessions = await this.examSessionRepository.findByCreatorWithoutCompleted(user)

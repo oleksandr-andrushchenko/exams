@@ -6,12 +6,10 @@ import QuestionRatingMarkRepository from '../../repositories/question/QuestionRa
 
 @Service()
 export default class QuestionRatingSyncer {
-
   public constructor(
     @InjectEntityManager() private readonly entityManager: EntityManagerInterface,
-    @Inject() private readonly questionRatingMarkRepository: QuestionRatingMarkRepository,
-  ) {
-  }
+    @Inject() private readonly questionRatingMarkRepository: QuestionRatingMarkRepository
+  ) {}
 
   public async syncQuestionRating(question: Question): Promise<Question> {
     const markCount = await this.questionRatingMarkRepository.countByQuestion(question)

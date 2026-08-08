@@ -9,13 +9,11 @@ import ExamEvent from '../../enums/exam/ExamEvent'
 
 @Service()
 export default class ExamApproveSwitcher {
-
   public constructor(
     @Inject() private readonly eventDispatcher: EventDispatcher,
     @Inject() private readonly examRepository: ExamRepository,
-    @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
-  ) {
-  }
+    @Inject() private readonly authorizationVerifier: AuthorizationVerifier
+  ) {}
 
   /**
    * @param {Exam} exam
@@ -28,7 +26,7 @@ export default class ExamApproveSwitcher {
 
     await this.examRepository.updateOneByEntity(exam, {
       ownerId: this.isExamApproved(exam) ? exam.creatorId : undefined,
-      updatedAt: new Date(),
+      updatedAt: new Date()
     })
 
     await this.eventDispatcher.dispatch(ExamEvent.ApproveToggled, { exam, initiator })

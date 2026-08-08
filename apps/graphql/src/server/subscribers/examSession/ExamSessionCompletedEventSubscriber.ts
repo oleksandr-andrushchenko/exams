@@ -9,13 +9,9 @@ import User from '../../entities/user/User'
 @Service()
 @EventSubscriber(ExamSessionEvent.Completed)
 export default class ExamSessionCompletedEventSubscriber implements EventSubscriberInterface {
+  public constructor(@Inject() private readonly userExamExamSessionsSyncer: UserExamExamSessionsSyncer) {}
 
-  public constructor(
-    @Inject() private readonly userExamExamSessionsSyncer: UserExamExamSessionsSyncer,
-  ) {
-  }
-
-  public async handle({ examSession, user }: { examSession: ExamSession, user: User }): Promise<void> {
+  public async handle({ examSession, user }: { examSession: ExamSession; user: User }): Promise<void> {
     await this.userExamExamSessionsSyncer.syncUserExamExamSessions(user)
   }
 }

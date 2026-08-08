@@ -9,13 +9,11 @@ import ExamSessionEvent from '../../enums/examSession/ExamSessionEvent'
 
 @Service()
 export default class ExamSessionDeleter {
-
   public constructor(
     @InjectEntityManager() private readonly entityManager: EntityManagerInterface,
     @Inject() private readonly eventDispatcher: EventDispatcher,
-    @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
-  ) {
-  }
+    @Inject() private readonly authorizationVerifier: AuthorizationVerifier
+  ) {}
 
   /**
    * @param {ExamSession} examSession

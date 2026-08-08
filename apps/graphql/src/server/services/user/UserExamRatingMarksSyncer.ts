@@ -5,12 +5,10 @@ import ExamRatingMarkRepository from '../../repositories/exam/ExamRatingMarkRepo
 
 @Service()
 export default class UserExamRatingMarksSyncer {
-
   public constructor(
     @Inject() private readonly examRatingMarkRepository: ExamRatingMarkRepository,
-    @Inject() private readonly userRepository: UserRepository,
-  ) {
-  }
+    @Inject() private readonly userRepository: UserRepository
+  ) {}
 
   public async syncUserExamRatingMarks(user: User): Promise<User> {
     const ratingMarks = await this.examRatingMarkRepository.findByCreator(user)

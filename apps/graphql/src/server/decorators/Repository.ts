@@ -8,11 +8,7 @@ export default function Repository(entity: Constructable<unknown>, connection: s
       type: repositoryType as any,
       factory: () => {
         const em = Container.get(ConnectionManager).get(connection).manager
-        const {
-          target,
-          manager,
-          queryRunner
-        } = em.getRepository(entity as EntityTarget<typeof entity>)
+        const { target, manager, queryRunner } = em.getRepository(entity as EntityTarget<typeof entity>)
         return new (repositoryType as any)(target, manager, queryRunner)
       }
     })

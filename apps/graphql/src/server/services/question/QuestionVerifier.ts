@@ -5,11 +5,7 @@ import QuestionTitleTakenError from '../../errors/question/QuestionTitleTakenErr
 
 @Service()
 export default class QuestionVerifier {
-
-  public constructor(
-    @Inject() private readonly questionRepository: QuestionRepository,
-  ) {
-  }
+  public constructor(@Inject() private readonly questionRepository: QuestionRepository) {}
 
   /**
    * @param {string} title

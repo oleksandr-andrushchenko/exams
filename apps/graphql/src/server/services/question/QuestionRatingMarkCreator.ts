@@ -11,14 +11,12 @@ import QuestionRatingMark from '../../entities/question/QuestionRatingMark'
 
 @Service()
 export default class QuestionRatingMarkCreator {
-
   public constructor(
     @Inject() private readonly eventDispatcher: EventDispatcher,
     @Inject() private readonly questionRatingMarkRepository: QuestionRatingMarkRepository,
     @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
-    @InjectEntityManager() private readonly entityManager: EntityManagerInterface,
-  ) {
-  }
+    @InjectEntityManager() private readonly entityManager: EntityManagerInterface
+  ) {}
 
   /**
    * @param {Question} question

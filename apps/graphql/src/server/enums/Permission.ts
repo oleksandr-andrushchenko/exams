@@ -28,7 +28,7 @@ enum Permission {
   UpdateUser = 'updateUser',
   DeleteUser = 'deleteUser',
   GetUserEmail = 'getUserEmail',
-  GetUserPermissions = 'getUserPermissions',
+  GetUserPermissions = 'getUserPermissions'
 }
 
 export default Permission

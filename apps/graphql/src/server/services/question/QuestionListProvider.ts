@@ -10,12 +10,10 @@ import User from '../../entities/user/User'
 
 @Service()
 export default class QuestionListProvider {
-
   public constructor(
     @Inject() private readonly questionRepository: QuestionRepository,
-    @Inject('validator') private readonly validator: ValidatorInterface,
-  ) {
-  }
+    @Inject('validator') private readonly validator: ValidatorInterface
+  ) {}
 
   /**
    * @param {GetQuestions} getQuestions
@@ -27,7 +25,7 @@ export default class QuestionListProvider {
   public async getQuestions(
     getQuestions: GetQuestions,
     meta: boolean = false,
-    initiator?: User,
+    initiator?: User
   ): Promise<Question[] | PaginatedQuestions> {
     await this.validator.validate(getQuestions)
 

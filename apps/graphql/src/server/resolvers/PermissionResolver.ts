@@ -7,14 +7,10 @@ import PermissionHierarchySchema from '../schema/auth/PermissionHierarchySchema'
 @Service()
 @Resolver()
 export class PermissionResolver {
-
-  public constructor(
-    @Inject('authPermissions') private readonly permissions: PermissionHierarchySchema,
-  ) {
-  }
+  public constructor(@Inject('authPermissions') private readonly permissions: PermissionHierarchySchema) {}
 
   @Authorized()
-  @Query(_returns => PermissionSchema, { name: 'permission' })
+  @Query((_returns) => PermissionSchema, { name: 'permission' })
   public async getPermission(): Promise<PermissionSchema> {
     const permission = new PermissionSchema()
     permission.items = Object.values(Permission)

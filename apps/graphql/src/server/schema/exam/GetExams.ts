@@ -4,19 +4,18 @@ import { ArgsType, Field, ID } from 'type-graphql'
 
 @ArgsType()
 export default class GetExams extends PaginationSchema {
-
   @IsOptional()
   @IsMongoId()
-  @Field(_type => ID, { nullable: true })
+  @Field((_type) => ID, { nullable: true })
   public readonly userId?: string
 
   @IsOptional()
-  @IsIn([ 'yes', 'no' ])
+  @IsIn(['yes', 'no'])
   @Field({ nullable: true })
   public readonly subscription?: string
 
   @IsOptional()
-  @IsIn([ 'yes', 'no' ])
+  @IsIn(['yes', 'no'])
   @Field({ nullable: true })
   public readonly approved?: string
 
@@ -32,7 +31,7 @@ export default class GetExams extends PaginationSchema {
   public readonly tag?: string
 
   @IsOptional()
-  @IsIn([ 'i', 'somebody' ])
+  @IsIn(['i', 'somebody'])
   @Field({ nullable: true })
   public creator?: string
 }

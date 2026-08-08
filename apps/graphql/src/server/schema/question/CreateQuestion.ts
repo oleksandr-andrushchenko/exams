@@ -7,9 +7,8 @@ import QuestionDifficulty from '../../entities/question/QuestionDifficulty'
 
 @InputType()
 export default class CreateQuestion {
-
   @IsMongoId()
-  @Field(_type => ID)
+  @Field((_type) => ID)
   public readonly examId: string
 
   @IsEnum(QuestionType)
@@ -24,10 +23,10 @@ export default class CreateQuestion {
   @Field()
   public readonly title: string
 
-  @ValidateIf(target => target.type === QuestionType.CHOICE)
+  @ValidateIf((target) => target.type === QuestionType.CHOICE)
   @ArrayNotEmpty()
   @ValidateNested({ each: true })
   @Type(() => QuestionChoiceSchema)
-  @Field(_type => [ QuestionChoiceSchema! ], { nullable: true })
+  @Field((_type) => [QuestionChoiceSchema!], { nullable: true })
   public readonly choices?: QuestionChoiceSchema[]
 }

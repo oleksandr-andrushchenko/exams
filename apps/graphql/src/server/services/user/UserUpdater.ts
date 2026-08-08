@@ -11,15 +11,13 @@ import UserEvent from '../../enums/user/UserEvent'
 
 @Service()
 export default class UserUpdater {
-
   public constructor(
     @InjectEntityManager() private readonly entityManager: EntityManagerInterface,
     @Inject() private readonly userVerifier: UserVerifier,
     @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
     @Inject() private readonly eventDispatcher: EventDispatcher,
-    @Inject('validator') private readonly validator: ValidatorInterface,
-  ) {
-  }
+    @Inject('validator') private readonly validator: ValidatorInterface
+  ) {}
 
   /**
    * @param {User} user

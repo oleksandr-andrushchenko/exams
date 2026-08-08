@@ -1,5 +1,5 @@
 enum QuestionType {
-  CHOICE = 'choice',
+  CHOICE = 'choice'
 }
 
 export default QuestionType

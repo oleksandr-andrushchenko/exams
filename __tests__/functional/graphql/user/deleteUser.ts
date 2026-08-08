@@ -7,6 +7,6 @@ export const deleteUser = (variables: GetUser) => {
         deleteUser(userId: $userId)
       }
   `,
-    variables,
+    variables
   }
 }

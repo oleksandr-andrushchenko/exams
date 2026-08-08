@@ -6,7 +6,6 @@ import RatingTemplateRenderer from '../rating/RatingTemplateRenderer'
 
 @Service()
 export default class QuestionRatingProvider {
-
   private readonly ratingTemplateRenderer = new RatingTemplateRenderer()
 
   public getQuestionRating(question: Question, initiator: User): RatingSchema | undefined {
@@ -23,7 +22,7 @@ export default class QuestionRatingProvider {
       const questionId = question.id.toString()
 
       for (let index = 0; index < 5; index++) {
-        const questionIds = initiator.questionRatingMarks[index].map(question => question.toString())
+        const questionIds = initiator.questionRatingMarks[index].map((question) => question.toString())
 
         if (Array.isArray(questionIds) && questionIds.includes(questionId)) {
           rating.mark = index + 1
@@ -32,7 +31,11 @@ export default class QuestionRatingProvider {
       }
     }
 
-    rating.html = this.ratingTemplateRenderer.render({ questionId: question.id.toString(), rating, userMark: rating.mark })
+    rating.html = this.ratingTemplateRenderer.render({
+      questionId: question.id.toString(),
+      rating,
+      userMark: rating.mark
+    })
 
     return rating
   }

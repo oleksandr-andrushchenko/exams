@@ -5,17 +5,13 @@ import ValidatorError from '../../errors/validator/ValidatorError'
 
 @Service()
 export default class ClassValidatorValidator implements ValidatorInterface {
-
-  public constructor(
-    @Inject('validatorOptions') private readonly options: ValidatorOptions,
-  ) {
-  }
+  public constructor(@Inject('validatorOptions') private readonly options: ValidatorOptions) {}
 
   public async validate(object: object): Promise<void> {
     try {
       await validateOrReject(object, this.options)
     } catch (errors) {
-      throw new ValidatorError((errors as ValidationError[]))
+      throw new ValidatorError(errors as ValidationError[])
     }
   }
 
@@ -24,9 +20,9 @@ export default class ClassValidatorValidator implements ValidatorInterface {
       const error = new ValidationError()
       error.property = 'id'
       error.value = id
-      error.constraints = {isMongoId: 'id must be a 24-character hexadecimal object id'}
+      error.constraints = { isMongoId: 'id must be a 24-character hexadecimal object id' }
 
-      throw new ValidatorError([ error ])
+      throw new ValidatorError([error])
     }
   }
 }

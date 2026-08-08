@@ -11,7 +11,6 @@ import slugify from '../../services/normalizers/SlugNormalizer'
 @ObjectType()
 @Entity({ name: 'users' })
 export default class User extends Base {
-
   @BeforeInsert()
   @BeforeUpdate()
   private updateSlug(): void {
@@ -35,9 +34,9 @@ export default class User extends Base {
   public password: string
 
   @Authorized(UserPermission.GetPermissions)
-  @Column({ type: 'text', array: true, default: [ Permission.Regular ] })
-  @Field(_type => [ String! ], { nullable: true, defaultValue: [ Permission.Regular ] })
-  public permissions?: Permission[] = [ Permission.Regular ]
+  @Column({ type: 'text', array: true, default: [Permission.Regular] })
+  @Field((_type) => [String!], { nullable: true, defaultValue: [Permission.Regular] })
+  public permissions?: Permission[] = [Permission.Regular]
 
   @Column({ type: 'jsonb', nullable: true })
   public rating?: Rating

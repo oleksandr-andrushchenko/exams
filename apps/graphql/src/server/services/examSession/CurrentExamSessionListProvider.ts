@@ -6,11 +6,7 @@ import Exam from '../../entities/exam/Exam'
 
 @Service()
 export default class CurrentExamSessionListProvider {
-
-  public constructor(
-    @Inject() private readonly examSessionRepository: ExamSessionRepository,
-  ) {
-  }
+  public constructor(@Inject() private readonly examSessionRepository: ExamSessionRepository) {}
 
   /**
    * @param {Exam[]} exams

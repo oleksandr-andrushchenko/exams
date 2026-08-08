@@ -8,17 +8,13 @@ import AccessTokenCreator from '../services/auth/AccessTokenCreator'
 @Service()
 @Resolver()
 export class AuthenticateResolver {
-
   public constructor(
     @Inject() private readonly userProvider: UserProvider,
-    @Inject() private readonly accessTokenCreator: AccessTokenCreator,
-  ) {
-  }
+    @Inject() private readonly accessTokenCreator: AccessTokenCreator
+  ) {}
 
-  @Mutation(_returns => Token)
-  public async createAuthenticationToken(
-    @Arg('credentials') credentials: Credentials,
-  ): Promise<Token> {
+  @Mutation((_returns) => Token)
+  public async createAuthenticationToken(@Arg('credentials') credentials: Credentials): Promise<Token> {
     const user = await this.userProvider.getUserByCredentials(credentials)
 
     return await this.accessTokenCreator.createAccessToken(user)

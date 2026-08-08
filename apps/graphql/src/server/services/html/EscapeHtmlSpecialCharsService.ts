@@ -2,7 +2,6 @@ import { Service } from 'typedi'
 
 @Service()
 export default class EscapeHtmlSpecialCharsService {
-
   public escapeHtmlSpecialChars(str: string): string {
     return str
       .replace(/&/g, '&amp;')
@@ -17,7 +16,7 @@ export default class EscapeHtmlSpecialCharsService {
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, '\'')
+      .replace(/&#39;/g, "'")
       .replace(/&amp;/g, '&')
   }
 }

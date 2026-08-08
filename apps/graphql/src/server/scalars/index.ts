@@ -4,5 +4,5 @@ import { ObjectId } from 'bson'
 
 export const scalars = [
   { type: ObjectId, scalar: ObjectIdScalar },
-  { type: Date, scalar: GraphQLTimestamp },
+  { type: Date, scalar: GraphQLTimestamp }
 ]

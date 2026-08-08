@@ -8,23 +8,15 @@ import ActivityQuery from '../schema/activity/ActivityQuery'
 @Service()
 @Resolver(Activity)
 export class ActivityResolver {
+  public constructor(@Inject() private readonly activityListProvider: ActivityListProvider) {}
 
-  public constructor(
-    @Inject() private readonly activityListProvider: ActivityListProvider,
-  ) {
+  @Query((_returns) => [Activity], { name: 'activities' })
+  public async getActivities(@Args() activityQuery: ActivityQuery): Promise<Activity[]> {
+    return (await this.activityListProvider.getActivities(activityQuery, false)) as Activity[]
   }
 
-  @Query(_returns => [ Activity ], { name: 'activities' })
-  public async getActivities(
-    @Args() activityQuery: ActivityQuery,
-  ): Promise<Activity[]> {
-    return await this.activityListProvider.getActivities(activityQuery, false) as Activity[]
-  }
-
-  @Query(_returns => PaginatedActivityList, { name: 'paginatedActivities' })
-  public async getPaginatedActivities(
-    @Args() activityQuery: ActivityQuery,
-  ): Promise<PaginatedActivityList> {
-    return await this.activityListProvider.getActivities(activityQuery, true) as PaginatedActivityList
+  @Query((_returns) => PaginatedActivityList, { name: 'paginatedActivities' })
+  public async getPaginatedActivities(@Args() activityQuery: ActivityQuery): Promise<PaginatedActivityList> {
+    return (await this.activityListProvider.getActivities(activityQuery, true)) as PaginatedActivityList
   }
 }

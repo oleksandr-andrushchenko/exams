@@ -27,9 +27,10 @@ describe('Create me', () => {
     { case: 'password is a number', me: { email: 'a@a.com', password: 123123 } },
     { case: 'password is an object', me: { email: 'a@a.com', password: {} } },
     { case: 'password is too short', me: { email: 'a@a.com', password: 'p' } },
-    { case: 'password is too long', me: { email: 'a@a.com', password: 'abc'.repeat(99) } },
+    { case: 'password is too long', me: { email: 'a@a.com', password: 'abc'.repeat(99) } }
   ])('Bad request ($case)', async ({ me, times = 1 }) => {
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(createMe({ createMe: me as CreateMe }))
 
     expect(res.status).toEqual(200)
@@ -37,14 +38,17 @@ describe('Create me', () => {
   })
   test('Conflict (email)', async () => {
     const user = await framework.fixture<User>(User)
-    const res = await request(framework.app).post('/')
-      .send(createMe({
-        createMe: {
-          name: 'any',
-          email: user.email,
-          password: '123123',
-        },
-      }))
+    const res = await request(framework.app)
+      .post('/')
+      .send(
+        createMe({
+          createMe: {
+            name: 'any',
+            email: user.email,
+            password: '123123'
+          }
+        })
+      )
 
     expect(res.status).toEqual(200)
     expect(res.body).toMatchObject(framework.graphqlError('ConflictError'))
@@ -52,9 +56,10 @@ describe('Create me', () => {
   test('Created', async () => {
     await framework.clear(User)
     const me = { name: 'any', email: 'a@a.com' }
-    const fields = [ 'id', 'name', 'createdAt', 'updatedAt' ]
+    const fields = ['id', 'name', 'createdAt', 'updatedAt']
     const now = Date.now()
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(createMe({ createMe: { ...me, ...{ password: '123123' } } }, fields))
 
     expect(res.status).toEqual(200)
@@ -69,9 +74,9 @@ describe('Create me', () => {
       id: id.toString(),
       name: createdUser.name,
       createdAt: createdUser.createdAt.getTime(),
-      updatedAt: null,
+      updatedAt: null
     })
     expect(createdUser.createdAt.getTime()).toBeGreaterThanOrEqual(now)
-    expect(res.body.data.createMe).not.toHaveProperty([ 'password', 'creatorId', 'deletedAt' ])
+    expect(res.body.data.createMe).not.toHaveProperty(['password', 'creatorId', 'deletedAt'])
   })
 })

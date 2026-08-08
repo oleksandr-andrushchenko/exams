@@ -12,16 +12,14 @@ import UserRatingSyncer from '../../services/user/UserRatingSyncer'
 @Service()
 @EventSubscriber(ExamEvent.Rated)
 export default class ExamRatedEventSubscriber implements EventSubscriberInterface {
-
   public constructor(
     @Inject() private readonly examActivityCreator: ExamActivityCreator,
     @Inject() private readonly userExamRatingMarksSyncer: UserExamRatingMarksSyncer,
     @Inject() private readonly examRatingSyncer: ExamRatingSyncer,
-    @Inject() private readonly userRatingSyncer: UserRatingSyncer,
-  ) {
-  }
+    @Inject() private readonly userRatingSyncer: UserRatingSyncer
+  ) {}
 
-  public async handle({ exam, user }: { exam: Exam, user: User }): Promise<void> {
+  public async handle({ exam, user }: { exam: Exam; user: User }): Promise<void> {
     await this.examActivityCreator.createExamActivity(exam, ExamEvent.Rated)
     await this.userExamRatingMarksSyncer.syncUserExamRatingMarks(user)
     await this.examRatingSyncer.syncExamRating(exam)

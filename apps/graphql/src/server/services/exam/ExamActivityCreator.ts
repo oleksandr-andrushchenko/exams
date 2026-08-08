@@ -6,11 +6,7 @@ import { Event } from '../../enums/Event'
 
 @Service()
 export default class ExamActivityCreator {
-
-  public constructor(
-    @InjectEntityManager() private readonly entityManager: EntityManagerInterface,
-  ) {
-  }
+  public constructor(@InjectEntityManager() private readonly entityManager: EntityManagerInterface) {}
 
   public async createExamActivity(exam: Exam, event: Event): Promise<Activity> {
     const activity = new Activity()

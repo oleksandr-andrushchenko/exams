@@ -6,11 +6,7 @@ import ExamSessionTakenError from '../../errors/examSession/ExamSessionTakenErro
 
 @Service()
 export default class ExamSessionVerifier {
-
-  public constructor(
-    @Inject() private readonly examSessionRepository: ExamSessionRepository,
-  ) {
-  }
+  public constructor(@Inject() private readonly examSessionRepository: ExamSessionRepository) {}
 
   /**
    * @param {Exam} exam

@@ -4,6 +4,6 @@ export const deleteMe = () => {
       mutation DeleteMe {
         deleteMe
       }
-  `,
+  `
   }
 }

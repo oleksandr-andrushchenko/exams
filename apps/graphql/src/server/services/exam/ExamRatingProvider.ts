@@ -5,7 +5,6 @@ import User from '../../entities/user/User'
 
 @Service()
 export default class ExamRatingProvider {
-
   public getExamRating(exam: Exam, initiator?: User): RatingSchema | undefined {
     if (!exam.rating) {
       return undefined
@@ -20,7 +19,7 @@ export default class ExamRatingProvider {
       const examId = exam.id.toString()
 
       for (let index = 0; index < 5; index++) {
-        const examIds = initiator.examRatingMarks[index].map(exam => exam.toString())
+        const examIds = initiator.examRatingMarks[index].map((exam) => exam.toString())
 
         if (Array.isArray(examIds) && examIds.includes(examId)) {
           rating.mark = index + 1

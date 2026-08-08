@@ -28,11 +28,11 @@ import ExamListProvider from '../services/exam/ExamListProvider'
 @Service()
 @Resolver(ExamSession)
 export class ExamSessionResolver {
-
   public constructor(
     @Inject() private readonly examSessionCreator: ExamSessionCreator,
     @Inject() private readonly examSessionDeleter: ExamSessionDeleter,
-    @Inject() private readonly examSessionLastRequestedQuestionNumberSetter: ExamSessionLastRequestedQuestionNumberSetter,
+    @Inject()
+    private readonly examSessionLastRequestedQuestionNumberSetter: ExamSessionLastRequestedQuestionNumberSetter,
     @Inject() private readonly examSessionQuestionAnswerCreator: ExamSessionQuestionAnswerCreator,
     @Inject() private readonly examSessionQuestionProvider: ExamSessionQuestionProvider,
     @Inject() private readonly examSessionQuestionAnswerDeleter: ExamSessionQuestionAnswerDeleter,
@@ -42,75 +42,77 @@ export class ExamSessionResolver {
     @Inject() private readonly examProvider: ExamProvider,
     @Inject() private readonly currentExamSessionListProvider: CurrentExamSessionListProvider,
     @Inject('validator') private readonly validator: ValidatorInterface,
-    @Inject() private readonly examListProvider: ExamListProvider,
-  ) {
-  }
+    @Inject() private readonly examListProvider: ExamListProvider
+  ) {}
 
   @Authorized()
-  @Mutation(_returns => ExamSession)
+  @Mutation((_returns) => ExamSession)
   public async createExamSession(
     @Arg('createExamSession') examSession: CreateExamSession,
-    @Ctx('user') user: User,
+    @Ctx('user') user: User
   ): Promise<ExamSession> {
     return await this.examSessionCreator.createExamSession(examSession, user)
   }
 
   @Authorized()
-  @Query(_returns => [ ExamSession ], { name: 'examSessions' })
+  @Query((_returns) => [ExamSession], { name: 'examSessions' })
   public async getExamSessions(
     @Args() getExamSessions: GetExamSessions,
-    @Ctx('user') user: User,
+    @Ctx('user') user: User
   ): Promise<ExamSession[]> {
-    return await this.examSessionListProvider.getExamSessions(getExamSessions, user) as ExamSession[]
+    return (await this.examSessionListProvider.getExamSessions(getExamSessions, user)) as ExamSession[]
   }
 
-  @Query(_returns => [ ExamSession ], { name: 'userExamSessions' })
-  public async getUserExamSessions(
-    @Args() getExamSessions: GetExamSessions,
-  ): Promise<ExamSession[]> {
+  @Query((_returns) => [ExamSession], { name: 'userExamSessions' })
+  public async getUserExamSessions(@Args() getExamSessions: GetExamSessions): Promise<ExamSession[]> {
     if (!getExamSessions.userId) return []
-    return await this.examSessionListProvider.getExamSessions(getExamSessions, undefined, false) as ExamSession[]
+    return (await this.examSessionListProvider.getExamSessions(getExamSessions, undefined, false)) as ExamSession[]
   }
 
-  @Query(_returns => PaginatedExamSessions, { name: 'paginatedExamSessions' })
+  @Query((_returns) => PaginatedExamSessions, { name: 'paginatedExamSessions' })
   public async getPaginatedExamSessions(
     @Args() getExamSessions: GetExamSessions,
-    @Ctx('user') user: User,
+    @Ctx('user') user: User
   ): Promise<PaginatedExamSessions> {
-    return await this.examSessionListProvider.getExamSessions(getExamSessions, user, true) as PaginatedExamSessions
+    return (await this.examSessionListProvider.getExamSessions(getExamSessions, user, true)) as PaginatedExamSessions
   }
 
   @Authorized()
-  @Query(_returns => ExamSession, { name: 'examSession' })
-  public async getExamSession(
-    @Args() getExamSession: GetExamSession,
-    @Ctx('user') user: User,
-  ): Promise<ExamSession> {
+  @Query((_returns) => ExamSession, { name: 'examSession' })
+  public async getExamSession(@Args() getExamSession: GetExamSession, @Ctx('user') user: User): Promise<ExamSession> {
     await this.validator.validate(getExamSession)
 
     return await this.examSessionProvider.getExamSession(getExamSession.examSessionId, user)
   }
 
   @Authorized()
-  @Query(_returns => ExamSessionQuestionSchema, { name: 'examSessionQuestion' })
+  @Query((_returns) => ExamSessionQuestionSchema, { name: 'examSessionQuestion' })
   public async getExamSessionQuestion(
     @Args() getExamSessionQuestion: GetExamSessionQuestion,
-    @Ctx('user') user: User,
+    @Ctx('user') user: User
   ): Promise<ExamSessionQuestionSchema> {
     await this.validator.validate(getExamSessionQuestion)
     const examSession = await this.examSessionProvider.getExamSession(getExamSessionQuestion.examSessionId, user)
 
-    const examSessionQuestion = await this.examSessionQuestionProvider.getExamSessionQuestion(examSession, getExamSessionQuestion.question, user)
-    await this.examSessionLastRequestedQuestionNumberSetter.setExamSessionLastRequestedQuestionNumber(examSession, getExamSessionQuestion.question, user)
+    const examSessionQuestion = await this.examSessionQuestionProvider.getExamSessionQuestion(
+      examSession,
+      getExamSessionQuestion.question,
+      user
+    )
+    await this.examSessionLastRequestedQuestionNumberSetter.setExamSessionLastRequestedQuestionNumber(
+      examSession,
+      getExamSessionQuestion.question,
+      user
+    )
 
     return examSessionQuestion
   }
 
   @Authorized()
-  @Query(_returns => ExamSessionQuestionSchema, { name: 'currentExamSessionQuestion' })
+  @Query((_returns) => ExamSessionQuestionSchema, { name: 'currentExamSessionQuestion' })
   public async getCurrentExamSessionQuestion(
     @Args() getExamSession: GetExamSession,
-    @Ctx('user') user: User,
+    @Ctx('user') user: User
   ): Promise<ExamSessionQuestionSchema> {
     await this.validator.validate(getExamSession)
     const examSession = await this.examSessionProvider.getExamSession(getExamSession.examSessionId, user)
@@ -119,39 +121,48 @@ export class ExamSessionResolver {
   }
 
   @Authorized()
-  @Mutation(_returns => ExamSessionQuestionSchema)
+  @Mutation((_returns) => ExamSessionQuestionSchema)
   public async createExamSessionQuestionAnswer(
     @Args() getExamSessionQuestion: GetExamSessionQuestion,
     @Arg('createExamSessionQuestionAnswer') createExamSessionQuestionAnswer: CreateExamSessionQuestionAnswer,
-    @Ctx('user') user: User,
+    @Ctx('user') user: User
   ): Promise<ExamSessionQuestionSchema> {
     await this.validator.validate(getExamSessionQuestion)
     const examSession = await this.examSessionProvider.getExamSession(getExamSessionQuestion.examSessionId, user)
 
-    await this.examSessionQuestionAnswerCreator.createExamSessionQuestionAnswer(examSession, getExamSessionQuestion.question, createExamSessionQuestionAnswer, user)
+    await this.examSessionQuestionAnswerCreator.createExamSessionQuestionAnswer(
+      examSession,
+      getExamSessionQuestion.question,
+      createExamSessionQuestionAnswer,
+      user
+    )
 
     return this.examSessionQuestionProvider.getExamSessionQuestion(examSession, getExamSessionQuestion.question, user)
   }
 
   @Authorized()
-  @Mutation(_returns => ExamSessionQuestionSchema)
+  @Mutation((_returns) => ExamSessionQuestionSchema)
   public async deleteExamSessionQuestionAnswer(
     @Args() getExamSessionQuestion: GetExamSessionQuestion,
-    @Ctx('user') user: User,
+    @Ctx('user') user: User
   ): Promise<ExamSessionQuestionSchema> {
     await this.validator.validate(getExamSessionQuestion)
     const examSession = await this.examSessionProvider.getExamSession(getExamSessionQuestion.examSessionId, user)
 
-    await this.examSessionQuestionAnswerDeleter.deleteExamSessionQuestionAnswer(examSession, getExamSessionQuestion.question, user)
+    await this.examSessionQuestionAnswerDeleter.deleteExamSessionQuestionAnswer(
+      examSession,
+      getExamSessionQuestion.question,
+      user
+    )
 
     return this.examSessionQuestionProvider.getExamSessionQuestion(examSession, getExamSessionQuestion.question, user)
   }
 
   @Authorized()
-  @Mutation(_returns => ExamSession)
+  @Mutation((_returns) => ExamSession)
   public async createExamSessionCompletion(
     @Args() getExamSession: GetExamSession,
-    @Ctx('user') user: User,
+    @Ctx('user') user: User
   ): Promise<ExamSession> {
     await this.validator.validate(getExamSession)
     const examSession = await this.examSessionProvider.getExamSession(getExamSession.examSessionId, user)
@@ -162,11 +173,8 @@ export class ExamSessionResolver {
   }
 
   @Authorized()
-  @Mutation(_returns => Boolean)
-  public async deleteExamSession(
-    @Args() getExamSession: GetExamSession,
-    @Ctx('user') user: User,
-  ): Promise<boolean> {
+  @Mutation((_returns) => Boolean)
+  public async deleteExamSession(@Args() getExamSession: GetExamSession, @Ctx('user') user: User): Promise<boolean> {
     await this.validator.validate(getExamSession)
     const examSession = await this.examSessionProvider.getExamSession(getExamSession.examSessionId, user)
 
@@ -175,18 +183,16 @@ export class ExamSessionResolver {
     return true
   }
 
-  @FieldResolver(_returns => Exam, { name: 'exam' })
-  public async getExamSessionExam(
-    @Root() examSession: ExamSession,
-  ): Promise<Exam> {
+  @FieldResolver((_returns) => Exam, { name: 'exam' })
+  public async getExamSessionExam(@Root() examSession: ExamSession): Promise<Exam> {
     return await this.examProvider.getExam(examSession.examId)
   }
 
   @Authorized()
-  @Query(_returns => [ ExamSession ], { name: 'currentExamSessions' })
+  @Query((_returns) => [ExamSession], { name: 'currentExamSessions' })
   public async getCurrentExamSessions(
     @Args() getCurrentExamSessions: GetCurrentExamSessions,
-    @Ctx('user') user: User,
+    @Ctx('user') user: User
   ): Promise<ExamSession[]> {
     await this.validator.validate(getCurrentExamSessions)
     const exams = await this.examListProvider.getExamsByIds(getCurrentExamSessions.examIds)

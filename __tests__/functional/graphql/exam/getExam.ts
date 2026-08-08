@@ -1,14 +1,14 @@
 import GetExam from '../../../../apps/graphql/src/server/schema/exam/GetExam'
 
-export const getExam = (variables: GetExam, fields: string[] = [ 'id' ]) => {
+export const getExam = (variables: GetExam, fields: string[] = ['id']) => {
   return {
     query: `
       query GetExam($examId: ID!) {
         exam(examId: $examId) {
-          ${ fields.join('\r') }
+          ${fields.join('\r')}
         }
       }
   `,
-    variables,
+    variables
   }
 }

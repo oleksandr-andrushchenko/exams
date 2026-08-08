@@ -14,16 +14,18 @@ const framework: TestFramework = globalThis.framework
 describe('Update user', () => {
   test('Unauthorized', async () => {
     const user = await framework.fixture<User>(User)
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(updateUser({ userId: user.id.toString(), updateUser: { name: 'any' } }))
 
     expect(res.status).toEqual(200)
     expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
   })
   test('Bad request (invalid id)', async () => {
-    const user = await framework.fixture<User>(User, { permissions: [ UserPermission.Update ] })
+    const user = await framework.fixture<User>(User, { permissions: [UserPermission.Update] })
     const token = (await framework.auth(user)).token
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(updateUser({ userId: 'invalid', updateUser: { name: 'any' } }))
       .auth(token, { type: 'bearer' })
 
@@ -31,10 +33,11 @@ describe('Update user', () => {
     expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
   })
   test('Not found', async () => {
-    const user = await framework.fixture<User>(User, { permissions: [ UserPermission.Update ] })
+    const user = await framework.fixture<User>(User, { permissions: [UserPermission.Update] })
     const token = (await framework.auth(user)).token
     const id = await framework.fakeId()
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(updateUser({ userId: id.toString(), updateUser: { name: 'any' } }))
       .auth(token, { type: 'bearer' })
 
@@ -51,13 +54,13 @@ describe('Update user', () => {
     { case: 'permissions is a string', body: { permissions: 'invalid' } },
     { case: 'permissions is an integer', body: { permissions: 123 } },
     { case: 'permissions is an object', body: { permissions: {} } },
-    { case: 'permissions is invalid', body: { permissions: [ 'any' ] } },
+    { case: 'permissions is invalid', body: { permissions: ['any'] } }
   ])('Bad request ($case)', async ({ body }) => {
-    const token = (await framework.auth(
-      await framework.fixture<User>(User, { permissions: [ UserPermission.Update ] }),
-    )).token
+    const token = (await framework.auth(await framework.fixture<User>(User, { permissions: [UserPermission.Update] })))
+      .token
     const user = await framework.fixture<User>(User)
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(updateUser({ userId: user.id.toString(), updateUser: body as UpdateUser }))
       .auth(token, { type: 'bearer' })
 
@@ -68,11 +71,14 @@ describe('Update user', () => {
   test('Forbidden', async () => {
     const token = (await framework.auth(await framework.fixture<User>(User))).token
     const user = await framework.fixture<User>(User)
-    const res = await request(framework.app).post('/')
-      .send(updateUser({
-        userId: user.id.toString(),
-        updateUser: { name: faker.person.fullName() },
-      }))
+    const res = await request(framework.app)
+      .post('/')
+      .send(
+        updateUser({
+          userId: user.id.toString(),
+          updateUser: { name: faker.person.fullName() }
+        })
+      )
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
@@ -81,14 +87,16 @@ describe('Update user', () => {
   test('Conflict (email)', async () => {
     const user1 = await framework.fixture<User>(User)
     const user = await framework.fixture<User>(User)
-    const token = (await framework.auth(
-      await framework.fixture<User>(User, { permissions: [ UserPermission.Update ] }),
-    )).token
-    const res = await request(framework.app).post('/')
-      .send(updateUser({
-        userId: user.id.toString(),
-        updateUser: { email: user1.email },
-      }))
+    const token = (await framework.auth(await framework.fixture<User>(User, { permissions: [UserPermission.Update] })))
+      .token
+    const res = await request(framework.app)
+      .post('/')
+      .send(
+        updateUser({
+          userId: user.id.toString(),
+          updateUser: { email: user1.email }
+        })
+      )
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
@@ -96,11 +104,12 @@ describe('Update user', () => {
   })
   test('Updated (has ownership)', async () => {
     await framework.clear(User)
-    const user = await framework.fixture<User>(User, { permissions: [ Permission.Root ] })
+    const user = await framework.fixture<User>(User, { permissions: [Permission.Root] })
     const token = (await framework.auth(user)).token
     const userId = user.id.toString()
     const update = { name: faker.person.fullName() }
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(updateUser({ userId, updateUser: update }))
       .auth(token, { type: 'bearer' })
 
@@ -114,18 +123,18 @@ describe('Update user', () => {
     expect(updatedUser).toMatchObject({
       email: user.email,
       permissions: user.permissions,
-      password: user.password,
+      password: user.password
     })
   })
   test('Updated (has permission)', async () => {
     await framework.clear(User)
     const user = await framework.fixture<User>(User)
-    const token = (await framework.auth(
-      await framework.fixture<User>(User, { permissions: [ UserPermission.Update ] }),
-    )).token
+    const token = (await framework.auth(await framework.fixture<User>(User, { permissions: [UserPermission.Update] })))
+      .token
     const userId = user.id.toString()
-    const update = { name: faker.person.fullName(), email: 'any@gmail.com', permissions: [ Permission.All ] }
-    const res = await request(framework.app).post('/')
+    const update = { name: faker.person.fullName(), email: 'any@gmail.com', permissions: [Permission.All] }
+    const res = await request(framework.app)
+      .post('/')
       .send(updateUser({ userId, updateUser: update }))
       .auth(token, { type: 'bearer' })
 

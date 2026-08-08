@@ -15,16 +15,18 @@ const framework: TestFramework = globalThis.framework
 describe('Create examSession', () => {
   test('Unauthorized', async () => {
     const exam = await framework.fixture<Exam>(Exam, { ownerId: null })
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(createExamSession({ createExamSession: { examId: exam.id.toString() } }))
 
     expect(res.status).toEqual(200)
     expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
   })
   test('Bad request (empty body)', async () => {
-    const user = await framework.fixture<User>(User, { permissions: [ ExamSessionPermission.Create ] })
+    const user = await framework.fixture<User>(User, { permissions: [ExamSessionPermission.Create] })
     const token = (await framework.auth(user)).token
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(createExamSession({ createExamSession: {} as CreateExamSession }))
       .auth(token, { type: 'bearer' })
 
@@ -35,7 +37,8 @@ describe('Create examSession', () => {
     const user = await framework.fixture<User>(User, { permissions: [] })
     const token = (await framework.auth(user)).token
     const exam = await framework.fixture<Exam>(Exam, { ownerId: null })
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(createExamSession({ createExamSession: { examId: exam.id.toString() } }))
       .auth(token, { type: 'bearer' })
 
@@ -43,10 +46,11 @@ describe('Create examSession', () => {
     expect(res.body).toMatchObject(framework.graphqlError('ForbiddenError'))
   })
   test('Conflict (not approved exam)', async () => {
-    const user = await framework.fixture<User>(User, { permissions: [ ExamSessionPermission.Create ] })
+    const user = await framework.fixture<User>(User, { permissions: [ExamSessionPermission.Create] })
     const token = (await framework.auth(user)).token
     const exam = await framework.fixture<Exam>(Exam)
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(createExamSession({ createExamSession: { examId: exam.id.toString() } }))
       .auth(token, { type: 'bearer' })
 
@@ -54,10 +58,11 @@ describe('Create examSession', () => {
     expect(res.body).toMatchObject(framework.graphqlError('ConflictError'))
   })
   test('Conflict (not approved questions)', async () => {
-    const user = await framework.fixture<User>(User, { permissions: [ ExamSessionPermission.Create ] })
+    const user = await framework.fixture<User>(User, { permissions: [ExamSessionPermission.Create] })
     const token = (await framework.auth(user)).token
     const exam = await framework.fixture<Exam>(Exam, { approvedQuestionCount: 0, ownerId: null })
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(createExamSession({ createExamSession: { examId: exam.id.toString() } }))
       .auth(token, { type: 'bearer' })
 
@@ -65,11 +70,16 @@ describe('Create examSession', () => {
     expect(res.body).toMatchObject(framework.graphqlError('ConflictError'))
   })
   test('Conflict (examSession taken)', async () => {
-    const user = await framework.fixture<User>(User, { permissions: [ ExamSessionPermission.Create ] })
+    const user = await framework.fixture<User>(User, { permissions: [ExamSessionPermission.Create] })
     const token = (await framework.auth(user)).token
     const exam = await framework.fixture<Exam>(Exam, { approvedQuestionCount: 1, ownerId: null })
-    const examSession = await framework.fixture<ExamSession>(ExamSession, { examId: exam.id, completed: false, ownerId: user.id })
-    const res = await request(framework.app).post('/')
+    const examSession = await framework.fixture<ExamSession>(ExamSession, {
+      examId: exam.id,
+      completed: false,
+      ownerId: user.id
+    })
+    const res = await request(framework.app)
+      .post('/')
       .send(createExamSession({ createExamSession: { examId: examSession.examId.toString() } }))
       .auth(token, { type: 'bearer' })
 
@@ -78,7 +88,7 @@ describe('Create examSession', () => {
   })
   test('Created', async () => {
     await framework.clear(ExamSession)
-    const user = await framework.fixture<User>(User, { permissions: [ ExamSessionPermission.Create ] })
+    const user = await framework.fixture<User>(User, { permissions: [ExamSessionPermission.Create] })
     const token = (await framework.auth(user)).token
     const exam = await framework.fixture<Exam>(Exam, { approvedQuestionCount: 1, ownerId: null })
     const create = { examId: exam.id.toString() }
@@ -91,10 +101,11 @@ describe('Create examSession', () => {
       'questionCount',
       'answeredQuestionCount',
       'createdAt',
-      'updatedAt',
+      'updatedAt'
     ]
     const now = Date.now()
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(createExamSession({ createExamSession: create }, fields))
       .auth(token, { type: 'bearer' })
 
@@ -114,9 +125,9 @@ describe('Create examSession', () => {
       questionCount: createdExamSession.questionCount(),
       answeredQuestionCount: createdExamSession.answeredQuestionCount(),
       createdAt: createdExamSession.createdAt.getTime(),
-      updatedAt: null,
+      updatedAt: null
     })
     expect(createdExamSession.createdAt.getTime()).toBeGreaterThanOrEqual(now)
-    expect(res.body.data.createExamSession).not.toHaveProperty([ 'creatorId', 'deletedAt' ])
+    expect(res.body.data.createExamSession).not.toHaveProperty(['creatorId', 'deletedAt'])
   })
 })

@@ -6,7 +6,6 @@ import User from '../../entities/user/User'
 
 @Repository(ExamRatingMark)
 export default class ExamRatingMarkRepository extends EntityRepository<ExamRatingMark> {
-
   public async countByExam(exam: Exam): Promise<number> {
     return await this.countBy({ examId: exam.id })
   }
@@ -21,15 +20,15 @@ export default class ExamRatingMarkRepository extends EntityRepository<ExamRatin
 
   public async findByExamsAndCreator(exams: Exam[], creator: User): Promise<ExamRatingMark[]> {
     return await this.findBy({
-      examId: { $in: exams.map(exam => exam.id) },
-      creatorId: creator.id,
+      examId: { $in: exams.map((exam) => exam.id) },
+      creatorId: creator.id
     })
   }
 
   public async findOneByExamAndCreator(exam: Exam, creator: User): Promise<ExamRatingMark | null> {
     return await this.findOneBy({
       examId: exam.id,
-      creatorId: creator.id,
+      creatorId: creator.id
     })
   }
 }

@@ -4,7 +4,7 @@ enum ExamEvent {
   Deleted = 'examDeleted',
   ApproveToggled = 'examApproveToggled',
   Approved = 'examApproved',
-  Rated = 'examRated',
+  Rated = 'examRated'
 }
 
 export default ExamEvent

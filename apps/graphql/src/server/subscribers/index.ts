@@ -15,10 +15,7 @@ export default [
   QuestionRatedEventSubscriber,
   ExamSessionCreatedEventSubscriber,
   ExamSessionCompletedEventSubscriber,
-  ExamSessionDeletedEventSubscriber,
+  ExamSessionDeletedEventSubscriber
 ]
 
-export const subscribers = [
-  QuestionSubscriber,
-  UserSubscriber,
-]
+export const subscribers = [QuestionSubscriber, UserSubscriber]

@@ -1,14 +1,14 @@
 import GetQuestion from '../../../../apps/graphql/src/server/schema/question/GetQuestion'
 
-export const getQuestion = (variables: GetQuestion, fields: string[] = [ 'id' ]) => {
+export const getQuestion = (variables: GetQuestion, fields: string[] = ['id']) => {
   return {
     query: `
       query GetQuestion($questionId: ID!) {
         question(questionId: $questionId) {
-          ${ fields.join('\r') }
+          ${fields.join('\r')}
         }
       }
   `,
-    variables,
+    variables
   }
 }

@@ -6,11 +6,7 @@ import Question from '../entities/question/Question'
 @Service()
 @EventSubscriber()
 export default class QuestionSubscriber implements EntitySubscriberInterface {
-
-  public constructor(
-    @Inject() private readonly escapeHtmlSpecialCharsService: EscapeHtmlSpecialCharsService,
-  ) {
-  }
+  public constructor(@Inject() private readonly escapeHtmlSpecialCharsService: EscapeHtmlSpecialCharsService) {}
 
   public listenTo(): typeof Question {
     return Question

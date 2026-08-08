@@ -13,8 +13,7 @@ const framework: TestFramework = globalThis.framework
 
 describe('Get examSessions', () => {
   test('Unauthorized', async () => {
-    const res = await request(framework.app).post('/')
-      .send(getExamSessions())
+    const res = await request(framework.app).post('/').send(getExamSessions())
 
     expect(res.status).toEqual(200)
     expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
@@ -29,11 +28,12 @@ describe('Get examSessions', () => {
     { case: 'zero size', query: { size: 0 } },
     { case: 'size greater them max', query: { size: 1000 } },
     { case: 'invalid order type', query: { order: 1 } },
-    { case: 'not allowed order', query: { order: 'any' } },
+    { case: 'not allowed order', query: { order: 'any' } }
   ])('Bad request ($case)', async ({ query }) => {
     const user = await framework.fixture<User>(User)
     const token = (await framework.auth(user)).token
-    const res = await request(framework.app).post('/')
+    const res = await request(framework.app)
+      .post('/')
       .send(getExamSessions(query as GetExamSessions))
       .auth(token, { type: 'bearer' })
 
@@ -44,9 +44,7 @@ describe('Get examSessions', () => {
     await framework.clear(ExamSession)
     const user = await framework.fixture<User>(User)
     const token = (await framework.auth(user)).token
-    const res = await request(framework.app).post('/')
-      .send(getExamSessions())
-      .auth(token, { type: 'bearer' })
+    const res = await request(framework.app).post('/').send(getExamSessions()).auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
     expect(res.body).toEqual({ data: { examSessions: [] } })
@@ -57,23 +55,23 @@ describe('Get examSessions', () => {
     const token = (await framework.auth(user)).token
     const ownerId = user.id
     const examSessionOwnOptions = { ownerId }
-    const examSessions = (await Promise.all([
-      framework.fixture<ExamSession>(ExamSession, examSessionOwnOptions),
-      framework.fixture<ExamSession>(ExamSession),
-      framework.fixture<ExamSession>(ExamSession, examSessionOwnOptions),
-    ])).sort((a: ExamSession, b: ExamSession) => a.id.toString().localeCompare(b.id.toString()))
+    const examSessions = (
+      await Promise.all([
+        framework.fixture<ExamSession>(ExamSession, examSessionOwnOptions),
+        framework.fixture<ExamSession>(ExamSession),
+        framework.fixture<ExamSession>(ExamSession, examSessionOwnOptions)
+      ])
+    ).sort((a: ExamSession, b: ExamSession) => a.id.toString().localeCompare(b.id.toString()))
 
-    const fields = [ 'id', 'examId', 'questionNumber', 'completedAt', 'createdAt', 'updatedAt', 'ownerId' ]
-    const res = await request(framework.app).post('/')
-      .send(getExamSessions({}, fields))
-      .auth(token, { type: 'bearer' })
+    const fields = ['id', 'examId', 'questionNumber', 'completedAt', 'createdAt', 'updatedAt', 'ownerId']
+    const res = await request(framework.app).post('/').send(getExamSessions({}, fields)).auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
 
     expect(res.body).toHaveProperty('data')
     expect(res.body.data).toHaveProperty('examSessions')
 
-    const ownExamSessions = examSessions.filter(examSession => examSession.ownerId.toString() === ownerId.toString())
+    const ownExamSessions = examSessions.filter((examSession) => examSession.ownerId.toString() === ownerId.toString())
     expect(res.body.data.examSessions).toHaveLength(ownExamSessions.length)
 
     const resExamSessions = res.body.data.examSessions.sort((a, b) => a.id.localeCompare(b.id))
@@ -86,9 +84,9 @@ describe('Get examSessions', () => {
         completedAt: ownExamSessions[index].completedAt?.getTime() ?? null,
         ownerId: ownExamSessions[index].ownerId.toString(),
         createdAt: ownExamSessions[index].createdAt.getTime(),
-        updatedAt: ownExamSessions[index].updatedAt?.getTime() ?? null,
+        updatedAt: ownExamSessions[index].updatedAt?.getTime() ?? null
       })
-      expect(resExamSessions[index]).not.toHaveProperty([ 'questions', 'creatorId', 'deletedAt' ])
+      expect(resExamSessions[index]).not.toHaveProperty(['questions', 'creatorId', 'deletedAt'])
     }
   })
   test('Exam filter (ownership)', async () => {
@@ -99,14 +97,17 @@ describe('Get examSessions', () => {
     const ownerId = user.id
     const examSessionOwnOptions = { ownerId }
     const examSessionExamOptions = { examId: exam.id }
-    const examSessions = (await Promise.all([
-      framework.fixture<ExamSession>(ExamSession, examSessionOwnOptions),
-      framework.fixture<ExamSession>(ExamSession, examSessionExamOptions),
-      framework.fixture<ExamSession>(ExamSession, { ...examSessionOwnOptions, ...examSessionExamOptions }),
-    ])).sort((a: ExamSession, b: ExamSession) => a.id.toString().localeCompare(b.id.toString()))
+    const examSessions = (
+      await Promise.all([
+        framework.fixture<ExamSession>(ExamSession, examSessionOwnOptions),
+        framework.fixture<ExamSession>(ExamSession, examSessionExamOptions),
+        framework.fixture<ExamSession>(ExamSession, { ...examSessionOwnOptions, ...examSessionExamOptions })
+      ])
+    ).sort((a: ExamSession, b: ExamSession) => a.id.toString().localeCompare(b.id.toString()))
 
-    const fields = [ 'id', 'examId', 'questionNumber', 'completedAt', 'createdAt', 'updatedAt', 'ownerId' ]
-    const res = await request(framework.app).post('/')
+    const fields = ['id', 'examId', 'questionNumber', 'completedAt', 'createdAt', 'updatedAt', 'ownerId']
+    const res = await request(framework.app)
+      .post('/')
       .send(getExamSessions({ examId: exam.id.toString() }, fields))
       .auth(token, { type: 'bearer' })
 
@@ -116,8 +117,8 @@ describe('Get examSessions', () => {
     expect(res.body.data).toHaveProperty('examSessions')
 
     const ownExamExamSessions = examSessions
-      .filter(examSession => examSession.ownerId.toString() === ownerId.toString())
-      .filter(examSession => examSession.examId.toString() === exam.id.toString())
+      .filter((examSession) => examSession.ownerId.toString() === ownerId.toString())
+      .filter((examSession) => examSession.examId.toString() === exam.id.toString())
     expect(res.body.data.examSessions).toHaveLength(ownExamExamSessions.length)
 
     const resExamSessions = res.body.data.examSessions.sort((a, b) => a.id.localeCompare(b.id))
@@ -130,27 +131,27 @@ describe('Get examSessions', () => {
         completedAt: ownExamExamSessions[index].completedAt?.getTime() ?? null,
         ownerId: ownExamExamSessions[index].ownerId.toString(),
         createdAt: ownExamExamSessions[index].createdAt.getTime(),
-        updatedAt: ownExamExamSessions[index].updatedAt?.getTime() ?? null,
+        updatedAt: ownExamExamSessions[index].updatedAt?.getTime() ?? null
       })
-      expect(resExamSessions[index]).not.toHaveProperty([ 'questions', 'creatorId', 'deletedAt' ])
+      expect(resExamSessions[index]).not.toHaveProperty(['questions', 'creatorId', 'deletedAt'])
     }
   })
   test('No filter (permission)', async () => {
     await framework.clear(ExamSession)
-    const user = await framework.fixture<User>(User, { permissions: [ ExamSessionPermission.Get ] })
+    const user = await framework.fixture<User>(User, { permissions: [ExamSessionPermission.Get] })
     const token = (await framework.auth(user)).token
     const ownerId = user.id
     const examSessionOwnOptions = { ownerId }
-    const examSessions = (await Promise.all([
-      framework.fixture<ExamSession>(ExamSession),
-      framework.fixture<ExamSession>(ExamSession, examSessionOwnOptions),
-      framework.fixture<ExamSession>(ExamSession),
-    ])).sort((a: ExamSession, b: ExamSession) => a.id.toString().localeCompare(b.id.toString()))
+    const examSessions = (
+      await Promise.all([
+        framework.fixture<ExamSession>(ExamSession),
+        framework.fixture<ExamSession>(ExamSession, examSessionOwnOptions),
+        framework.fixture<ExamSession>(ExamSession)
+      ])
+    ).sort((a: ExamSession, b: ExamSession) => a.id.toString().localeCompare(b.id.toString()))
 
-    const fields = [ 'id', 'examId', 'questionNumber', 'completedAt', 'createdAt', 'updatedAt', 'ownerId' ]
-    const res = await request(framework.app).post('/')
-      .send(getExamSessions({}, fields))
-      .auth(token, { type: 'bearer' })
+    const fields = ['id', 'examId', 'questionNumber', 'completedAt', 'createdAt', 'updatedAt', 'ownerId']
+    const res = await request(framework.app).post('/').send(getExamSessions({}, fields)).auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
 
@@ -169,27 +170,30 @@ describe('Get examSessions', () => {
         completedAt: examSessions[index].completedAt?.getTime() ?? null,
         ownerId: examSessions[index].ownerId.toString(),
         createdAt: examSessions[index].createdAt.getTime(),
-        updatedAt: examSessions[index].updatedAt?.getTime() ?? null,
+        updatedAt: examSessions[index].updatedAt?.getTime() ?? null
       })
-      expect(resExamSessions[index]).not.toHaveProperty([ 'questions', 'creatorId', 'deletedAt' ])
+      expect(resExamSessions[index]).not.toHaveProperty(['questions', 'creatorId', 'deletedAt'])
     }
   })
   test('Exam filter (permission)', async () => {
     await framework.clear(ExamSession)
     const exam = await framework.fixture<Exam>(Exam)
-    const user = await framework.fixture<User>(User, { permissions: [ ExamSessionPermission.Get ] })
+    const user = await framework.fixture<User>(User, { permissions: [ExamSessionPermission.Get] })
     const token = (await framework.auth(user)).token
     const ownerId = user.id
     const examSessionOwnOptions = { ownerId }
     const examSessionExamOptions = { examId: exam.id }
-    const examSessions = (await Promise.all([
-      framework.fixture<ExamSession>(ExamSession),
-      framework.fixture<ExamSession>(ExamSession, examSessionOwnOptions),
-      framework.fixture<ExamSession>(ExamSession, { ...examSessionOwnOptions, ...examSessionExamOptions }),
-    ])).sort((a: ExamSession, b: ExamSession) => a.id.toString().localeCompare(b.id.toString()))
+    const examSessions = (
+      await Promise.all([
+        framework.fixture<ExamSession>(ExamSession),
+        framework.fixture<ExamSession>(ExamSession, examSessionOwnOptions),
+        framework.fixture<ExamSession>(ExamSession, { ...examSessionOwnOptions, ...examSessionExamOptions })
+      ])
+    ).sort((a: ExamSession, b: ExamSession) => a.id.toString().localeCompare(b.id.toString()))
 
-    const fields = [ 'id', 'examId', 'questionNumber', 'completedAt', 'createdAt', 'updatedAt', 'ownerId' ]
-    const res = await request(framework.app).post('/')
+    const fields = ['id', 'examId', 'questionNumber', 'completedAt', 'createdAt', 'updatedAt', 'ownerId']
+    const res = await request(framework.app)
+      .post('/')
       .send(getExamSessions({ examId: exam.id.toString() }, fields))
       .auth(token, { type: 'bearer' })
 
@@ -198,7 +202,7 @@ describe('Get examSessions', () => {
     expect(res.body).toHaveProperty('data')
     expect(res.body.data).toHaveProperty('examSessions')
 
-    const examExamSessions = examSessions.filter(examSession => examSession.examId.toString() === exam.id.toString())
+    const examExamSessions = examSessions.filter((examSession) => examSession.examId.toString() === exam.id.toString())
     expect(res.body.data.examSessions).toHaveLength(examExamSessions.length)
 
     const resExamSessions = res.body.data.examSessions.sort((a, b) => a.id.localeCompare(b.id))
@@ -211,9 +215,9 @@ describe('Get examSessions', () => {
         completedAt: examExamSessions[index].completedAt?.getTime() ?? null,
         ownerId: examExamSessions[index].ownerId.toString(),
         createdAt: examExamSessions[index].createdAt.getTime(),
-        updatedAt: examExamSessions[index].updatedAt?.getTime() ?? null,
+        updatedAt: examExamSessions[index].updatedAt?.getTime() ?? null
       })
-      expect(resExamSessions[index]).not.toHaveProperty([ 'questions', 'creatorId', 'deletedAt' ])
+      expect(resExamSessions[index]).not.toHaveProperty(['questions', 'creatorId', 'deletedAt'])
     }
   })
   test('Public profile sessions', async () => {
@@ -221,14 +225,21 @@ describe('Get examSessions', () => {
     const user = await framework.fixture<User>(User)
     const exam = await framework.fixture<Exam>(Exam)
     const session = await framework.fixture<ExamSession>(ExamSession, { examId: exam.id, ownerId: user.id })
-    const res = await request(framework.app).post('/').send({
-      query: `query($userId: ID!) { paginatedExamSessions(userId: $userId) { data { id examId exam { id name } } } }`,
-      variables: { userId: user.id.toString() },
-    })
+    const res = await request(framework.app)
+      .post('/')
+      .send({
+        query: `query($userId: ID!) { paginatedExamSessions(userId: $userId) { data { id examId exam { id name } } } }`,
+        variables: { userId: user.id.toString() }
+      })
 
-    expect(res.body.data.paginatedExamSessions.data).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: session.id.toString(), examId: exam.id.toString(), exam: { id: exam.id.toString(), name: exam.name } }),
-    ]))
+    expect(res.body.data.paginatedExamSessions.data).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: session.id.toString(),
+          examId: exam.id.toString(),
+          exam: { id: exam.id.toString(), name: exam.name }
+        })
+      ])
+    )
   })
-
 })

@@ -6,7 +6,6 @@ import { ObjectId } from 'bson'
 
 @Repository(User)
 export default class UserRepository extends EntityRepository<User> {
-
   public async findOneByEmail(email: string): Promise<User | null> {
     return await this.findOneBy({ email })
   }
@@ -15,8 +14,8 @@ export default class UserRepository extends EntityRepository<User> {
     user: User,
     targetConstructor: RatingMarkTargetConstructorType,
     value: ObjectId[][],
-    set: Partial<User> = {},
+    set: Partial<User> = {}
   ): Promise<User> {
-    return await this.updateOneByEntity(user, { [`${ targetConstructor.name.toLowerCase() }RatingMarks`]: value, ...set })
+    return await this.updateOneByEntity(user, { [`${targetConstructor.name.toLowerCase()}RatingMarks`]: value, ...set })
   }
 }

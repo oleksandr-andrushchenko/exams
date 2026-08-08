@@ -10,16 +10,16 @@ import ValidatorInterface from '../services/validator/ValidatorInterface'
 export class ExamTagResolver {
   public constructor(
     @Inject() private readonly repository: ExamTagRepository,
-    @Inject('validator') private readonly validator: ValidatorInterface,
+    @Inject('validator') private readonly validator: ValidatorInterface
   ) {}
 
-  @Query(_returns => [ ExamTag ], { name: 'examTags' })
+  @Query((_returns) => [ExamTag], { name: 'examTags' })
   public async getExamTags(@Args() request: GetExamTags): Promise<ExamTag[]> {
     await this.validator.validate(request)
     return this.repository.findMatching(request.search, request.size)
   }
 
-  @FieldResolver(_returns => Int, { name: 'examsCount' })
+  @FieldResolver((_returns) => Int, { name: 'examsCount' })
   public getExamsCount(@Root() tag: ExamTag): Promise<number> {
     return this.repository.countExams(tag)
   }

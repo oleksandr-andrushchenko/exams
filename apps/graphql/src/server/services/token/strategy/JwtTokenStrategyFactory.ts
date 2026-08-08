@@ -2,15 +2,12 @@ import { Service } from 'typedi'
 import JwtTokenStrategy from './JwtTokenStrategy'
 
 export type JwtTokenStrategyOptions = {
-  secret: string,
-};
+  secret: string
+}
 
 @Service()
 export default class JwtTokenStrategyFactory {
-
   public create(options: JwtTokenStrategyOptions): JwtTokenStrategy {
-    return new JwtTokenStrategy(
-      options.secret,
-    )
+    return new JwtTokenStrategy(options.secret)
   }
 }

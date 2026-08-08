@@ -3,12 +3,11 @@ import { Column } from 'typeorm'
 
 @ObjectType()
 export default class Rating {
-
   @Column()
-  @Field(_type => Int)
+  @Field((_type) => Int)
   public markCount: number
 
   @Column()
-  @Field(_type => Float)
+  @Field((_type) => Float)
   public averageMark: number
 }

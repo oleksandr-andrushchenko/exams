@@ -2,7 +2,7 @@ enum ExamSessionEvent {
   Created = 'examSessionCreated',
   Updated = 'examSessionUpdated',
   Deleted = 'examSessionDeleted',
-  Completed = 'examSessionCompleted',
+  Completed = 'examSessionCompleted'
 }
 
 export default ExamSessionEvent

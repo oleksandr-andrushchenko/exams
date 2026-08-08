@@ -11,15 +11,13 @@ import QuestionEvent from '../../enums/question/QuestionEvent'
 
 @Service()
 export default class QuestionDeleter {
-
   public constructor(
     @Inject() private readonly examProvider: ExamProvider,
     @Inject() private readonly eventDispatcher: EventDispatcher,
     @Inject() private readonly questionRepository: QuestionRepository,
     @Inject() private readonly examRepository: ExamRepository,
-    @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
-  ) {
-  }
+    @Inject() private readonly authorizationVerifier: AuthorizationVerifier
+  ) {}
 
   /**
    * @param {Question} question
@@ -35,10 +33,10 @@ export default class QuestionDeleter {
 
     await this.questionRepository.updateOneByEntity(question, { deletedAt: new Date() })
 
-    const newQuestionCount = Math.max(0, await this.questionRepository.countByExam(exam) - 1)
+    const newQuestionCount = Math.max(0, (await this.questionRepository.countByExam(exam)) - 1)
     await this.examRepository.updateOneByEntity(exam, {
       questionCount: newQuestionCount === 0 ? undefined : newQuestionCount,
-      updatedAt: new Date(),
+      updatedAt: new Date()
     })
 
     await this.eventDispatcher.dispatch(QuestionEvent.Deleted, { question })

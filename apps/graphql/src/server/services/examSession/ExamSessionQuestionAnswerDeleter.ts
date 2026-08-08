@@ -10,13 +10,11 @@ import AuthorizationVerifier from '../auth/AuthorizationVerifier'
 
 @Service()
 export default class ExamSessionQuestionAnswerDeleter {
-
   public constructor(
     @InjectEntityManager() private readonly entityManager: EntityManagerInterface,
     @Inject() private readonly questionProvider: QuestionProvider,
-    @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
-  ) {
-  }
+    @Inject() private readonly authorizationVerifier: AuthorizationVerifier
+  ) {}
 
   /**
    * @param {ExamSession} examSession
@@ -30,9 +28,13 @@ export default class ExamSessionQuestionAnswerDeleter {
   public async deleteExamSessionQuestionAnswer(
     examSession: ExamSession,
     questionNumber: number,
-    initiator: User,
+    initiator: User
   ): Promise<void> {
-    await this.authorizationVerifier.verifyAuthorization(initiator, ExamSessionPermission.DeleteQuestionAnswer, examSession)
+    await this.authorizationVerifier.verifyAuthorization(
+      initiator,
+      ExamSessionPermission.DeleteQuestionAnswer,
+      examSession
+    )
 
     const questions = examSession.questions
     const questionId = questions[questionNumber]

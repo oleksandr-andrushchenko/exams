@@ -6,9 +6,8 @@ import User from '../../entities/user/User'
 
 @ObjectType()
 export default class PaginatedUsers extends PaginatedSchema<User> {
-
   @ValidateNested({ each: true })
   @Type(() => User)
-  @Field(_type => [ User ])
+  @Field((_type) => [User])
   public data: User[]
 }

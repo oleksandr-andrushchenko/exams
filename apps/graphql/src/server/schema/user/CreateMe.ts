@@ -3,7 +3,6 @@ import { Field, InputType } from 'type-graphql'
 
 @InputType()
 export default class CreateMe {
-
   @IsOptional()
   @Length(2, 30)
   @Field({ nullable: true })

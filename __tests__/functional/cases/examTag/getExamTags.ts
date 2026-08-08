@@ -14,8 +14,14 @@ describe('Get exam tags', () => {
 
     const res = await request(framework.app).post('/').send(getExamTags('script'))
     expect(res.status).toEqual(200)
-    expect(res.body.data.examTags).toEqual([ expect.objectContaining({
-      name: 'JavaScript', slug: 'javascript', rating: 7, examsCount: 0, imageFilename: null,
-    }) ])
+    expect(res.body.data.examTags).toEqual([
+      expect.objectContaining({
+        name: 'JavaScript',
+        slug: 'javascript',
+        rating: 7,
+        examsCount: 0,
+        imageFilename: null
+      })
+    ])
   })
 })

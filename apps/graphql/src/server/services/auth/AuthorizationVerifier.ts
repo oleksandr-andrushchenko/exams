@@ -7,11 +7,7 @@ import PermissionHierarchySchema from '../../schema/auth/PermissionHierarchySche
 
 @Service()
 export default class AuthorizationVerifier {
-
-  public constructor(
-    @Inject('authPermissions') private readonly permissions: PermissionHierarchySchema,
-  ) {
-  }
+  public constructor(@Inject('authPermissions') private readonly permissions: PermissionHierarchySchema) {}
 
   /**
    * @param {User} user
@@ -25,7 +21,7 @@ export default class AuthorizationVerifier {
     user: User,
     permission: string,
     resource: { ownerId?: ObjectId } = undefined,
-    permissions: string[] = undefined,
+    permissions: string[] = undefined
   ): Promise<boolean> {
     if (resource) {
       if (resource instanceof User) {

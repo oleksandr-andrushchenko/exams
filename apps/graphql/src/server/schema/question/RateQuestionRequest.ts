@@ -4,10 +4,9 @@ import GetQuestion from './GetQuestion'
 
 @ArgsType()
 export default class RateQuestionRequest extends GetQuestion {
-
   @Min(0)
   @Max(5)
   @IsNumber({ maxDecimalPlaces: 0 })
-  @Field(_type => Int)
+  @Field((_type) => Int)
   public readonly mark: number
 }
