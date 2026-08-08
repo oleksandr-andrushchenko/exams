@@ -1,2 +1,4 @@
 **/dist/
 node_modules/
+apps/ssr/templates/
+shared/templates/

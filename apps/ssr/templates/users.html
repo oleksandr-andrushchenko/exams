@@ -29,10 +29,10 @@
         placeholder="Search by name"
       /><select class="form-select" name="sort">
         <option value="">Newest</option>
-        <option value="name" {% if filters.sort="" ="name" %}selected{% endif %}>Name</option></select
+        <option value="name" {% if filters.sort == 'name' %}selected{% endif %}>Name</option></select
       ><select class="form-select" name="order">
         <option value="desc">Descending</option>
-        <option value="asc" {% if filters.order="" ="asc" %}selected{% endif %}>Ascending</option></select
+        <option value="asc" {% if filters.order == 'asc' %}selected{% endif %}>Ascending</option></select
       ><input class="form-control" name="page" type="number" min="1" value="{{ filters.page }}" /><button
         class="btn btn-primary"
       >

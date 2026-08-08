@@ -39,10 +39,10 @@
         placeholder="Difficulty"
       /><select class="form-select" name="sort">
         <option value="">Newest</option>
-        <option value="title" {% if filters.sort="" ="title" %}selected{% endif %}>Title</option></select
+        <option value="title" {% if filters.sort == 'title' %}selected{% endif %}>Title</option></select
       ><select class="form-select" name="order">
         <option value="desc">Descending</option>
-        <option value="asc" {% if filters.order="" ="asc" %}selected{% endif %}>Ascending</option></select
+        <option value="asc" {% if filters.order == 'asc' %}selected{% endif %}>Ascending</option></select
       ><input class="form-control" name="page" type="number" min="1" value="{{ filters.page }}" /><button
         class="btn btn-primary"
       >
