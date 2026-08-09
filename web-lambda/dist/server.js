@@ -51,8 +51,8 @@ exports.app = app;
 const canViewUnapproved = (user, permission) => user?.permissions?.some((userPermission) => userPermission === permission || userPermission === 'root' || userPermission === '*') ?? false;
 const templateDir = node_path_1.default.resolve(__dirname, '../templates');
 const sharedTemplateDir = node_path_1.default.resolve(__dirname, '../../lambda-shared/templates');
-const publicDir = node_path_1.default.resolve(__dirname, '../public');
-const uploadsDir = node_path_1.default.join(publicDir, 'uploads');
+const staticDir = node_path_1.default.resolve(__dirname, '../../static');
+const uploadsDir = node_path_1.default.join(staticDir, 'uploads');
 const imageExtensions = {
     'image/jpeg': '.jpg',
     'image/png': '.png',
@@ -74,7 +74,7 @@ nunjucks_1.default.configure([templateDir, sharedTemplateDir], {
     noCache: process.env.NODE_ENV !== 'production'
 });
 app.use(express_1.default.urlencoded({ extended: true }));
-app.use('/static', express_1.default.static(publicDir, { maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0 }));
+app.use('/static', express_1.default.static(staticDir, { maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0 }));
 app.use((request, response, next) => {
     response.locals.siteName = 'ExamMe';
     response.locals.siteDescription = 'Practice exams and explore questions.';

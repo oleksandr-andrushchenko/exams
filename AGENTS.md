@@ -14,6 +14,10 @@
 - Put common functions and behavior that may be used by both Lambdas in `lambda-shared`.
 - For example, a shared exam-item fragment could be consumed by the web Lambda for rendering and by the API Lambda when returning content during subsequent lazy loads.
 
+## Static assets
+
+- Serve web assets and store SSR uploads under the repository-level `static` directory; the web Lambda exposes it at `/static`.
+
 ## Repository knowledge
 
 - When work reveals useful, reusable repository knowledge, update this file with the new rule or guidance before handing off the work.

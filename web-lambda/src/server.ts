@@ -26,8 +26,8 @@ const canViewUnapproved = (user: { permissions?: string[] } | undefined, permiss
   ) ?? false
 const templateDir = path.resolve(__dirname, '../templates')
 const sharedTemplateDir = path.resolve(__dirname, '../../lambda-shared/templates')
-const publicDir = path.resolve(__dirname, '../public')
-const uploadsDir = path.join(publicDir, 'uploads')
+const staticDir = path.resolve(__dirname, '../../static')
+const uploadsDir = path.join(staticDir, 'uploads')
 const imageExtensions: Record<string, string> = {
   'image/jpeg': '.jpg',
   'image/png': '.png',
@@ -51,7 +51,7 @@ nunjucks.configure([templateDir, sharedTemplateDir], {
   noCache: process.env.NODE_ENV !== 'production'
 })
 app.use(express.urlencoded({ extended: true }))
-app.use('/static', express.static(publicDir, { maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0 }))
+app.use('/static', express.static(staticDir, { maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0 }))
 app.use((request, response, next) => {
   response.locals.siteName = 'ExamMe'
   response.locals.siteDescription = 'Practice exams and explore questions.'

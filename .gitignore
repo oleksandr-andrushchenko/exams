@@ -4,5 +4,5 @@
 **/.next/
 api-lambda/dist/
 node_modules/
-web-lambda/public/uploads/
+static/uploads/
 *.js.map
