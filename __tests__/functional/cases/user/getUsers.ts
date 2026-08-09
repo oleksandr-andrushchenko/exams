@@ -47,7 +47,7 @@ describe('Get users', () => {
     expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
   })
   test('No filter', async () => {
-    framework.clear()
+    await framework.clear()
     const user = await framework.fixture<User>(User, {
       permissions: [UserPermission.Get, UserPermission.GetEmail, UserPermission.GetPermissions]
     })
@@ -74,7 +74,7 @@ describe('Get users', () => {
     }
   })
   test('Search filter', async () => {
-    framework.clear()
+    await framework.clear()
     const user = await framework.fixture<User>(User, {
       permissions: [UserPermission.Get, UserPermission.GetEmail, UserPermission.GetPermissions]
     })
