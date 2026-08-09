@@ -1,10 +1,16 @@
-<nav class="small mb-3">
-  {% for item in breadcrumbs %}
-  {% if item.href and not loop.last %}
-  <a href="{{ item.href }}">{{ item.label }}</a>
-  {% else %}
-  {{ item.label }}
-  {% endif %}
-  {% if not loop.last %} / {% endif %}
-  {% endfor %}
+{% if breadcrumbs %}
+<!-- Breadcrumbs -->
+<nav aria-label="breadcrumb" style="--bs-breadcrumb-divider: '>';">
+  <ol class="breadcrumb my-3">
+    {% for label, url in breadcrumbs %}
+    {% if loop.last or url is none %}
+    <li class="breadcrumb-item active" aria-current="page">{{ label }}</li>
+    {% else %}
+    <li class="breadcrumb-item">
+      <a href="{{ url }}" class="link-body-emphasis text-decoration-none">{{ label }}</a>
+    </li>
+    {% endif %}
+    {% endfor %}
+  </ol>
 </nav>
+{% endif %}

@@ -18,3 +18,4 @@
 
 - When work reveals useful, reusable repository knowledge, update this file with the new rule or guidance before handing off the work.
 - Document durable conventions, build and deployment requirements, tooling limitations, and other information that will help future changes avoid the same issue.
+- Keep refactors scoped to the layer being refactored. Do not change controllers for template-only work when the templates can define their own presentation data.

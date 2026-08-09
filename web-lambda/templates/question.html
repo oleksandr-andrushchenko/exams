@@ -1,15 +1,14 @@
 {% extends "layout.html" %}{% block content %}{% if question %}
-{% set breadcrumbs = [
-  { label: 'Home', href: '/' },
-  { label: 'Exams', href: '/exams' }
-] %}
 {% if question.exam %}
-{% set breadcrumbs = breadcrumbs.concat([{
-  label: question.exam.name,
-  href: '/' + question.exam.userSlug + '/' + question.exam.slug
-}]) %}
+{% set breadcrumbs = [
+  ['Home', '/'],
+  ['Exams', '/exams'],
+  [question.exam.name, '/' + question.exam.userSlug + '/' + question.exam.slug],
+  [question.title, none]
+] %}
+{% else %}
+{% set breadcrumbs = [['Home', '/'], ['Exams', '/exams'], [question.title, none]] %}
 {% endif %}
-{% set breadcrumbs = breadcrumbs.concat([{ label: question.title }]) %}
 {% include "fragements/breadcrumbs.html" %}
 {% if question.imageFilename %}
 <img

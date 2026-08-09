@@ -1,5 +1,5 @@
 {% extends "layout.html" %}{% block content %}{% if tag %}
-{% set breadcrumbs = [{ label: 'Home', href: '/' }, { label: tag.name }] %}
+{% set breadcrumbs = [['Home', '/'], [tag.name, none]] %}
 {% include "fragements/breadcrumbs.html" %}
 <h1>{{ tag.name }}</h1>
 <p class="lead">Browse exams and questions for this topic.</p>

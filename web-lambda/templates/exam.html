@@ -1,5 +1,5 @@
 {% extends "layout.html" %}{% block content %}{% if exam %}
-{% set breadcrumbs = [{ label: 'Home', href: '/' }, { label: 'Exams', href: '/exams' }, { label: exam.name }] %}
+{% set breadcrumbs = [['Home', '/'], ['Exams', '/exams'], [exam.name, none]] %}
 {% include "fragements/breadcrumbs.html" %}
 {% if exam.imageFilename %}<img alt="{{ exam.name }}" class="entity-image entity-image-lg"
                                 src="/static/uploads/{{ exam.imageFilename }}"/>{% endif %}<h1>{{ exam.name }}</h1>

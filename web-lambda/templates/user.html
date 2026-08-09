@@ -1,9 +1,5 @@
 {% extends "layout.html" %}{% block content %}{% if user %}
-{% set breadcrumbs = [
-  { label: 'Home', href: '/' },
-  { label: 'Users', href: '/users' },
-  { label: user.name or user.id }
-] %}
+{% set breadcrumbs = [['Home', '/'], ['Users', '/users'], [user.name or user.id, none]] %}
 {% include "fragements/breadcrumbs.html" %}
 {% if user.imageFilename %}
 <img

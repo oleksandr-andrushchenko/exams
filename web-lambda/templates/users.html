@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 {% block content %}
-{% set breadcrumbs = [{ label: 'Home', href: '/' }, { label: 'Users' }] %}
+{% set breadcrumbs = [['Home', '/'], ['Users', none]] %}
 {% include "fragements/breadcrumbs.html" %}
 <h1>Users</h1>
 <div class="row g-5">
