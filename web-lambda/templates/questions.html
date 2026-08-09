@@ -2,9 +2,10 @@
 {% block content %}
 {% set breadcrumbs = [['Home', '/'], ['Questions', none]] %}
 {% include "fragements/breadcrumbs.html" %}
-<h1>Questions</h1>
+<h1>Latest Questions</h1>
+<p class="small text-secondary">Recently Added Questions</p>
 <div class="row g-5">
-  <section class="col-12 col-lg-8">
+  <section class="col col-12 col-lg-6 col-xl-8 d-flex flex-column gap-4">
     <div class="list-group">
       {% for question in page.data %}
       {% include "fragements/question.html" %}
@@ -14,23 +15,27 @@
     </div>
     <p class="text-secondary mt-3">Page {{ page.page }}{% if page.hasNext %} · more available{% endif %}</p>
   </section>
-  <aside class="col-12 col-lg-4 border-start-lg">
-    <h2 class="h5">Filter questions</h2>
-    <form method="get" action="/questions" class="d-flex flex-column gap-2">
-      <input class="form-control" name="search" value="{{ filters.search or '' }}" placeholder="Search">
-      <input class="form-control" name="exam" value="{{ filters.exam or '' }}" placeholder="Exam id">
-      <input class="form-control" name="difficulty" value="{{ filters.difficulty or '' }}" placeholder="Difficulty">
-      <select class="form-select" name="sort">
-        <option value="">Newest</option>
-        <option value="title" {% if filters.sort == 'title' %}selected{% endif %}>Title</option>
-      </select>
-      <select class="form-select" name="order">
-        <option value="desc">Descending</option>
-        <option value="asc" {% if filters.order == 'asc' %}selected{% endif %}>Ascending</option>
-      </select>
-      <input class="form-control" name="page" type="number" min="1" value="{{ filters.page }}">
-      <button class="btn btn-primary">Apply filters</button>
-    </form>
+  <aside class="col col-12 col-lg-6 col-xl-4 d-flex flex-column gap-4 border-start">
+    <section class="d-flex flex-column gap-3">
+      <h2 class="h5 mb-0 text-decoration-underline bi bi-filter">Filter questions</h2>
+      <form method="get" action="/questions" class="d-flex flex-column gap-2">
+        <input class="form-control" name="search" value="{{ filters.search or '' }}" placeholder="Search">
+        <input class="form-control" name="exam" value="{{ filters.exam or '' }}" placeholder="Exam id">
+        <input class="form-control" name="difficulty" value="{{ filters.difficulty or '' }}" placeholder="Difficulty">
+        <select class="form-select" name="sort">
+          <option value="">Newest</option>
+          <option value="title" {% if filters.sort==
+          'title' %}selected{% endif %}>Title</option>
+        </select>
+        <select class="form-select" name="order">
+          <option value="desc">Descending</option>
+          <option value="asc" {% if filters.order==
+          'asc' %}selected{% endif %}>Ascending</option>
+        </select>
+        <input class="form-control" name="page" type="number" min="1" value="{{ filters.page }}">
+        <button class="btn btn-primary">Apply filters</button>
+      </form>
+    </section>
   </aside>
 </div>
 {% endblock %}
