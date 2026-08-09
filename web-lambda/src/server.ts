@@ -25,7 +25,7 @@ const canViewUnapproved = (user: { permissions?: string[] } | undefined, permiss
     (userPermission) => userPermission === permission || userPermission === 'root' || userPermission === '*'
   ) ?? false
 const templateDir = path.resolve(__dirname, '../templates')
-const sharedTemplateDir = path.resolve(__dirname, '../../../lambda-shared/templates')
+const sharedTemplateDir = path.resolve(__dirname, '../../lambda-shared/templates')
 const publicDir = path.resolve(__dirname, '../public')
 const uploadsDir = path.join(publicDir, 'uploads')
 const imageExtensions: Record<string, string> = {

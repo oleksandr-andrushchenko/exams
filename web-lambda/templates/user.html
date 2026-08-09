@@ -1,6 +1,18 @@
 {% extends "layout.html" %}{% block content %}{% if user %}
-<nav class="small mb-3"><a href="/">Home</a> / <a href="/users">Users</a> / {{ user.name or user.id }}</nav>
-{% if user.imageFilename %}<img class="entity-image entity-image-lg" src="/static/uploads/{{ user.imageFilename }}" alt="{{ user.name or user.id }}" />{% endif %}<h1>{{ user.name or user.id }}</h1>
+{% set breadcrumbs = [
+  { label: 'Home', href: '/' },
+  { label: 'Users', href: '/users' },
+  { label: user.name or user.id }
+] %}
+{% include "fragements/breadcrumbs.html" %}
+{% if user.imageFilename %}
+<img
+  class="entity-image entity-image-lg"
+  src="/static/uploads/{{ user.imageFilename }}"
+  alt="{{ user.name or user.id }}"
+/>
+{% endif %}
+<h1>{{ user.name or user.id }}</h1>
 <div class="rating-summary" aria-label="{{ user.rating.averageMark or 0 }} out of 5">
   <span class="rating-stars" style="--rating: {{ user.rating.averageMark or 0 }}">★★★★★</span>
   <span class="text-secondary"
@@ -9,15 +21,7 @@
 </div>
 <h2 class="h4 mt-4">Exams</h2>
 <div class="list-group">
-  {% for exam in exams.data %}<a class="list-group-item list-group-item-action" href="/{{ user.slug }}/{{ exam.slug }}"
-    >{{ exam.name }}
-    <div class="rating-summary">
-      <span class="rating-stars" style="--rating: {{ exam.rating.averageMark or 0 }}">★★★★★</span>
-      <span class="text-secondary"
-        >{{ (exam.rating.averageMark or 0) | round(1) }}/5 ({{ exam.rating.markCount or 0 }} votes)</span
-      >
-    </div></a
-  >{% else %}
+  {% for exam in exams.data %}{% include "fragements/exam.html" %}{% else %}
   <div class="list-group-item">No exams.</div>
   {% endfor %}
 </div>

@@ -1,0 +1,10 @@
+<nav class="small mb-3">
+  {% for item in breadcrumbs %}
+  {% if item.href and not loop.last %}
+  <a href="{{ item.href }}">{{ item.label }}</a>
+  {% else %}
+  {{ item.label }}
+  {% endif %}
+  {% if not loop.last %} / {% endif %}
+  {% endfor %}
+</nav>

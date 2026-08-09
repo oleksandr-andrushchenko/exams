@@ -30,18 +30,25 @@ const direction = (f = {}) => (f.order === 'asc' ? 'ASC' : 'DESC');
 const sortColumn = (f, allowed, fallback) => allowed[f.sort || ''] || fallback;
 const userRatingSelect = 'u."rating" AS "rating"';
 async function getHomeData(size = 8, includeUnapproved = false, includeUnapprovedQuestions = includeUnapproved) {
-    const [tags, exams, questions] = await Promise.all([
+    const [tags, exams, popularExams, questions, popularQuestions, popularUsers] = await Promise.all([
         query('SELECT "id", "name", "slug" FROM "examTags" ORDER BY "rating" DESC, "name" ASC LIMIT $1', [size]),
         query(`SELECT "id", COALESCE("slug", "id") AS "slug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = "exams"."creatorId"), "creatorId") AS "userSlug", "name", "imageFilename", "questionCount", "approvedQuestionCount", "requiredScore", "rating" FROM "exams" WHERE ${deletedFilter} ${includeUnapproved ? '' : 'AND "ownerId" IS NULL'} ORDER BY "id" DESC LIMIT $1`, [size]),
-        query(`SELECT q."id", COALESCE(q."slug", q."id") AS "slug", q."examId", q."title", q."imageFilename", q."difficulty", COALESCE(e."slug", e."id") AS "examSlug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = e."creatorId"), e."creatorId") AS "userSlug", e."name" AS "examName", q."rating" FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId" WHERE q."deletedAt" IS NULL ${includeUnapprovedQuestions ? '' : 'AND q."ownerId" IS NULL'} ORDER BY q."id" DESC LIMIT $1`, [size])
+        query(`SELECT "id", COALESCE("slug", "id") AS "slug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = "exams"."creatorId"), "creatorId") AS "userSlug", "name", "imageFilename", "questionCount", "approvedQuestionCount", "requiredScore", "rating" FROM "exams" WHERE ${deletedFilter} ${includeUnapproved ? '' : 'AND "ownerId" IS NULL'} ORDER BY "rating" DESC NULLS LAST, "id" DESC LIMIT $1`, [size]),
+        query(`SELECT q."id", COALESCE(q."slug", q."id") AS "slug", q."examId", q."title", q."imageFilename", q."difficulty", COALESCE(e."slug", e."id") AS "examSlug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = e."creatorId"), e."creatorId") AS "userSlug", e."name" AS "examName", q."rating" FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId" WHERE q."deletedAt" IS NULL ${includeUnapprovedQuestions ? '' : 'AND q."ownerId" IS NULL'} ORDER BY q."id" DESC LIMIT $1`, [size]),
+        query(`SELECT q."id", COALESCE(q."slug", q."id") AS "slug", q."examId", q."title", q."imageFilename", q."difficulty", COALESCE(e."slug", e."id") AS "examSlug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = e."creatorId"), e."creatorId") AS "userSlug", e."name" AS "examName", q."rating" FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId" WHERE q."deletedAt" IS NULL ${includeUnapprovedQuestions ? '' : 'AND q."ownerId" IS NULL'} ORDER BY q."rating" DESC NULLS LAST, q."id" DESC LIMIT $1`, [size]),
+        query(`SELECT u."id", COALESCE(u."slug", u."id") AS "slug", u."name", u."imageFilename", u."createdAt", u."updatedAt", ${userRatingSelect} FROM "users" u WHERE u."deletedAt" IS NULL ORDER BY u."rating" DESC NULLS LAST, u."id" DESC LIMIT $1`, [size])
     ]);
+    const mapQuestion = ({ examName, examSlug, userSlug, ...q }) => ({
+        ...q,
+        exam: examName ? { id: q.examId, slug: examSlug, userSlug: userSlug, name: examName } : undefined
+    });
     return {
         tags,
         exams,
-        questions: questions.map(({ examName, examSlug, userSlug, ...q }) => ({
-            ...q,
-            exam: examName ? { id: q.examId, slug: examSlug, userSlug: userSlug, name: examName } : undefined
-        }))
+        popularExams,
+        questions: questions.map(mapQuestion),
+        popularQuestions: popularQuestions.map(mapQuestion),
+        popularUsers
     };
 }
 async function getExams(size = 50) {

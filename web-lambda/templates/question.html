@@ -1,10 +1,24 @@
 {% extends "layout.html" %}{% block content %}{% if question %}
-<nav class="small mb-3">
-  <a href="/">Home</a> / <a href="/exams">Exams</a>{% if question.exam %} /
-  <a href="/{{ question.exam.userSlug }}/{{ question.exam.slug }}">{{ question.exam.name }}</a>{% endif %} / {{
-  question.title }}
-</nav>
-{% if question.imageFilename %}<img class="entity-image entity-image-lg" src="/static/uploads/{{ question.imageFilename }}" alt="{{ question.title }}" />{% endif %}<h1>{{ question.title }}</h1>
+{% set breadcrumbs = [
+  { label: 'Home', href: '/' },
+  { label: 'Exams', href: '/exams' }
+] %}
+{% if question.exam %}
+{% set breadcrumbs = breadcrumbs.concat([{
+  label: question.exam.name,
+  href: '/' + question.exam.userSlug + '/' + question.exam.slug
+}]) %}
+{% endif %}
+{% set breadcrumbs = breadcrumbs.concat([{ label: question.title }]) %}
+{% include "fragements/breadcrumbs.html" %}
+{% if question.imageFilename %}
+<img
+  class="entity-image entity-image-lg"
+  src="/static/uploads/{{ question.imageFilename }}"
+  alt="{{ question.title }}"
+/>
+{% endif %}
+<h1>{{ question.title }}</h1>
 {% if currentUser %}
 <form class="rating-form mb-4" method="post" action="/questions/{{ question.id }}/rating">
   {% set rating = question.rating %}{% set userMark = question.userMark %}{% include "rating.html" %}

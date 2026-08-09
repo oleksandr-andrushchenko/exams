@@ -1,0 +1,16 @@
+<a class="list-group-item list-group-item-action" href="/{{ exam.userSlug }}/{{ exam.slug }}">
+  {% if exam.imageFilename %}
+  <img class="entity-image" src="/static/uploads/{{ exam.imageFilename }}" alt="{{ exam.name }}" loading="lazy">
+  {% endif %}
+  <strong>{{ exam.name }}</strong>
+  <span class="d-block small text-secondary">
+    {{ exam.questionCount or 0 }} questions
+    {% if exam.requiredScore is not none %} · required score {{ exam.requiredScore or 0 }}{% endif %}
+  </span>
+  <div class="rating-summary" aria-label="{{ exam.rating.averageMark or 0 }} out of 5">
+    <span class="rating-stars" style="--rating: {{ exam.rating.averageMark or 0 }}">★★★★★</span>
+    <span class="text-secondary">
+      {{ (exam.rating.averageMark or 0) | round(1) }}/5 ({{ exam.rating.markCount or 0 }} votes)
+    </span>
+  </div>
+</a>

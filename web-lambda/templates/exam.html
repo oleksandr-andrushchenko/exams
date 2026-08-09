@@ -1,5 +1,6 @@
 {% extends "layout.html" %}{% block content %}{% if exam %}
-<nav class="small mb-3"><a href="/">Home</a> / <a href="/exams">Exams</a> / {{ exam.name }}</nav>
+{% set breadcrumbs = [{ label: 'Home', href: '/' }, { label: 'Exams', href: '/exams' }, { label: exam.name }] %}
+{% include "fragements/breadcrumbs.html" %}
 {% if exam.imageFilename %}<img alt="{{ exam.name }}" class="entity-image entity-image-lg"
                                 src="/static/uploads/{{ exam.imageFilename }}"/>{% endif %}<h1>{{ exam.name }}</h1>
 <div aria-label="{{ exam.rating.averageMark or 0 }} out of 5" class="rating-summary">
@@ -17,14 +18,7 @@
 </dl>
 <h2 class="h4 mt-4">Questions</h2>
 <div class="list-group">
-  {% for question in exam.questions %}<a
-        class="list-group-item list-group-item-action"
-        href="/{{ exam.userSlug }}/{{ exam.slug }}/{{ question.slug }}"
-><strong>{{ question.title }}</strong
-><span class="d-block small text-secondary"
->{{ question.difficulty or '' }}{% if question.type %} · {{ question.type }}{% endif %}</span
-></a
->{% else %}
+  {% for question in exam.questions %}{% include "fragements/question.html" %}{% else %}
   <div class="list-group-item">No questions found.</div>
   {% endfor %}
 </div>

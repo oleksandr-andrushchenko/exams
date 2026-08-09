@@ -1,10 +1,12 @@
-{% extends "layout.html" %}{% block content %}
+{% extends "layout.html" %}
+{% block content %}
 <div class="row g-5 pt-4">
   <div class="col col-12 col-lg-6 col-xl-8">
     <h1 class="h2 d-inline-block">{{ siteName }}</h1>
-    <p class="small text-secondary d-inline-block">— Practice exams and explore questions</p>
-    <p class="d-none d-lg-inline-block small">Deep dives into system design, scalability, distributed systems, and
-      modern software architecture.</p>
+    <p class="small text-secondary d-inline-block">&mdash; Practice exams and explore questions</p>
+    <p class="d-none d-lg-inline-block small">
+      Deep dives into system design, scalability, distributed systems, and modern software architecture.
+    </p>
 
     <section class="d-flex flex-column gap-3 mt-4">
       <h2 class="h5 mb-0 text-decoration-underline">Popular topics</h2>
@@ -19,41 +21,21 @@
 
     <section class="d-flex flex-column gap-3 mt-4">
       <h2 class="h5 mb-0 text-decoration-underline">Latest exams</h2>
-      {% if data.exams %}
       <div class="list-group">
         {% for exam in data.exams %}
-        <a href="/{{ exam.userSlug }}/{{ exam.slug }}" class="list-group-item list-group-item-action">
-          <h3 class="h5 mb-1">{{ exam.name }}</h3>
-          <p class="text-secondary mb-0">{{ exam.questionCount or 0 }} questions</p>
-          <div aria-label="{{ exam.rating.averageMark or 0 }} out of 5" class="rating-summary">
-            <span class="rating-stars" style="--rating: {{ exam.rating.averageMark or 0 }}">★★★★★</span>
-            <span class="text-secondary"
-            >{{ (exam.rating.averageMark or 0) | round(1) }}/5 ({{ exam.rating.markCount or 0 }} votes)</span
-            >
-          </div>
-        </a>
+        {% include "fragements/exam.html" %}
+        {% else %}
+        <div class="list-group-item">No exams found.</div>
         {% endfor %}
       </div>
-      {% else %}
-      <p>No exams found.</p>
-      {% endif %}
     </section>
 
     <section class="d-flex flex-column gap-3 mt-4">
       <h2 class="h5 mb-0"><a href="/questions" class="link-body-emphasis">Latest questions</a></h2>
       <div class="list-group">
-        {% for question in data.questions %}<a
-              class="list-group-item list-group-item-action"
-              href="/{{ question.exam.userSlug }}/{{ question.exam.slug }}/{{ question.slug }}"
-      >{{ question.title }}
-        <div aria-label="{{ question.rating.averageMark or 0 }} out of 5" class="rating-summary">
-          <span class="rating-stars" style="--rating: {{ question.rating.averageMark or 0 }}">★★★★★</span>
-          <span class="text-secondary"
-          >{{ (question.rating.averageMark or 0) | round(1) }}/5 ({{ question.rating.markCount or 0 }} votes)</span
-          >
-        </div>
-      </a
-      >{% else %}
+        {% for question in data.questions %}
+        {% include "fragements/question.html" %}
+        {% else %}
         <div class="list-group-item">No questions found.</div>
         {% endfor %}
       </div>
@@ -62,29 +44,33 @@
 
   <aside class="col col-12 col-lg-6 col-xl-4 border-start">
     <section class="d-flex flex-column gap-3">
-      <h2 class="h5 mb-0"><a href="/popular/exams" class="link-body-emphasis">Popular exams</a></h2>
-      <div>N/A</div>
+      <h2 class="h5 mb-0"><a href="/exams" class="link-body-emphasis">Popular exams</a></h2>
+      <div class="list-group">
+        {% for exam in data.popularExams %}
+        {% include "fragements/exam.html" %}
+        {% else %}
+        <div class="list-group-item">No exams found.</div>
+        {% endfor %}
+      </div>
     </section>
 
     <section class="d-flex flex-column gap-3 mt-4">
-      <h2 class="h5 mb-0 text-decoration-underline">Popular tags</h2>
-      <div>N/A</div>
+      <h2 class="h5 mb-0"><a href="/questions" class="link-body-emphasis">Popular questions</a></h2>
+      <div class="list-group">
+        {% for question in data.popularQuestions %}
+        {% include "fragements/question.html" %}
+        {% else %}
+        <div class="list-group-item">No questions found.</div>
+        {% endfor %}
+      </div>
     </section>
 
     <section class="card mt-4">
       <div class="card-body d-flex flex-column gap-2">
-        <div class="d-flex align-items-center gap-2 fw-semibold">
-          <h2 class="h4 mb-0">Become an Author</h2>
-        </div>
-
-        <div class="text-muted small">
-          Join our community, share your ideas, and earn money from your content.
-        </div>
-
+        <h2 class="h4 mb-0">Become an Author</h2>
+        <div class="text-muted small">Join our community, share your ideas, and earn money from your content.</div>
         <div>
-          <a href="/earn-with-us" class="btn btn-warning fw-semibold bi bi-currency-dollar">
-            Earn with us
-          </a>
+          <a href="/earn-with-us" class="btn btn-warning fw-semibold bi bi-currency-dollar"> Earn with us</a>
           <a href="/login?redirect_url=%2Fexams%2Fnew" class="btn btn-primary fw-semibold bi bi-pencil-fill">
             Create an exam
           </a>
@@ -93,8 +79,14 @@
     </section>
 
     <section class="d-flex flex-column gap-3 mt-4">
-      <h2 class="h5 mb-0"><a href="/popular/users" class="link-body-emphasis">Popular users</a></h2>
-      <div>N/A</div>
+      <h2 class="h5 mb-0"><a href="/users" class="link-body-emphasis">Popular users</a></h2>
+      <div class="list-group">
+        {% for user in data.popularUsers %}
+        {% include "fragements/user.html" %}
+        {% else %}
+        <div class="list-group-item">No users found.</div>
+        {% endfor %}
+      </div>
     </section>
 
     <div class="mt-4"><a class="btn btn-primary" href="/exams">Browse all exams</a></div>

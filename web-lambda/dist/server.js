@@ -50,7 +50,7 @@ const app = (0, express_1.default)();
 exports.app = app;
 const canViewUnapproved = (user, permission) => user?.permissions?.some((userPermission) => userPermission === permission || userPermission === 'root' || userPermission === '*') ?? false;
 const templateDir = node_path_1.default.resolve(__dirname, '../templates');
-const sharedTemplateDir = node_path_1.default.resolve(__dirname, '../../../shared/templates');
+const sharedTemplateDir = node_path_1.default.resolve(__dirname, '../../lambda-shared/templates');
 const publicDir = node_path_1.default.resolve(__dirname, '../public');
 const uploadsDir = node_path_1.default.join(publicDir, 'uploads');
 const imageExtensions = {

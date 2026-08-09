@@ -1,0 +1,24 @@
+<a
+  class="list-group-item list-group-item-action"
+  href="/{{ (question.exam or exam).userSlug }}/{{ (question.exam or exam).slug }}/{{ question.slug }}"
+>
+  {% if question.imageFilename %}
+  <img
+    class="entity-image"
+    src="/static/uploads/{{ question.imageFilename }}"
+    alt="{{ question.title }}"
+    loading="lazy"
+  >
+  {% endif %}
+  <strong>{{ question.title }}</strong>
+  <div class="rating-summary" aria-label="{{ question.rating.averageMark or 0 }} out of 5">
+    <span class="rating-stars" style="--rating: {{ question.rating.averageMark or 0 }}">★★★★★</span>
+    <span class="text-secondary">
+      {{ (question.rating.averageMark or 0) | round(1) }}/5 ({{ question.rating.markCount or 0 }} votes)
+    </span>
+  </div>
+  <span class="d-block small text-secondary">
+    {% if question.exam %}{{ question.exam.name }} · {% endif %}
+    {{ question.difficulty or '' }} {{ question.type or '' }}
+  </span>
+</a>
