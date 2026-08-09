@@ -1,4 +1,4 @@
-import CreateUser from '../../../../apps/graphql/src/server/schema/user/CreateUser'
+import CreateUser from '../../../../api-lambda/src/server/schema/user/CreateUser'
 
 export const createUser = (variables: { createUser: CreateUser }, fields: string[] = ['id']) => {
   return {

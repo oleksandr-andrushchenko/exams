@@ -1,4 +1,4 @@
-import { Credentials } from '../../../../apps/graphql/src/server/schema/auth/Credentials'
+import { Credentials } from '../../../../api-lambda/src/server/schema/auth/Credentials'
 
 export const createAuthenticationToken = (variables: { credentials: Credentials }, fields: string[] = ['token']) => {
   return {

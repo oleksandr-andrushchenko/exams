@@ -1,6 +1,6 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
-import Exam from '../../../../apps/graphql/src/server/entities/exam/Exam'
+import Exam from '../../../../api-lambda/src/server/entities/exam/Exam'
 // @ts-ignore
 import { getExam } from '../../graphql/exam/getExam'
 import TestFramework from '../../TestFramework'

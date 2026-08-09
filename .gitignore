@@ -2,7 +2,7 @@
 .env
 # Generated server and Next output
 **/.next/
-apps/graphql/dist/
+api-lambda/dist/
 node_modules/
-apps/ssr/public/uploads/
+web-lambda/public/uploads/
 *.js.map

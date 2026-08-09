@@ -1,6 +1,6 @@
 node_modules
 .next
-apps/graphql/dist
-apps/ssr/dist
+api-lambda/dist
+web-lambda/dist
 .git
 .env

@@ -1,9 +1,9 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
-import User from '../../../../apps/graphql/src/server/entities/user/User'
+import User from '../../../../api-lambda/src/server/entities/user/User'
 // @ts-ignore
 import { createAuthenticationToken } from '../../graphql/authenticate/createAuthenticationToken'
-import { Credentials } from '../../../../apps/graphql/src/server/schema/auth/Credentials'
+import { Credentials } from '../../../../api-lambda/src/server/schema/auth/Credentials'
 import TestFramework from '../../TestFramework'
 
 const framework: TestFramework = globalThis.framework

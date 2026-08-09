@@ -1,4 +1,4 @@
-import GetExamSessionQuestion from '../../../../apps/graphql/src/server/schema/examSession/GetExamSessionQuestion'
+import GetExamSessionQuestion from '../../../../api-lambda/src/server/schema/examSession/GetExamSessionQuestion'
 
 export const getExamSessionQuestion = (variables: GetExamSessionQuestion, fields: string[] = ['number']) => {
   return {

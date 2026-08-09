@@ -1,5 +1,5 @@
-import GetExam from '../../../../apps/graphql/src/server/schema/exam/GetExam'
-import Exam from '../../../../apps/graphql/src/server/entities/exam/Exam'
+import GetExam from '../../../../api-lambda/src/server/schema/exam/GetExam'
+import Exam from '../../../../api-lambda/src/server/entities/exam/Exam'
 
 export const toggleExamApprove = (variables: GetExam, fields: (keyof Exam)[] = ['id']) => {
   return {

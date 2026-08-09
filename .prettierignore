@@ -1,4 +1,4 @@
 **/dist/
 node_modules/
-apps/ssr/templates/
-shared/templates/
+web-lambda/templates/
+lambda-shared/templates/

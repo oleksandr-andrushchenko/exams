@@ -1,12 +1,12 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
-import Question from '../../../../apps/graphql/src/server/entities/question/Question'
+import Question from '../../../../api-lambda/src/server/entities/question/Question'
 // @ts-ignore
 import { getQuestion } from '../../graphql/question/getQuestion'
 import TestFramework from '../../TestFramework'
-import User from '../../../../apps/graphql/src/server/entities/user/User'
-import QuestionType from '../../../../apps/graphql/src/server/entities/question/QuestionType'
-import QuestionChoice from '../../../../apps/graphql/src/server/entities/question/QuestionChoice'
+import User from '../../../../api-lambda/src/server/entities/user/User'
+import QuestionType from '../../../../api-lambda/src/server/entities/question/QuestionType'
+import QuestionChoice from '../../../../api-lambda/src/server/entities/question/QuestionChoice'
 
 const framework: TestFramework = globalThis.framework
 

@@ -1,8 +1,8 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
-import Exam from '../../../../apps/graphql/src/server/entities/exam/Exam'
-import User from '../../../../apps/graphql/src/server/entities/user/User'
-import ExamPermission from '../../../../apps/graphql/src/server/enums/exam/ExamPermission'
+import Exam from '../../../../api-lambda/src/server/entities/exam/Exam'
+import User from '../../../../api-lambda/src/server/entities/user/User'
+import ExamPermission from '../../../../api-lambda/src/server/enums/exam/ExamPermission'
 // @ts-ignore
 import { deleteExam } from '../../graphql/exam/deleteExam'
 import TestFramework from '../../TestFramework'

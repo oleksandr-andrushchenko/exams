@@ -2,11 +2,11 @@ import 'reflect-metadata'
 import fs from 'node:fs'
 import path from 'node:path'
 import { Container, ContainerInstance } from 'typedi'
-import UserRepository from '../../apps/graphql/src/server/repositories/UserRepository'
-import ExamRepository from '../../apps/graphql/src/server/repositories/exam/ExamRepository'
-import QuestionRepository from '../../apps/graphql/src/server/repositories/question/QuestionRepository'
-import ExamSessionRepository from '../../apps/graphql/src/server/repositories/ExamSessionRepository'
-import User from '../../apps/graphql/src/server/entities/user/User'
+import UserRepository from '../../api-lambda/src/server/repositories/UserRepository'
+import ExamRepository from '../../api-lambda/src/server/repositories/exam/ExamRepository'
+import QuestionRepository from '../../api-lambda/src/server/repositories/question/QuestionRepository'
+import ExamSessionRepository from '../../api-lambda/src/server/repositories/ExamSessionRepository'
+import User from '../../api-lambda/src/server/entities/user/User'
 import { faker } from '@faker-js/faker'
 import {
   defaultChoices,
@@ -17,33 +17,33 @@ import {
   nextUserCredentials,
   slugify
 } from './HumanReadableTestData'
-import Permission from '../../apps/graphql/src/server/enums/Permission'
-import Exam from '../../apps/graphql/src/server/entities/exam/Exam'
-import Question from '../../apps/graphql/src/server/entities/question/Question'
-import ExamSession from '../../apps/graphql/src/server/entities/examSession/ExamSession'
+import Permission from '../../api-lambda/src/server/enums/Permission'
+import Exam from '../../api-lambda/src/server/entities/exam/Exam'
+import Question from '../../api-lambda/src/server/entities/question/Question'
+import ExamSession from '../../api-lambda/src/server/entities/examSession/ExamSession'
 import { ConnectionManager } from 'typeorm'
 import { ObjectId } from 'bson'
-import Token from '../../apps/graphql/src/server/schema/auth/Token'
+import Token from '../../api-lambda/src/server/schema/auth/Token'
 import { Application } from 'express'
-import QuestionType from '../../apps/graphql/src/server/entities/question/QuestionType'
-import QuestionDifficulty from '../../apps/graphql/src/server/entities/question/QuestionDifficulty'
-import QuestionChoice from '../../apps/graphql/src/server/entities/question/QuestionChoice'
-import ExamSessionQuestion from '../../apps/graphql/src/server/entities/examSession/ExamSessionQuestion'
-import Rating from '../../apps/graphql/src/server/entities/rating/Rating'
-import AccessTokenCreator from '../../apps/graphql/src/server/services/auth/AccessTokenCreator'
-import Activity from '../../apps/graphql/src/server/entities/activity/Activity'
-import ActivityRepository from '../../apps/graphql/src/server/repositories/ActivityRepository'
-import ExamEvent from '../../apps/graphql/src/server/enums/exam/ExamEvent'
-import EntityRepository from '../../apps/graphql/src/server/repositories/EntityRepository'
-import ExamRatingMark from '../../apps/graphql/src/server/entities/exam/ExamRatingMark'
-import QuestionRatingMark from '../../apps/graphql/src/server/entities/question/QuestionRatingMark'
-import ExamRatingMarkRepository from '../../apps/graphql/src/server/repositories/exam/ExamRatingMarkRepository'
-import QuestionRatingMarkRepository from '../../apps/graphql/src/server/repositories/question/QuestionRatingMarkRepository'
-import config from '../../apps/graphql/src/server/configuration'
-import ExamTag from '../../apps/graphql/src/server/entities/examTag/ExamTag'
-import ExamTagRepository from '../../apps/graphql/src/server/repositories/examTag/ExamTagRepository'
+import QuestionType from '../../api-lambda/src/server/entities/question/QuestionType'
+import QuestionDifficulty from '../../api-lambda/src/server/entities/question/QuestionDifficulty'
+import QuestionChoice from '../../api-lambda/src/server/entities/question/QuestionChoice'
+import ExamSessionQuestion from '../../api-lambda/src/server/entities/examSession/ExamSessionQuestion'
+import Rating from '../../api-lambda/src/server/entities/rating/Rating'
+import AccessTokenCreator from '../../api-lambda/src/server/services/auth/AccessTokenCreator'
+import Activity from '../../api-lambda/src/server/entities/activity/Activity'
+import ActivityRepository from '../../api-lambda/src/server/repositories/ActivityRepository'
+import ExamEvent from '../../api-lambda/src/server/enums/exam/ExamEvent'
+import EntityRepository from '../../api-lambda/src/server/repositories/EntityRepository'
+import ExamRatingMark from '../../api-lambda/src/server/entities/exam/ExamRatingMark'
+import QuestionRatingMark from '../../api-lambda/src/server/entities/question/QuestionRatingMark'
+import ExamRatingMarkRepository from '../../api-lambda/src/server/repositories/exam/ExamRatingMarkRepository'
+import QuestionRatingMarkRepository from '../../api-lambda/src/server/repositories/question/QuestionRatingMarkRepository'
+import config from '../../api-lambda/src/server/configuration'
+import ExamTag from '../../api-lambda/src/server/entities/examTag/ExamTag'
+import ExamTagRepository from '../../api-lambda/src/server/repositories/examTag/ExamTagRepository'
 
-const demoImagesDir = path.resolve(process.cwd(), 'apps/ssr/public/uploads')
+const demoImagesDir = path.resolve(process.cwd(), 'web-lambda/public/uploads')
 
 const demoImageFilename = (prefix: string): string | undefined => {
   if (!faker.datatype.boolean()) return undefined
@@ -67,7 +67,7 @@ export default class TestFramework {
   private readonly _serverDown: () => Promise<void>
 
   public constructor() {
-    const { testServerUp, testServerDown } = require('../../apps/graphql/src/server/application')
+    const { testServerUp, testServerDown } = require('../../api-lambda/src/server/application')
     this.container = Container as unknown as ContainerInstance
     this._serverUp = testServerUp
     this._serverDown = testServerDown

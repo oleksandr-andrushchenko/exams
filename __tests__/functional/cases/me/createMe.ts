@@ -1,10 +1,10 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
-import User from '../../../../apps/graphql/src/server/entities/user/User'
+import User from '../../../../api-lambda/src/server/entities/user/User'
 import { ObjectId } from 'bson'
 // @ts-ignore
 import { createMe } from '../../graphql/me/createMe'
-import CreateMe from '../../../../apps/graphql/src/server/schema/user/CreateMe'
+import CreateMe from '../../../../api-lambda/src/server/schema/user/CreateMe'
 import TestFramework from '../../TestFramework'
 
 const framework: TestFramework = globalThis.framework

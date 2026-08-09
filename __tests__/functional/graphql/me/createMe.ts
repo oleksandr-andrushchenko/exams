@@ -1,4 +1,4 @@
-import CreateMe from '../../../../apps/graphql/src/server/schema/user/CreateMe'
+import CreateMe from '../../../../api-lambda/src/server/schema/user/CreateMe'
 
 export const createMe = (variables: { createMe: CreateMe }, fields: string[] = ['id']) => {
   return {
