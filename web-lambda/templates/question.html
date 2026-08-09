@@ -13,7 +13,7 @@
 {% if question.imageFilename %}
 <img
   class="entity-image entity-image-lg"
-  src="/static/uploads/{{ question.imageFilename }}"
+  src="/static/{{ question.imageFilename }}"
   alt="{{ question.title }}"
 />
 {% endif %}

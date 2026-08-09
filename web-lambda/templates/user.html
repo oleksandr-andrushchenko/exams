@@ -4,7 +4,7 @@
 {% if user.imageFilename %}
 <img
   class="entity-image entity-image-lg"
-  src="/static/uploads/{{ user.imageFilename }}"
+  src="/static/{{ user.imageFilename }}"
   alt="{{ user.name or user.id }}"
 />
 {% endif %}

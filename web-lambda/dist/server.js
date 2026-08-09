@@ -38,7 +38,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handler = exports.app = void 0;
 const node_crypto_1 = require("node:crypto");
-const node_fs_1 = __importDefault(require("node:fs"));
 const express_1 = __importDefault(require("express"));
 const multer_1 = __importDefault(require("multer"));
 const jwt = __importStar(require("jsonwebtoken"));
@@ -52,17 +51,15 @@ const canViewUnapproved = (user, permission) => user?.permissions?.some((userPer
 const templateDir = node_path_1.default.resolve(__dirname, '../templates');
 const sharedTemplateDir = node_path_1.default.resolve(__dirname, '../../lambda-shared/templates');
 const staticDir = node_path_1.default.resolve(__dirname, '../../static');
-const uploadsDir = node_path_1.default.join(staticDir, 'uploads');
 const imageExtensions = {
     'image/jpeg': '.jpg',
     'image/png': '.png',
     'image/gif': '.gif',
     'image/webp': '.webp'
 };
-node_fs_1.default.mkdirSync(uploadsDir, { recursive: true });
 const uploadImage = (0, multer_1.default)({
     storage: multer_1.default.diskStorage({
-        destination: uploadsDir,
+        destination: staticDir,
         filename: (_request, file, callback) => callback(null, (0, node_crypto_1.randomUUID)() + imageExtensions[file.mimetype])
     }),
     limits: { fileSize: 5 * 1024 * 1024 },

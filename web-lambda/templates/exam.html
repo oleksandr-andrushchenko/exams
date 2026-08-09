@@ -2,7 +2,7 @@
 {% set breadcrumbs = [['Home', '/'], ['Exams', '/exams'], [exam.name, none]] %}
 {% include "fragements/breadcrumbs.html" %}
 {% if exam.imageFilename %}<img alt="{{ exam.name }}" class="entity-image entity-image-lg"
-                                src="/static/uploads/{{ exam.imageFilename }}"/>{% endif %}<h1>{{ exam.name }}</h1>
+                                src="/static/{{ exam.imageFilename }}"/>{% endif %}<h1>{{ exam.name }}</h1>
 <div aria-label="{{ exam.rating.averageMark or 0 }} out of 5" class="rating-summary">
   <span class="rating-stars" style="--rating: {{ exam.rating.averageMark or 0 }}">★★★★★</span>
   <span class="text-secondary"

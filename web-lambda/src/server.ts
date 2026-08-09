@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto'
-import fs from 'node:fs'
 import express, { type Request, type Response } from 'express'
 import multer from 'multer'
 import * as jwt from 'jsonwebtoken'
@@ -27,17 +26,15 @@ const canViewUnapproved = (user: { permissions?: string[] } | undefined, permiss
 const templateDir = path.resolve(__dirname, '../templates')
 const sharedTemplateDir = path.resolve(__dirname, '../../lambda-shared/templates')
 const staticDir = path.resolve(__dirname, '../../static')
-const uploadsDir = path.join(staticDir, 'uploads')
 const imageExtensions: Record<string, string> = {
   'image/jpeg': '.jpg',
   'image/png': '.png',
   'image/gif': '.gif',
   'image/webp': '.webp'
 }
-fs.mkdirSync(uploadsDir, { recursive: true })
 const uploadImage = multer({
   storage: multer.diskStorage({
-    destination: uploadsDir,
+    destination: staticDir,
     filename: (_request, file, callback) => callback(null, randomUUID() + imageExtensions[file.mimetype])
   }),
   limits: { fileSize: 5 * 1024 * 1024 },

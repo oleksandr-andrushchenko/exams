@@ -1,6 +1,6 @@
 <a class="list-group-item list-group-item-action" href="/{{ exam.userSlug }}/{{ exam.slug }}">
   {% if exam.imageFilename %}
-  <img class="entity-image" src="/static/uploads/{{ exam.imageFilename }}" alt="{{ exam.name }}" loading="lazy">
+  <img class="entity-image" src="/static/{{ exam.imageFilename }}" alt="{{ exam.name }}" loading="lazy">
   {% endif %}
   <strong>{{ exam.name }}</strong>
   <span class="d-block small text-secondary">

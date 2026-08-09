@@ -43,7 +43,7 @@ import config from '../../api-lambda/src/server/configuration'
 import ExamTag from '../../api-lambda/src/server/entities/examTag/ExamTag'
 import ExamTagRepository from '../../api-lambda/src/server/repositories/examTag/ExamTagRepository'
 
-const demoImagesDir = path.resolve(process.cwd(), 'static/uploads')
+const demoImagesDir = path.resolve(process.cwd(), 'static')
 
 const demoImageFilename = (prefix: string): string | undefined => {
   if (!faker.datatype.boolean()) return undefined

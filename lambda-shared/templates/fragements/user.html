@@ -2,7 +2,7 @@
   {% if user.imageFilename %}
   <img
     class="entity-image"
-    src="/static/uploads/{{ user.imageFilename }}"
+    src="/static/{{ user.imageFilename }}"
     alt="{{ user.name or user.id }}"
     loading="lazy"
   >
