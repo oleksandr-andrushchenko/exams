@@ -1,4 +1,13 @@
-import { ArrayNotEmpty, IsEnum, IsMongoId, Length, ValidateIf, ValidateNested } from 'class-validator'
+import {
+  ArrayNotEmpty,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsMongoId,
+  Length,
+  ValidateIf,
+  ValidateNested
+} from 'class-validator'
 import { Type } from 'class-transformer'
 import { Field, ID, InputType } from 'type-graphql'
 import { QuestionChoiceSchema } from './QuestionChoiceSchema'
@@ -22,6 +31,12 @@ export default class CreateQuestion {
   @Length(10, 3000)
   @Field()
   public readonly title: string
+
+  @IsOptional()
+  @IsString()
+  @Length(1, 255)
+  @Field({ nullable: true })
+  public readonly imageFilename?: string
 
   @ValidateIf((target) => target.type === QuestionType.CHOICE)
   @ArrayNotEmpty()

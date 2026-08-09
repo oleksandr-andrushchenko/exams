@@ -18,6 +18,12 @@ export default class CreateExam {
   @Field()
   public readonly name: string
 
+  @IsOptional()
+  @IsString()
+  @Length(1, 255)
+  @Field({ nullable: true })
+  public readonly imageFilename?: string
+
   @Min(0)
   @Max(100)
   @IsNumber({ maxDecimalPlaces: 0 })

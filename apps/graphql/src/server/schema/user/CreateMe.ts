@@ -1,4 +1,4 @@
-import { IsEmail, IsOptional, IsStrongPassword, Length } from 'class-validator'
+import { IsEmail, IsOptional, IsString, IsStrongPassword, Length } from 'class-validator'
 import { Field, InputType } from 'type-graphql'
 
 @InputType()
@@ -7,6 +7,12 @@ export default class CreateMe {
   @Length(2, 30)
   @Field({ nullable: true })
   public readonly name?: string
+
+  @IsOptional()
+  @IsString()
+  @Length(1, 255)
+  @Field({ nullable: true })
+  public readonly imageFilename?: string
 
   @IsEmail()
   @Field()

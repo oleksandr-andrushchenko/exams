@@ -58,6 +58,10 @@ export default class QuestionUpdater {
       question.difficulty = updateQuestion.difficulty
     }
 
+    if ('imageFilename' in updateQuestion) {
+      question.imageFilename = updateQuestion.imageFilename
+    }
+
     if (question.type === QuestionType.CHOICE) {
       if ('choices' in updateQuestion) {
         question.choices = updateQuestion.choices

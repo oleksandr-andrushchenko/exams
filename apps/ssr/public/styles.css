@@ -2,7 +2,7 @@ body {
   font-family: 'Rethink Sans', sans-serif;
   font-weight: 400;
   font-optical-sizing: auto;
-  font-style: normal
+  font-style: normal;
 }
 
 h1,
@@ -17,7 +17,7 @@ h6,
 .h4,
 .h5,
 .h6 {
-  font-weight: 700
+  font-weight: 700;
 }
 
 .border-start-lg {
@@ -32,9 +32,9 @@ h6,
 
 .rating-stars {
   background: linear-gradient(
-          90deg,
-          #f5b301 calc(var(--rating, 0) / 5 * 100%),
-          #d9dee7 calc(var(--rating, 0) / 5 * 100%)
+    90deg,
+    #f5b301 calc(var(--rating, 0) / 5 * 100%),
+    #d9dee7 calc(var(--rating, 0) / 5 * 100%)
   );
   background-clip: text;
   -webkit-background-clip: text;

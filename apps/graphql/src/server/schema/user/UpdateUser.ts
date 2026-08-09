@@ -1,4 +1,4 @@
-import { ArrayUnique, IsEmail, IsEnum, IsStrongPassword, Length, ValidateIf } from 'class-validator'
+import { ArrayUnique, IsEmail, IsEnum, IsString, IsStrongPassword, Length, ValidateIf } from 'class-validator'
 import { Field, InputType } from 'type-graphql'
 import Permission from '../../enums/Permission'
 
@@ -8,6 +8,12 @@ export default class UpdateUser {
   @Length(2, 30)
   @Field({ nullable: true })
   public readonly name?: string
+
+  @ValidateIf((target) => 'imageFilename' in target)
+  @IsString()
+  @Length(1, 255)
+  @Field({ nullable: true })
+  public readonly imageFilename?: string
 
   @ValidateIf((target) => 'email' in target)
   @IsEmail()

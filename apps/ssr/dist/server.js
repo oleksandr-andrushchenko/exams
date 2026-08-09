@@ -37,7 +37,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handler = exports.app = void 0;
+const node_crypto_1 = require("node:crypto");
+const node_fs_1 = __importDefault(require("node:fs"));
 const express_1 = __importDefault(require("express"));
+const multer_1 = __importDefault(require("multer"));
 const jwt = __importStar(require("jsonwebtoken"));
 const node_path_1 = __importDefault(require("node:path"));
 const nunjucks_1 = __importDefault(require("nunjucks"));
@@ -49,6 +52,22 @@ const canViewUnapproved = (user, permission) => user?.permissions?.some((userPer
 const templateDir = node_path_1.default.resolve(__dirname, '../templates');
 const sharedTemplateDir = node_path_1.default.resolve(__dirname, '../../../shared/templates');
 const publicDir = node_path_1.default.resolve(__dirname, '../public');
+const uploadsDir = node_path_1.default.join(publicDir, 'uploads');
+const imageExtensions = {
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/gif': '.gif',
+    'image/webp': '.webp'
+};
+node_fs_1.default.mkdirSync(uploadsDir, { recursive: true });
+const uploadImage = (0, multer_1.default)({
+    storage: multer_1.default.diskStorage({
+        destination: uploadsDir,
+        filename: (_request, file, callback) => callback(null, (0, node_crypto_1.randomUUID)() + imageExtensions[file.mimetype])
+    }),
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (_request, file, callback) => callback(null, Object.prototype.hasOwnProperty.call(imageExtensions, file.mimetype))
+}).single('image');
 nunjucks_1.default.configure([templateDir, sharedTemplateDir], {
     autoescape: true,
     express: app,
@@ -217,17 +236,26 @@ async function updateResource(request, response, resource, id) {
     const definitions = {
         user: {
             query: 'mutation Update($id: ID!, $input: UpdateUser!) { updateUser(userId: $id, updateUser: $input) { id } }',
-            input: { name: request.body.name, email: request.body.email },
+            input: { name: request.body.name, email: request.body.email, imageFilename: request.file?.filename },
             target: '/users/' + id
         },
         exam: {
             query: 'mutation Update($id: ID!, $input: UpdateExam!) { updateExam(examId: $id, updateExam: $input) { id } }',
-            input: { name: request.body.name, requiredScore: Number(request.body.requiredScore) },
+            input: {
+                name: request.body.name,
+                requiredScore: Number(request.body.requiredScore),
+                imageFilename: request.file?.filename
+            },
             target: '/exams/' + id
         },
         question: {
             query: 'mutation Update($id: ID!, $input: UpdateQuestion!) { updateQuestion(questionId: $id, updateQuestion: $input) { id } }',
-            input: { title: request.body.title, difficulty: request.body.difficulty, type: request.body.type },
+            input: {
+                title: request.body.title,
+                difficulty: request.body.difficulty,
+                type: request.body.type,
+                imageFilename: request.file?.filename
+            },
             target: '/questions/' + id
         }
     };
@@ -247,11 +275,11 @@ async function updateResource(request, response, resource, id) {
     response.redirect(definition.target);
 }
 app.get('/users/:userId/edit', (request, response, next) => renderEdit(request, response, 'user', request.params.userId).catch(next));
-app.post('/users/:userId/edit', (request, response, next) => updateResource(request, response, 'user', request.params.userId).catch(next));
+app.post('/users/:userId/edit', uploadImage, (request, response, next) => updateResource(request, response, 'user', request.params.userId).catch(next));
 app.get('/exams/:examId/edit', (request, response, next) => renderEdit(request, response, 'exam', request.params.examId).catch(next));
-app.post('/exams/:examId/edit', (request, response, next) => updateResource(request, response, 'exam', request.params.examId).catch(next));
+app.post('/exams/:examId/edit', uploadImage, (request, response, next) => updateResource(request, response, 'exam', request.params.examId).catch(next));
 app.get('/questions/:questionId/edit', (request, response, next) => renderEdit(request, response, 'question', request.params.questionId).catch(next));
-app.post('/questions/:questionId/edit', (request, response, next) => updateResource(request, response, 'question', request.params.questionId).catch(next));
+app.post('/questions/:questionId/edit', uploadImage, (request, response, next) => updateResource(request, response, 'question', request.params.questionId).catch(next));
 app.get('/exams/:examId', async (request, response, next) => {
     try {
         const exam = await (0, data_1.getExam)(request.params.examId, canViewUnapproved(response.locals.currentUser, 'getExam'));
@@ -334,9 +362,9 @@ app.post('/logout', (_request, response) => {
     response.clearCookie('authenticationToken');
     response.redirect('/');
 });
-app.post('/register', async (request, response) => {
+app.post('/register', uploadImage, async (request, response) => {
     try {
-        await authenticate(response, { email: request.body.email, password: request.body.password }, true);
+        await authenticate(response, { email: request.body.email, password: request.body.password, imageFilename: request.file?.filename }, true);
         response.redirect('/');
     }
     catch (error) {

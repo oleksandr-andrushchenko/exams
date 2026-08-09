@@ -19,6 +19,12 @@ export default class UpdateExam {
   @Field({ nullable: true })
   public readonly name?: string
 
+  @ValidateIf((target) => 'imageFilename' in target)
+  @IsString()
+  @Length(1, 255)
+  @Field({ nullable: true })
+  public readonly imageFilename?: string
+
   @ValidateIf((target) => 'requiredScore' in target)
   @Min(0)
   @Max(100)

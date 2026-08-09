@@ -29,6 +29,10 @@ export default class MeUpdater {
       initiator.name = updateMe.name
     }
 
+    if ('imageFilename' in updateMe) {
+      initiator.imageFilename = updateMe.imageFilename
+    }
+
     if ('password' in updateMe) {
       initiator.password = updateMe.password
     }

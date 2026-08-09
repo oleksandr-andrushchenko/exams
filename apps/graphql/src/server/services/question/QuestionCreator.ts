@@ -49,6 +49,7 @@ export default class QuestionCreator {
     question.type = createQuestion.type
     question.difficulty = createQuestion.difficulty
     question.title = title
+    question.imageFilename = createQuestion.imageFilename
     question.creatorId = initiator.id
     question.ownerId = initiator.id
 

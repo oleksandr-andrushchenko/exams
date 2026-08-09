@@ -50,6 +50,10 @@ export default class UserUpdater {
       user.permissions = updateUser.permissions
     }
 
+    if ('imageFilename' in updateUser) {
+      user.imageFilename = updateUser.imageFilename
+    }
+
     user.updatedAt = new Date()
 
     await this.entityManager.save<User>(user)

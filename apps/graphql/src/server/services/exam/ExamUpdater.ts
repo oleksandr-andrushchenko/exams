@@ -32,6 +32,7 @@ export default class ExamUpdater {
       exam.name = updateExam.name
     }
     if ('requiredScore' in updateExam) exam.requiredScore = updateExam.requiredScore
+    if ('imageFilename' in updateExam) exam.imageFilename = updateExam.imageFilename
 
     exam.updatedAt = new Date()
     await this.entityManager.save(exam)

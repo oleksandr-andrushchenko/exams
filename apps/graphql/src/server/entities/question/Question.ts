@@ -40,6 +40,10 @@ export default class Question extends Base {
   @Field()
   public title: string
 
+  @Column({ nullable: true })
+  @Field({ nullable: true })
+  public imageFilename?: string
+
   @Authorized(QuestionPermission.GetChoices)
   @Column({ type: 'jsonb', nullable: true })
   @Field((_type) => [QuestionChoice], { nullable: true })

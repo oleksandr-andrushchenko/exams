@@ -1,4 +1,6 @@
 import 'reflect-metadata'
+import fs from 'node:fs'
+import path from 'node:path'
 import { Container, ContainerInstance } from 'typedi'
 import UserRepository from '../../apps/graphql/src/server/repositories/UserRepository'
 import ExamRepository from '../../apps/graphql/src/server/repositories/exam/ExamRepository'
@@ -40,6 +42,22 @@ import QuestionRatingMarkRepository from '../../apps/graphql/src/server/reposito
 import config from '../../apps/graphql/src/server/configuration'
 import ExamTag from '../../apps/graphql/src/server/entities/examTag/ExamTag'
 import ExamTagRepository from '../../apps/graphql/src/server/repositories/examTag/ExamTagRepository'
+
+const demoImagesDir = path.resolve(process.cwd(), 'apps/ssr/public/uploads')
+
+const demoImageFilename = (prefix: string): string | undefined => {
+  if (!faker.datatype.boolean()) return undefined
+
+  fs.mkdirSync(demoImagesDir, { recursive: true })
+  const filename = 'demo-' + prefix + '-' + faker.string.uuid() + '.svg'
+  const hue = faker.number.int({ min: 0, max: 360 })
+  const content =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180"><rect width="320" height="180" fill="hsl(' +
+    hue +
+    ' 70% 55%)"/><circle cx="250" cy="35" r="80" fill="rgba(255,255,255,.2)"/><circle cx="55" cy="145" r="100" fill="rgba(0,0,0,.15)"/></svg>'
+  fs.writeFileSync(path.join(demoImagesDir, filename), content)
+  return filename
+}
 
 export default class TestFramework {
   public app: Application
@@ -126,6 +144,7 @@ export default class TestFramework {
         object = new User()
         object.permissions = 'permissions' in options ? options.permissions : [Permission.Regular]
         object.name = 'name' in options ? options.name : nextPerson()
+        if ('imageFilename' in options) object.imageFilename = options.imageFilename
         const credentials = nextUserCredentials(object.permissions)
         object.email = 'email' in options ? options.email : credentials.email
         object.password = 'password' in options ? options.password : credentials.password
@@ -134,6 +153,7 @@ export default class TestFramework {
       case this.compare(entity, Exam):
         object = new Exam()
         object.name = 'name' in options ? options.name : nextExamName()
+        if ('imageFilename' in options) object.imageFilename = options.imageFilename
         object.requiredScore =
           'requiredScore' in options
             ? options.requiredScore
@@ -167,6 +187,7 @@ export default class TestFramework {
         object.type = 'type' in options ? options.type : faker.helpers.enumValue(QuestionType)
         object.difficulty = 'difficulty' in options ? options.difficulty : QuestionDifficulty.MODERATE
         object.title = 'title' in options ? options.title : nextQuestionTitle()
+        if ('imageFilename' in options) object.imageFilename = options.imageFilename
         object.creatorId = 'creatorId' in options ? options.creatorId : ((await this.fixture(User)) as User).id
         object.ownerId = 'ownerId' in options ? options.ownerId : object.creatorId
 
@@ -339,6 +360,14 @@ export default class TestFramework {
 
   public async seedDemoData(): Promise<void> {
     const seedManager = this.container.get<ConnectionManager>(ConnectionManager).get('default').manager
+    if (fs.existsSync(demoImagesDir)) {
+      for (const filename of fs.readdirSync(demoImagesDir)) {
+        if (filename.startsWith('demo-') && filename.endsWith('.svg')) {
+          fs.unlinkSync(path.join(demoImagesDir, filename))
+        }
+      }
+    }
+
     for (const schema of [config.db.schema]) {
       for (const table of [
         'examExamTags',
@@ -360,19 +389,22 @@ export default class TestFramework {
       name: 'Demo Learner',
       email: 'learner@examme.test',
       password: 'Learner123!',
-      permissions: [Permission.Regular]
+      permissions: [Permission.Regular],
+      imageFilename: demoImageFilename('user')
     })
     const admin = await this.fixture<User>(User, {
       name: 'Demo Administrator',
       email: 'admin@examme.test',
       password: 'Admin123!',
-      permissions: [Permission.All]
+      permissions: [Permission.All],
+      imageFilename: demoImageFilename('user')
     })
     const root = await this.fixture<User>(User, {
       name: 'Demo Root',
       email: 'root@examme.test',
       password: 'Root123!',
-      permissions: [Permission.Root]
+      permissions: [Permission.Root],
+      imageFilename: demoImageFilename('user')
     })
 
     const tagData = [
@@ -411,7 +443,8 @@ export default class TestFramework {
           approvedQuestionCount: 2,
           creatorId: admin.id,
           ownerId: undefined,
-          rating: { averageMark: 4, markCount: 24 }
+          rating: { averageMark: 4, markCount: 24 },
+          imageFilename: demoImageFilename('exam')
         })
       )
     }
@@ -431,7 +464,8 @@ export default class TestFramework {
             ownerId: undefined,
             title: `${title} (${exam.name})`,
             difficulty: QuestionDifficulty.MODERATE,
-            choices: defaultChoices()
+            choices: defaultChoices(),
+            imageFilename: demoImageFilename('question')
           })
         )
       }

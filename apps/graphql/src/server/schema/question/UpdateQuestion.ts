@@ -1,4 +1,13 @@
-import { ArrayNotEmpty, IsEnum, IsMongoId, Length, ValidateIf, ValidateNested } from 'class-validator'
+import {
+  ArrayNotEmpty,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsMongoId,
+  Length,
+  ValidateIf,
+  ValidateNested
+} from 'class-validator'
 import { Type } from 'class-transformer'
 import { Field, ID, InputType } from 'type-graphql'
 import { QuestionChoiceSchema } from './QuestionChoiceSchema'
@@ -26,6 +35,12 @@ export default class UpdateQuestion {
   @Length(10, 3000)
   @Field({ nullable: true })
   public readonly title?: string
+
+  @ValidateIf((target) => 'imageFilename' in target)
+  @IsString()
+  @Length(1, 255)
+  @Field({ nullable: true })
+  public readonly imageFilename?: string
 
   @ValidateIf((target) => 'choices' in target)
   @ArrayNotEmpty()

@@ -6,6 +6,7 @@ export type SsrExam = {
   slug: string
   userSlug: string
   name: string
+  imageFilename?: string
   questionCount?: number
   approvedQuestionCount?: number
   requiredScore?: number
@@ -17,6 +18,7 @@ export type SsrQuestion = {
   slug: string
   examId?: string
   title: string
+  imageFilename?: string
   difficulty?: string
   type?: string
   rating?: SsrRating
@@ -84,11 +86,11 @@ export async function getHomeData(size = 8, includeUnapproved = false, includeUn
   const [tags, exams, questions] = await Promise.all([
     query<SsrTag>('SELECT "id", "name", "slug" FROM "examTags" ORDER BY "rating" DESC, "name" ASC LIMIT $1', [size]),
     query<SsrExam>(
-      `SELECT "id", COALESCE("slug", "id") AS "slug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = "exams"."creatorId"), "creatorId") AS "userSlug", "name", "questionCount", "approvedQuestionCount", "requiredScore", "rating" FROM "exams" WHERE ${deletedFilter} ${includeUnapproved ? '' : 'AND "ownerId" IS NULL'} ORDER BY "id" DESC LIMIT $1`,
+      `SELECT "id", COALESCE("slug", "id") AS "slug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = "exams"."creatorId"), "creatorId") AS "userSlug", "name", "imageFilename", "questionCount", "approvedQuestionCount", "requiredScore", "rating" FROM "exams" WHERE ${deletedFilter} ${includeUnapproved ? '' : 'AND "ownerId" IS NULL'} ORDER BY "id" DESC LIMIT $1`,
       [size]
     ),
     query<SsrQuestion & { examName?: string; examSlug?: string; userSlug?: string }>(
-      `SELECT q."id", COALESCE(q."slug", q."id") AS "slug", q."examId", q."title", q."difficulty", COALESCE(e."slug", e."id") AS "examSlug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = e."creatorId"), e."creatorId") AS "userSlug", e."name" AS "examName", q."rating" FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId" WHERE q."deletedAt" IS NULL ${includeUnapprovedQuestions ? '' : 'AND q."ownerId" IS NULL'} ORDER BY q."id" DESC LIMIT $1`,
+      `SELECT q."id", COALESCE(q."slug", q."id") AS "slug", q."examId", q."title", q."imageFilename", q."difficulty", COALESCE(e."slug", e."id") AS "examSlug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = e."creatorId"), e."creatorId") AS "userSlug", e."name" AS "examName", q."rating" FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId" WHERE q."deletedAt" IS NULL ${includeUnapprovedQuestions ? '' : 'AND q."ownerId" IS NULL'} ORDER BY q."id" DESC LIMIT $1`,
       [size]
     )
   ])
@@ -104,7 +106,7 @@ export async function getHomeData(size = 8, includeUnapproved = false, includeUn
 
 export async function getExams(size = 50) {
   return query<SsrExam>(
-    `SELECT "id", COALESCE("slug", "id") AS "slug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = "exams"."creatorId"), "creatorId") AS "userSlug", "name", "questionCount", "approvedQuestionCount", "requiredScore", "rating" FROM "exams" WHERE ${deletedFilter} ORDER BY "id" DESC LIMIT $1`,
+    `SELECT "id", COALESCE("slug", "id") AS "slug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = "exams"."creatorId"), "creatorId") AS "userSlug", "name", "imageFilename", "questionCount", "approvedQuestionCount", "requiredScore", "rating" FROM "exams" WHERE ${deletedFilter} ORDER BY "id" DESC LIMIT $1`,
     [size]
   )
 }
@@ -132,7 +134,7 @@ export async function getExamList(f: SsrListFilters = {}, includeUnapproved = fa
   const column = sortColumn(f, { name: '"name"', createdAt: '"createdAt"' }, '"id"')
   values.push(size + 1, (page - 1) * size)
   const rows = await query<SsrExam>(
-    `SELECT "id", COALESCE("slug", "id") AS "slug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = "exams"."creatorId"), "creatorId") AS "userSlug", "name", "questionCount", "approvedQuestionCount", "requiredScore", "rating" FROM "exams" WHERE ${conditions.join(' AND ')} ORDER BY ${column} ${direction(f)} LIMIT $${values.length - 1} OFFSET $${values.length}`,
+    `SELECT "id", COALESCE("slug", "id") AS "slug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = "exams"."creatorId"), "creatorId") AS "userSlug", "name", "imageFilename", "questionCount", "approvedQuestionCount", "requiredScore", "rating" FROM "exams" WHERE ${conditions.join(' AND ')} ORDER BY ${column} ${direction(f)} LIMIT $${values.length - 1} OFFSET $${values.length}`,
     values
   )
   return { data: rows.slice(0, size), page, size, hasNext: rows.length > size }
@@ -140,7 +142,7 @@ export async function getExamList(f: SsrListFilters = {}, includeUnapproved = fa
 
 export async function getQuestions(size = 50, includeUnapproved = false) {
   const rows = await query<SsrQuestion & { examName?: string; examSlug?: string; userSlug?: string }>(
-    `SELECT q."id", COALESCE(q."slug", q."id") AS "slug", q."examId", q."title", q."difficulty", q."type", COALESCE(e."slug", e."id") AS "examSlug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = e."creatorId"), e."creatorId") AS "userSlug", e."name" AS "examName", q."rating" FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId" WHERE q."deletedAt" IS NULL ${includeUnapproved ? '' : 'AND q."ownerId" IS NULL'} ORDER BY q."id" DESC LIMIT $1`,
+    `SELECT q."id", COALESCE(q."slug", q."id") AS "slug", q."examId", q."title", q."imageFilename", q."difficulty", q."type", COALESCE(e."slug", e."id") AS "examSlug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = e."creatorId"), e."creatorId") AS "userSlug", e."name" AS "examName", q."rating" FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId" WHERE q."deletedAt" IS NULL ${includeUnapproved ? '' : 'AND q."ownerId" IS NULL'} ORDER BY q."id" DESC LIMIT $1`,
     [size]
   )
   return rows.map(({ examName, examSlug, userSlug, ...q }) => ({
@@ -177,7 +179,7 @@ export async function getQuestionList(
   const column = sortColumn(f, { title: 'q."title"', createdAt: 'q."createdAt"' }, 'q."id"')
   values.push(size + 1, (page - 1) * size)
   const rows = await query<SsrQuestion & { examName?: string; examSlug?: string; userSlug?: string }>(
-    `SELECT q."id", COALESCE(q."slug", q."id") AS "slug", q."examId", q."title", q."difficulty", q."type", COALESCE(e."slug", e."id") AS "examSlug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = e."creatorId"), e."creatorId") AS "userSlug", e."name" AS "examName", q."rating" FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId" WHERE ${conditions.join(' AND ')} ORDER BY ${column} ${direction(f)} LIMIT $${values.length - 1} OFFSET $${values.length}`,
+    `SELECT q."id", COALESCE(q."slug", q."id") AS "slug", q."examId", q."title", q."imageFilename", q."difficulty", q."type", COALESCE(e."slug", e."id") AS "examSlug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = e."creatorId"), e."creatorId") AS "userSlug", e."name" AS "examName", q."rating" FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId" WHERE ${conditions.join(' AND ')} ORDER BY ${column} ${direction(f)} LIMIT $${values.length - 1} OFFSET $${values.length}`,
     values
   )
   return {
@@ -200,7 +202,7 @@ export async function getExamOptions(size = 100) {
 
 export async function getExam(examSlug: string, includeUnapproved = false) {
   const exams = await query<SsrExam>(
-    `SELECT "id", COALESCE("slug", "id") AS "slug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = "exams"."creatorId"), "creatorId") AS "userSlug", "name", "questionCount", "approvedQuestionCount", "requiredScore", "rating" FROM "exams" WHERE ("slug" = $1 OR "id" = $1) AND ${deletedFilter} ${includeUnapproved ? '' : 'AND "ownerId" IS NULL'}`,
+    `SELECT "id", COALESCE("slug", "id") AS "slug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = "exams"."creatorId"), "creatorId") AS "userSlug", "name", "imageFilename", "questionCount", "approvedQuestionCount", "requiredScore", "rating" FROM "exams" WHERE ("slug" = $1 OR "id" = $1) AND ${deletedFilter} ${includeUnapproved ? '' : 'AND "ownerId" IS NULL'}`,
     [examSlug]
   )
   if (!exams[0]) return undefined
@@ -210,7 +212,7 @@ export async function getExam(examSlug: string, includeUnapproved = false) {
       [exams[0].id]
     ),
     query<SsrQuestion>(
-      `SELECT "id", COALESCE("slug", "id") AS "slug", "examId", "title", "difficulty", "type", "rating", COALESCE((SELECT u."slug" FROM "users" u INNER JOIN "exams" e ON e."creatorId" = u."id" WHERE e."id" = "questions"."examId"), (SELECT e."creatorId" FROM "exams" e WHERE e."id" = "questions"."examId")) AS "userSlug" FROM "questions" WHERE "examId" = $1 AND "deletedAt" IS NULL ${includeUnapproved ? '' : 'AND "ownerId" IS NULL'} ORDER BY "id" ASC`,
+      `SELECT "id", COALESCE("slug", "id") AS "slug", "examId", "title", "imageFilename", "difficulty", "type", "rating", COALESCE((SELECT u."slug" FROM "users" u INNER JOIN "exams" e ON e."creatorId" = u."id" WHERE e."id" = "questions"."examId"), (SELECT e."creatorId" FROM "exams" e WHERE e."id" = "questions"."examId")) AS "userSlug" FROM "questions" WHERE "examId" = $1 AND "deletedAt" IS NULL ${includeUnapproved ? '' : 'AND "ownerId" IS NULL'} ORDER BY "id" ASC`,
       [exams[0].id]
     )
   ])
@@ -223,7 +225,7 @@ export async function getQuestion(questionSlug: string, userId?: string, include
   const userJoin = userId ? ' LEFT JOIN "questionRatingMarks" m ON m."questionId" = q."id" AND m."creatorId" = $2' : ''
   if (userId) values.push(userId)
   const rows = await query<SsrQuestion & { examName?: string; examSlug?: string; userSlug?: string }>(
-    `SELECT q."id", COALESCE(q."slug", q."id") AS "slug", q."examId", q."title", q."difficulty", q."type", COALESCE(e."slug", e."id") AS "examSlug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = e."creatorId"), e."creatorId") AS "userSlug", e."name" AS "examName", q."rating"${userMark} FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId"${userJoin} WHERE (q."slug" = $1 OR q."id" = $1) AND q."deletedAt" IS NULL ${includeUnapproved ? '' : 'AND q."ownerId" IS NULL'}`,
+    `SELECT q."id", COALESCE(q."slug", q."id") AS "slug", q."examId", q."title", q."imageFilename", q."difficulty", q."type", COALESCE(e."slug", e."id") AS "examSlug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = e."creatorId"), e."creatorId") AS "userSlug", e."name" AS "examName", q."rating"${userMark} FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId"${userJoin} WHERE (q."slug" = $1 OR q."id" = $1) AND q."deletedAt" IS NULL ${includeUnapproved ? '' : 'AND q."ownerId" IS NULL'}`,
     values
   )
   if (!rows[0]) return undefined
@@ -232,7 +234,7 @@ export async function getQuestion(questionSlug: string, userId?: string, include
 }
 export async function getUsers(size = 50) {
   return query<SsrUser>(
-    `SELECT u."id", COALESCE(u."slug", u."id") AS "slug", u."name", u."createdAt", u."updatedAt", ${userRatingSelect} FROM "users" u WHERE u."deletedAt" IS NULL ORDER BY u."id" DESC LIMIT $1`,
+    `SELECT u."id", COALESCE(u."slug", u."id") AS "slug", u."name", u."imageFilename", u."createdAt", u."updatedAt", ${userRatingSelect} FROM "users" u WHERE u."deletedAt" IS NULL ORDER BY u."id" DESC LIMIT $1`,
     [size]
   )
 }
@@ -248,7 +250,7 @@ export async function getUserList(f: SsrListFilters = {}): Promise<SsrPage<SsrUs
   const column = sortColumn(f, { name: 'u."name"', createdAt: 'u."createdAt"' }, 'u."id"')
   values.push(size + 1, (page - 1) * size)
   const rows = await query<SsrUser>(
-    `SELECT u."id", COALESCE(u."slug", u."id") AS "slug", u."name", u."createdAt", u."updatedAt", ${userRatingSelect} FROM "users" u WHERE ${conditions.join(' AND ')} ORDER BY ${column} ${direction(f)} LIMIT $${values.length - 1} OFFSET $${values.length}`,
+    `SELECT u."id", COALESCE(u."slug", u."id") AS "slug", u."name", u."imageFilename", u."createdAt", u."updatedAt", ${userRatingSelect} FROM "users" u WHERE ${conditions.join(' AND ')} ORDER BY ${column} ${direction(f)} LIMIT $${values.length - 1} OFFSET $${values.length}`,
     values
   )
   return { data: rows.slice(0, size), page, size, hasNext: rows.length > size }
@@ -283,7 +285,7 @@ export async function getUserExamSessions(userId: string): Promise<SsrExamSessio
 export async function getUser(userSlug: string) {
   return (
     await query<SsrUser>(
-      `SELECT u."id", COALESCE(u."slug", u."id") AS "slug", u."name", u."email", u."permissions", u."createdAt", u."updatedAt", ${userRatingSelect} FROM "users" u WHERE (u."slug" = $1 OR u."id" = $1) AND u."deletedAt" IS NULL`,
+      `SELECT u."id", COALESCE(u."slug", u."id") AS "slug", u."name", u."imageFilename", u."email", u."permissions", u."createdAt", u."updatedAt", ${userRatingSelect} FROM "users" u WHERE (u."slug" = $1 OR u."id" = $1) AND u."deletedAt" IS NULL`,
       [userSlug]
     )
   )[0]

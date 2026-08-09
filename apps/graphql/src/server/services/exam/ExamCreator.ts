@@ -31,6 +31,7 @@ export default class ExamCreator {
     const exam = new Exam()
     exam.name = createExam.name
     exam.requiredScore = createExam.requiredScore
+    exam.imageFilename = createExam.imageFilename
     exam.creatorId = initiator.id
     exam.ownerId = initiator.id
     exam.createdAt = new Date()

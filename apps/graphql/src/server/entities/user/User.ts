@@ -25,6 +25,10 @@ export default class User extends Base {
   @Field({ nullable: true })
   public name?: string
 
+  @Column({ nullable: true })
+  @Field({ nullable: true })
+  public imageFilename?: string
+
   @Authorized(UserPermission.GetEmail)
   @Column({ unique: true, nullable: true })
   @Field({ nullable: true })

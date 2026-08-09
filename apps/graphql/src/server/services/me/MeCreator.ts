@@ -38,6 +38,8 @@ export default class MeCreator {
       user.name = createMe.name
     }
 
+    user.imageFilename = createMe.imageFilename
+
     user.createdAt = new Date()
 
     await this.entityManager.save<User>(user)

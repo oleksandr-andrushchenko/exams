@@ -4,4 +4,5 @@
 **/.next/
 apps/graphql/dist/
 node_modules/
+apps/ssr/public/uploads/
 *.js.map

@@ -14,6 +14,7 @@ type Activity {
 }
 
 input CreateExam {
+  imageFilename: String
   name: String!
   requiredScore: Int = 0
   tags: [String!] = []
@@ -30,6 +31,7 @@ input CreateExamSessionQuestionAnswer {
 
 input CreateMe {
   email: String!
+  imageFilename: String
   name: String
   password: String!
 }
@@ -38,12 +40,14 @@ input CreateQuestion {
   choices: [QuestionChoiceSchema!]
   difficulty: String!
   examId: ID!
+  imageFilename: String
   title: String!
   type: String!
 }
 
 input CreateUser {
   email: String!
+  imageFilename: String
   name: String
   password: String!
   permissions: [String!]! = ["regular"]
@@ -59,6 +63,7 @@ type Exam {
   createdAt: Timestamp!
   examSessionId: ObjectId
   id: ObjectId!
+  imageFilename: String
   isApproved: Boolean
   isCreator: Boolean
   isOwner: Boolean
@@ -109,11 +114,7 @@ type Mutation {
   createExam(createExam: CreateExam!): Exam!
   createExamSession(createExamSession: CreateExamSession!): ExamSession!
   createExamSessionCompletion(examSessionId: ID!): ExamSession!
-  createExamSessionQuestionAnswer(
-    createExamSessionQuestionAnswer: CreateExamSessionQuestionAnswer!
-    examSessionId: ID!
-    question: Int!
-  ): ExamSessionQuestionSchema!
+  createExamSessionQuestionAnswer(createExamSessionQuestionAnswer: CreateExamSessionQuestionAnswer!, examSessionId: ID!, question: Int!): ExamSessionQuestionSchema!
   createMe(createMe: CreateMe!): User!
   createQuestion(createQuestion: CreateQuestion!): Question!
   createUser(createUser: CreateUser!): User!
@@ -132,9 +133,7 @@ type Mutation {
   updateUser(updateUser: UpdateUser!, userId: ID!): User!
 }
 
-"""
-Object ID scalar type
-"""
+"""Object ID scalar type"""
 scalar ObjectId
 
 type PaginatedActivityList {
@@ -183,130 +182,27 @@ type PermissionSchema {
 }
 
 type Query {
-  activities(
-    cursor: String = "id"
-    nextCursor: String
-    order: String = "desc"
-    prevCursor: String
-    size: Int = 20
-  ): [Activity!]!
+  activities(cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, size: Int = 20): [Activity!]!
   currentExamSessionQuestion(examSessionId: ID!): ExamSessionQuestionSchema!
   currentExamSessions(examIds: [ID!]!): [ExamSession!]!
   exam(examId: ID!): Exam!
   examSession(examSessionId: ID!): ExamSession!
   examSessionQuestion(examSessionId: ID!, question: Int!): ExamSessionQuestionSchema!
-  examSessions(
-    completion: Boolean
-    cursor: String = "id"
-    examId: ID
-    nextCursor: String
-    order: String = "desc"
-    prevCursor: String
-    size: Int = 20
-    userId: ID
-  ): [ExamSession!]!
+  examSessions(completion: Boolean, cursor: String = "id", examId: ID, nextCursor: String, order: String = "desc", prevCursor: String, size: Int = 20, userId: ID): [ExamSession!]!
   examTags(search: String, size: Int = 20): [ExamTag!]!
-  exams(
-    approved: String
-    creator: String
-    cursor: String = "id"
-    nextCursor: String
-    order: String = "desc"
-    prevCursor: String
-    search: String
-    size: Int = 20
-    subscription: String
-    tag: String
-    userId: ID
-  ): [Exam!]!
+  exams(approved: String, creator: String, cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20, subscription: String, tag: String, userId: ID): [Exam!]!
   me: User!
-  paginatedActivities(
-    cursor: String = "id"
-    nextCursor: String
-    order: String = "desc"
-    prevCursor: String
-    size: Int = 20
-  ): PaginatedActivityList!
-  paginatedExamSessions(
-    completion: Boolean
-    cursor: String = "id"
-    examId: ID
-    nextCursor: String
-    order: String = "desc"
-    prevCursor: String
-    size: Int = 20
-    userId: ID
-  ): PaginatedExamSessions!
-  paginatedExams(
-    approved: String
-    creator: String
-    cursor: String = "id"
-    nextCursor: String
-    order: String = "desc"
-    prevCursor: String
-    search: String
-    size: Int = 20
-    subscription: String
-    tag: String
-    userId: ID
-  ): PaginatedExams!
-  paginatedQuestions(
-    approved: String
-    creator: String
-    cursor: String = "id"
-    difficulty: String
-    exam: ID
-    nextCursor: String
-    order: String = "desc"
-    prevCursor: String
-    search: String
-    size: Int = 20
-    subscription: String
-    type: String
-  ): PaginatedQuestions!
-  paginatedUsers(
-    cursor: String = "id"
-    nextCursor: String
-    order: String = "desc"
-    prevCursor: String
-    search: String
-    size: Int = 20
-  ): PaginatedUsers!
+  paginatedActivities(cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, size: Int = 20): PaginatedActivityList!
+  paginatedExamSessions(completion: Boolean, cursor: String = "id", examId: ID, nextCursor: String, order: String = "desc", prevCursor: String, size: Int = 20, userId: ID): PaginatedExamSessions!
+  paginatedExams(approved: String, creator: String, cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20, subscription: String, tag: String, userId: ID): PaginatedExams!
+  paginatedQuestions(approved: String, creator: String, cursor: String = "id", difficulty: String, exam: ID, nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20, subscription: String, type: String): PaginatedQuestions!
+  paginatedUsers(cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20): PaginatedUsers!
   permission: PermissionSchema!
   question(questionId: ID!): Question!
-  questions(
-    approved: String
-    creator: String
-    cursor: String = "id"
-    difficulty: String
-    exam: ID
-    nextCursor: String
-    order: String = "desc"
-    prevCursor: String
-    search: String
-    size: Int = 20
-    subscription: String
-    type: String
-  ): [Question!]!
+  questions(approved: String, creator: String, cursor: String = "id", difficulty: String, exam: ID, nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20, subscription: String, type: String): [Question!]!
   user(userId: ID!): User!
-  userExamSessions(
-    completion: Boolean
-    cursor: String = "id"
-    examId: ID
-    nextCursor: String
-    order: String = "desc"
-    prevCursor: String
-    size: Int = 20
-    userId: ID
-  ): [ExamSession!]!
-  users(
-    cursor: String = "id"
-    nextCursor: String
-    order: String = "desc"
-    prevCursor: String
-    search: String
-    size: Int = 20
-  ): [User!]!
+  userExamSessions(completion: Boolean, cursor: String = "id", examId: ID, nextCursor: String, order: String = "desc", prevCursor: String, size: Int = 20, userId: ID): [ExamSession!]!
+  users(cursor: String = "id", nextCursor: String, order: String = "desc", prevCursor: String, search: String, size: Int = 20): [User!]!
 }
 
 type Question {
@@ -316,6 +212,7 @@ type Question {
   exam: Exam!
   examId: ObjectId!
   id: ObjectId!
+  imageFilename: String
   isApproved: Boolean
   isCreator: Boolean
   isOwner: Boolean
@@ -356,6 +253,7 @@ type Token {
 }
 
 input UpdateExam {
+  imageFilename: String
   name: String
   requiredScore: Int
   tags: [String!]
@@ -363,6 +261,7 @@ input UpdateExam {
 
 input UpdateMe {
   email: String
+  imageFilename: String
   name: String
   password: String
 }
@@ -371,12 +270,14 @@ input UpdateQuestion {
   choices: [QuestionChoiceSchema!]
   difficulty: String
   examId: ID
+  imageFilename: String
   title: String
   type: String
 }
 
 input UpdateUser {
   email: String
+  imageFilename: String
   name: String
   password: String
   permissions: [String!]
@@ -386,6 +287,7 @@ type User {
   createdAt: Timestamp!
   email: String
   id: ObjectId!
+  imageFilename: String
   name: String
   ownerId: ObjectId
   permissions: [String!]

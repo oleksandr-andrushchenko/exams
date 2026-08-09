@@ -23,6 +23,10 @@ export default class Exam extends Base {
   public name: string
 
   @Column({ nullable: true })
+  @Field({ nullable: true })
+  public imageFilename?: string
+
+  @Column({ nullable: true })
   @Field((_type) => Int, { nullable: true })
   public questionCount?: number = 0
 

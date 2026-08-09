@@ -1,4 +1,4 @@
-import { IsEmail, IsStrongPassword, Length, ValidateIf } from 'class-validator'
+import { IsEmail, IsString, IsStrongPassword, Length, ValidateIf } from 'class-validator'
 import { Field, InputType } from 'type-graphql'
 
 @InputType()
@@ -7,6 +7,12 @@ export default class UpdateMe {
   @Length(2, 30)
   @Field({ nullable: true })
   public readonly name?: string
+
+  @ValidateIf((target) => 'imageFilename' in target)
+  @IsString()
+  @Length(1, 255)
+  @Field({ nullable: true })
+  public readonly imageFilename?: string
 
   @ValidateIf((target) => 'email' in target)
   @IsEmail()

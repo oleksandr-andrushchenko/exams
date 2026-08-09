@@ -1,4 +1,7 @@
+import { randomUUID } from 'node:crypto'
+import fs from 'node:fs'
 import express, { type Request, type Response } from 'express'
+import multer from 'multer'
 import * as jwt from 'jsonwebtoken'
 import path from 'node:path'
 import nunjucks from 'nunjucks'
@@ -24,6 +27,23 @@ const canViewUnapproved = (user: { permissions?: string[] } | undefined, permiss
 const templateDir = path.resolve(__dirname, '../templates')
 const sharedTemplateDir = path.resolve(__dirname, '../../../shared/templates')
 const publicDir = path.resolve(__dirname, '../public')
+const uploadsDir = path.join(publicDir, 'uploads')
+const imageExtensions: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/gif': '.gif',
+  'image/webp': '.webp'
+}
+fs.mkdirSync(uploadsDir, { recursive: true })
+const uploadImage = multer({
+  storage: multer.diskStorage({
+    destination: uploadsDir,
+    filename: (_request, file, callback) => callback(null, randomUUID() + imageExtensions[file.mimetype])
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_request, file, callback) =>
+    callback(null, Object.prototype.hasOwnProperty.call(imageExtensions, file.mimetype))
+}).single('image')
 
 nunjucks.configure([templateDir, sharedTemplateDir], {
   autoescape: true,
@@ -208,18 +228,27 @@ async function updateResource(
   const definitions: Record<string, { query: string; input: Record<string, unknown>; target: string }> = {
     user: {
       query: 'mutation Update($id: ID!, $input: UpdateUser!) { updateUser(userId: $id, updateUser: $input) { id } }',
-      input: { name: request.body.name, email: request.body.email },
+      input: { name: request.body.name, email: request.body.email, imageFilename: request.file?.filename },
       target: '/users/' + id
     },
     exam: {
       query: 'mutation Update($id: ID!, $input: UpdateExam!) { updateExam(examId: $id, updateExam: $input) { id } }',
-      input: { name: request.body.name, requiredScore: Number(request.body.requiredScore) },
+      input: {
+        name: request.body.name,
+        requiredScore: Number(request.body.requiredScore),
+        imageFilename: request.file?.filename
+      },
       target: '/exams/' + id
     },
     question: {
       query:
         'mutation Update($id: ID!, $input: UpdateQuestion!) { updateQuestion(questionId: $id, updateQuestion: $input) { id } }',
-      input: { title: request.body.title, difficulty: request.body.difficulty, type: request.body.type },
+      input: {
+        title: request.body.title,
+        difficulty: request.body.difficulty,
+        type: request.body.type,
+        imageFilename: request.file?.filename
+      },
       target: '/questions/' + id
     }
   }
@@ -241,19 +270,19 @@ async function updateResource(
 app.get('/users/:userId/edit', (request, response, next) =>
   renderEdit(request, response, 'user', request.params.userId).catch(next)
 )
-app.post('/users/:userId/edit', (request, response, next) =>
+app.post('/users/:userId/edit', uploadImage, (request, response, next) =>
   updateResource(request, response, 'user', request.params.userId).catch(next)
 )
 app.get('/exams/:examId/edit', (request, response, next) =>
   renderEdit(request, response, 'exam', request.params.examId).catch(next)
 )
-app.post('/exams/:examId/edit', (request, response, next) =>
+app.post('/exams/:examId/edit', uploadImage, (request, response, next) =>
   updateResource(request, response, 'exam', request.params.examId).catch(next)
 )
 app.get('/questions/:questionId/edit', (request, response, next) =>
   renderEdit(request, response, 'question', request.params.questionId).catch(next)
 )
-app.post('/questions/:questionId/edit', (request, response, next) =>
+app.post('/questions/:questionId/edit', uploadImage, (request, response, next) =>
   updateResource(request, response, 'question', request.params.questionId).catch(next)
 )
 app.get('/exams/:examId', async (request, response, next) => {
@@ -303,7 +332,11 @@ app.get('/tags/:slug', async (request, response, next) => {
 app.get('/login', (_request, response) => response.render('login.html', { title: 'Login' }))
 app.get('/register', (_request, response) => response.render('register.html', { title: 'Register' }))
 
-async function authenticate(response: Response, credentials: { email: string; password: string }, register: boolean) {
+async function authenticate(
+  response: Response,
+  credentials: { email: string; password: string; imageFilename?: string },
+  register: boolean
+) {
   const query = register
     ? 'mutation Register($createMe: CreateMe!, $credentials: Credentials!) { createMe(createMe: $createMe) { id } createAuthenticationToken(credentials: $credentials) { token } }'
     : 'mutation Login($email: String!, $password: String!) { createAuthenticationToken(credentials: { email: $email, password: $password }) { token } }'
@@ -342,9 +375,13 @@ app.post('/logout', (_request, response) => {
   response.clearCookie('authenticationToken')
   response.redirect('/')
 })
-app.post('/register', async (request, response) => {
+app.post('/register', uploadImage, async (request, response) => {
   try {
-    await authenticate(response, { email: request.body.email, password: request.body.password }, true)
+    await authenticate(
+      response,
+      { email: request.body.email, password: request.body.password, imageFilename: request.file?.filename },
+      true
+    )
     response.redirect('/')
   } catch (error) {
     response.status(400).render('register.html', {
