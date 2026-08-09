@@ -3,22 +3,20 @@
 <h1>Exams</h1>
 <div class="row g-5">
   <section class="col-12 col-lg-8">
-    <div class="d-flex flex-column gap-3">
+    <div class="list-group">
       {% for exam in page.data %}
-      <article class="card">
-        <div class="card-body">
-          <h2 class="h5"><a href="/{{ exam.userSlug }}/{{ exam.slug }}">{{ exam.name }}</a></h2>
-          <p class="text-secondary mb-0">
-            {{ exam.questionCount or 0 }} questions · required score {{ exam.requiredScore or 0 }}
-          </p>
-          <div class="rating-summary" aria-label="{{ exam.rating.averageMark or 0 }} out of 5">
-            <span class="rating-stars" style="--rating: {{ exam.rating.averageMark or 0 }}">★★★★★</span>
-            <span class="text-secondary"
-              >{{ (exam.rating.averageMark or 0) | round(1) }}/5 ({{ exam.rating.markCount or 0 }} votes)</span
-            >
-          </div>
+      <a href="/{{ exam.userSlug }}/{{ exam.slug }}" class="list-group-item list-group-item-action">
+        <h2 class="h5">{{ exam.name }}</h2>
+        <p class="text-secondary mb-0">
+          {{ exam.questionCount or 0 }} questions · required score {{ exam.requiredScore or 0 }}
+        </p>
+        <div class="rating-summary" aria-label="{{ exam.rating.averageMark or 0 }} out of 5">
+          <span class="rating-stars" style="--rating: {{ exam.rating.averageMark or 0 }}">★★★★★</span>
+          <span class="text-secondary"
+          >{{ (exam.rating.averageMark or 0) | round(1) }}/5 ({{ exam.rating.markCount or 0 }} votes)</span
+          >
         </div>
-      </article>
+      </a>
       {% else %}
       <p>No exams found.</p>
       {% endfor %}
@@ -28,17 +26,20 @@
   <aside class="col-12 col-lg-4 border-start-lg">
     <h2 class="h5">Filter exams</h2>
     <form method="get" action="/exams" class="d-flex flex-column gap-2">
-      <input class="form-control" name="search" value="{{ filters.search or '' }}" placeholder="Search" /><select
-        class="form-select"
-        name="sort"
-      >
-        <option value="">Newest</option>
-        <option value="name" {% if filters.sort == 'name' %}selected{% endif %}>Name</option></select
-      ><select class="form-select" name="order">
-        <option value="desc">Descending</option>
-        <option value="asc" {% if filters.order == 'asc' %}selected{% endif %}>Ascending</option></select
-      ><input class="form-control" name="page" type="number" min="1" value="{{ filters.page }}" /><button
-        class="btn btn-primary"
+      <input class="form-control" name="search" value="{{ filters.search or '' }}" placeholder="Search"/><select
+            class="form-select"
+            name="sort"
+    >
+      <option value="">Newest</option>
+      <option value="name" {% if filters.sort==
+      'name' %}selected{% endif %}>Name</option></select
+    ><select class="form-select" name="order">
+      <option value="desc">Descending</option>
+      <option value="asc" {% if filters.order==
+      'asc' %}selected{% endif %}>Ascending</option></select
+    ><input class="form-control" name="page" type="number" min="1" value="{{ filters.page }}"/>
+      <button
+              class="btn btn-primary"
       >
         Apply filters
       </button>

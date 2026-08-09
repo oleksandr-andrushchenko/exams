@@ -1,6 +1,10 @@
 body {
-  color: #172033;
+  font-family: 'Rethink Sans', sans-serif;
+  font-weight: 400;
+  font-optical-sizing: auto;
+  font-style: normal
 }
+
 h1,
 h2,
 h3,
@@ -12,30 +16,25 @@ h6,
 .h3,
 .h4,
 .h5,
-.h6,
-.navbar-brand {
-  font-family: 'Rethink Sans', sans-serif;
-  font-optical-sizing: auto;
-  font-weight: bold;
-  font-style: normal;
+.h6 {
+  font-weight: 700
 }
+
 .border-start-lg {
   border-left: 1px solid var(--bs-border-color);
 }
+
 @media (max-width: 991.98px) {
   .border-start-lg {
     border-left: 0;
   }
 }
-a {
-  text-underline-offset: 0.15em;
-}
 
 .rating-stars {
   background: linear-gradient(
-    90deg,
-    #f5b301 calc(var(--rating, 0) / 5 * 100%),
-    #d9dee7 calc(var(--rating, 0) / 5 * 100%)
+          90deg,
+          #f5b301 calc(var(--rating, 0) / 5 * 100%),
+          #d9dee7 calc(var(--rating, 0) / 5 * 100%)
   );
   background-clip: text;
   -webkit-background-clip: text;
@@ -43,9 +42,11 @@ a {
   letter-spacing: 0.08em;
   font-size: 1.25rem;
 }
+
 .rating-summary {
   margin-top: 0.25rem;
 }
+
 .rating-vote {
   display: flex;
   flex-wrap: wrap;
@@ -57,10 +58,12 @@ a {
   align-items: center;
   gap: 0.6rem;
 }
+
 .rating-control {
   display: inline-flex;
   align-items: center;
 }
+
 .rating-star {
   border: 0;
   background: transparent;
@@ -70,14 +73,30 @@ a {
   line-height: 1;
   padding: 0.1rem;
 }
+
 .rating-star.is-filled,
 .rating-star.is-preview {
   color: #f5b301;
 }
+
 .rating-star:focus-visible {
   outline: 2px solid var(--bs-primary);
   border-radius: 0.25rem;
 }
+
 .rating-user-vote {
   color: var(--bs-secondary-color);
+}
+
+.entity-image {
+  border-radius: 0.5rem;
+  height: 4rem;
+  object-fit: cover;
+  width: 4rem;
+}
+
+.entity-image-lg {
+  height: 12rem;
+  margin-bottom: 1rem;
+  width: 12rem;
 }

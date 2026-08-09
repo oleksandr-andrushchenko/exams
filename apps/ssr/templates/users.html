@@ -5,7 +5,7 @@
   <section class="col-12 col-lg-8">
     <div class="list-group">
       {% for user in page.data %}<a class="list-group-item list-group-item-action" href="/{{ user.slug }}"
-        ><strong>{{ user.name or user.id }}</strong
+        >{% if user.imageFilename %}<img class="entity-image" src="/static/uploads/{{ user.imageFilename }}" alt="{{ user.name or user.id }}" loading="lazy" />{% endif %}<strong>{{ user.name or user.id }}</strong
         ><span class="d-block small text-secondary">Joined {{ user.createdAt or '' }}</span
         ><span class="d-block"
           ><span class="rating-stars" style="--rating: {{ user.rating.averageMark or 0 }}">★★★★★</span>

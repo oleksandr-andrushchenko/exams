@@ -1,6 +1,6 @@
 {% extends "layout.html" %}{% block content %}{% if user %}
 <nav class="small mb-3"><a href="/">Home</a> / <a href="/users">Users</a> / {{ user.name or user.id }}</nav>
-<h1>{{ user.name or user.id }}</h1>
+{% if user.imageFilename %}<img class="entity-image entity-image-lg" src="/static/uploads/{{ user.imageFilename }}" alt="{{ user.name or user.id }}" />{% endif %}<h1>{{ user.name or user.id }}</h1>
 <div class="rating-summary" aria-label="{{ user.rating.averageMark or 0 }} out of 5">
   <span class="rating-stars" style="--rating: {{ user.rating.averageMark or 0 }}">★★★★★</span>
   <span class="text-secondary"
