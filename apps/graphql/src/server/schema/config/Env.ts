@@ -11,7 +11,7 @@ export default class Env {
   @IsEnum(['postgres'])
   public readonly DATABASE_TYPE: string
 
-  @IsUrl({ require_valid_protocol: false, host_whitelist: ['postgres'] })
+  @IsUrl({ require_valid_protocol: false, host_whitelist: ['postgres', 'localhost'] })
   public readonly DATABASE_URL: string
   public readonly DATABASE_SCHEMA: string
 
