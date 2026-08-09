@@ -28,6 +28,10 @@ Monorepo containing the ExamMe API, frontend, and local development environment.
   up                   Start local Docker containers
 ```
 
+## Favicons
+
+Use [RealFaviconGenerator](https://realfavicongenerator.net/) to generate favicon assets, then place the generated files in the root `static` directory and reference them from `web-lambda/templates/layout.html`.
+
 ## TODO
 
 - Implement live reload for application code and all local Lambda functions in the development environment.
