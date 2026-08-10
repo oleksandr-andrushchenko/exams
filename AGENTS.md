@@ -18,6 +18,10 @@
 
 - Serve web assets and store SSR uploads under the repository-level `static` directory; the web Lambda exposes it at `/static`.
 
+## UI styling
+
+- Prefer Bootstrap 5 components and utility classes for presentation changes before adding custom rules to `static/styles.css`.
+
 ## Repository knowledge
 
 - When work reveals useful, reusable repository knowledge, update this file with the new rule or guidance before handing off the work.

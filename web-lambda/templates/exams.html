@@ -1,39 +1,33 @@
 {% extends "layout.html" %}
 {% block content %}
-{% set breadcrumbs = [['Home', '/'], ['Exams', none]] %}
+{% set breadcrumbs = [["Home", "/"], ["Exams", none]] %}
 {% include "fragements/breadcrumbs.html" %}
 <h1>Latest Exams</h1>
 <p class="small text-secondary">Recently Added Exams</p>
-<div class="row g-5">
-  <section class="col col-12 col-lg-6 col-xl-8 d-flex flex-column gap-4">
-    <div class="list-group">
-      {% for exam in page.data %}
-      {% include "fragements/exam.html" %}
-      {% else %}
-      <p>No exams found.</p>
-      {% endfor %}
-    </div>
-    <p class="text-secondary mt-3">Page {{ page.page }}{% if page.hasNext %} · more available{% endif %}</p>
-  </section>
-  <aside class="col col-12 col-lg-6 col-xl-4 d-flex flex-column gap-4 border-start">
-    <section class="d-flex flex-column gap-3">
-      <h2 class="h5 mb-0 text-decoration-underline bi bi-filter">Filter exams</h2>
-      <form method="get" action="/exams" class="d-flex flex-column gap-2">
-        <input class="form-control" name="search" value="{{ filters.search or '' }}" placeholder="Search">
-        <select class="form-select" name="sort">
-          <option value="">Newest</option>
-          <option value="name" {% if filters.sort==
-          'name' %}selected{% endif %}>Name</option>
-        </select>
-        <select class="form-select" name="order">
-          <option value="desc">Descending</option>
-          <option value="asc" {% if filters.order==
-          'asc' %}selected{% endif %}>Ascending</option>
-        </select>
-        <input class="form-control" name="page" type="number" min="1" value="{{ filters.page }}">
-        <button class="btn btn-primary">Apply filters</button>
-      </form>
-    </section>
-  </aside>
-</div>
+<section class="d-flex flex-column gap-3 mb-4">
+  <h2 class="h5 mb-0 text-decoration-underline bi bi-filter">Filter exams</h2>
+  <form method="get" action="/exams" class="filter-form d-flex flex-wrap align-items-center gap-2">
+    <input class="form-control w-auto" name="search" value="{{ filters.search or "" }}" placeholder="Search">
+    <select class="form-select w-auto" name="sort">
+      <option value="">Newest</option>
+      <option value="name" {% if filters.sort == "name" %}selected{% endif %}>Name</option>
+    </select>
+    <select class="form-select w-auto" name="order">
+      <option value="desc">Descending</option>
+      <option value="asc" {% if filters.order == "asc" %}selected{% endif %}>Ascending</option>
+    </select>
+    <input class="form-control w-auto" name="page" type="number" min="1" value="{{ filters.page }}">
+    <button class="btn btn-primary align-self-start">Apply filters</button>
+  </form>
+</section>
+<section class="d-flex flex-column gap-4">
+  <div class="row g-3">
+    {% for exam in page.data %}
+    {% include "fragements/exam.html" %}
+    {% else %}
+    <p>No exams found.</p>
+    {% endfor %}
+  </div>
+  <p class="text-secondary mt-3">Page {{ page.page }}{% if page.hasNext %} · more available{% endif %}</p>
+</section>
 {% endblock %}

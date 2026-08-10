@@ -17,9 +17,9 @@
   <dd class="col-sm-9">{{ exam.approvedQuestionCount or 0 }}</dd>
 </dl>
 <h2 class="h4 mt-4">Questions</h2>
-<div class="list-group">
+<div class="d-flex flex-column gap-3">
   {% for question in exam.questions %}{% include "fragements/question.html" %}{% else %}
-  <div class="list-group-item">No questions found.</div>
+  <div class="card p-3">No questions found.</div>
   {% endfor %}
 </div>
 <h2 class="h4 mt-4">Topics</h2>

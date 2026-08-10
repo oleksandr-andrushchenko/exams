@@ -1,18 +1,29 @@
-<a class="list-group-item list-group-item-action" href="/{{ user.slug }}">
-  {% if user.imageFilename %}
-  <img
-    class="entity-image"
-    src="/static/{{ user.imageFilename }}"
-    alt="{{ user.name or user.id }}"
-    loading="lazy"
-  >
-  {% endif %}
-  <strong>{{ user.name or user.id }}</strong>
-  <span class="d-block small text-secondary">Joined {{ user.createdAt or '' }}</span>
-  <span class="d-block">
-    <span class="rating-stars" style="--rating: {{ user.rating.averageMark or 0 }}">★★★★★</span>
-    <span class="small text-secondary">
-      {{ (user.rating.averageMark or 0) | round(1) }}/5 ({{ user.rating.markCount or 0 }} votes)
-    </span>
-  </span>
-</a>
+{% set userColumns = columns or { md: 4 } %}
+<article class="col{% if userColumns.xs %}-{{ userColumns.xs }}{% else %}-12{% endif %}{% if userColumns.sm %} col-sm-{{ userColumns.sm }}{% endif %}{% if userColumns.md %} col-md-{{ userColumns.md }}{% endif %}{% if userColumns.lg %} col-lg-{{ userColumns.lg }}{% endif %}{% if userColumns.xl %} col-xl-{{ userColumns.xl }}{% endif %}{% if userColumns.xxl %} col-xxl-{{ userColumns.xxl }}{% endif %}">
+  <div class="user-item border rounded p-3 h-100">
+    <a class="d-flex align-items-start gap-3 text-decoration-none" href="/{{ user.slug }}">
+      {% if user.imageFilename %}
+      <img
+        class="rounded-circle object-fit-cover flex-shrink-0"
+        src="/static/{{ user.imageFilename }}"
+        alt="{{ user.name or user.id }}"
+        loading="lazy" width="64" height="64"
+      >
+      {% endif %}
+      <span class="d-flex min-w-0 flex-column gap-1">
+        <span class="h5 mb-0 text-body-emphasis text-break">{{ user.name or user.id }}</span>
+        <span class="small text-secondary">Joined {{ user.createdAt or "" }}</span>
+        <span class="rating-summary" aria-label="{{ user.rating.averageMark or 0 }} out of 5">
+          <span class="rating-stars" aria-hidden="true" style="--rating: {{ user.rating.averageMark or 0 }}">★★★★★</span>
+          <span class="small text-secondary">
+            {{ (user.rating.averageMark or 0) | round(1) }}/5 ({{ user.rating.markCount or 0 }} votes)
+          </span>
+        </span>
+        <span class="small text-secondary">
+          {{ user.createdExamCount or 0 }} exams · {{ user.createdQuestionCount or 0 }} questions ·
+          {{ user.examSessionCount or 0 }} sessions
+        </span>
+      </span>
+    </a>
+  </div>
+</article>

@@ -16,21 +16,21 @@
   >
 </div>
 <h2 class="h4 mt-4">Exams</h2>
-<div class="list-group">
+<div class="row g-3">
   {% for exam in exams.data %}{% include "fragements/exam.html" %}{% else %}
-  <div class="list-group-item">No exams.</div>
+  <div class="col-12"><div class="card p-3">No exams.</div></div>
   {% endfor %}
 </div>
 <h2 class="h4 mt-4">Exam sessions</h2>
-<div class="list-group">
+<div class="d-flex flex-column gap-3">
   {% for session in sessions %}
-  <div class="list-group-item">
+  <div class="card p-3">
     {{ session.exam.name if session.exam else session.examId }}<span class="d-block small text-secondary"
       >{{ session.answeredQuestionCount }}/{{ session.questionCount }} answered</span
     >
   </div>
   {% else %}
-  <div class="list-group-item">No exam sessions.</div>
+  <div class="card p-3">No exam sessions.</div>
   {% endfor %}
 </div>
 {% else %}
