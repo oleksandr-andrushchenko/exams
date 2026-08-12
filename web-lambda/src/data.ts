@@ -13,6 +13,7 @@ export type SsrExam = {
   rating?: SsrRating
   tags?: SsrTag[]
   questions?: SsrQuestion[]
+  creator?: SsrUser
 }
 export type SsrQuestion = {
   id: string
@@ -24,7 +25,18 @@ export type SsrQuestion = {
   type?: string
   rating?: SsrRating
   userMark?: number
-  exam?: { id: string; slug: string; userSlug: string; name: string }
+  exam?: {
+    id: string
+    slug: string
+    userSlug: string
+    name: string
+    imageFilename?: string
+    questionCount?: number
+    approvedQuestionCount?: number
+    requiredScore?: number
+    rating?: SsrRating
+  }
+  creator?: SsrUser
 }
 export type SsrTag = { id: string; name: string; slug: string }
 export type SsrUser = {
@@ -244,7 +256,7 @@ export async function getExam(examSlug: string, includeUnapproved = false) {
       [exams[0].id]
     )
   ])
-  return { ...exams[0], tags, questions }
+  return { ...exams[0], tags, questions, creator: await getUser(exams[0].userSlug) }
 }
 
 export async function getQuestion(questionSlug: string, userId?: string, includeUnapproved = false) {
@@ -252,13 +264,50 @@ export async function getQuestion(questionSlug: string, userId?: string, include
   const userMark = userId ? ', m."mark" AS "userMark"' : ''
   const userJoin = userId ? ' LEFT JOIN "questionRatingMarks" m ON m."questionId" = q."id" AND m."creatorId" = $2' : ''
   if (userId) values.push(userId)
-  const rows = await query<SsrQuestion & { examName?: string; examSlug?: string; userSlug?: string }>(
-    `SELECT q."id", COALESCE(q."slug", q."id") AS "slug", q."examId", q."title", q."imageFilename", q."difficulty", q."type", COALESCE(e."slug", e."id") AS "examSlug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = e."creatorId"), e."creatorId") AS "userSlug", e."name" AS "examName", q."rating"${userMark} FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId"${userJoin} WHERE (q."slug" = $1 OR q."id" = $1) AND q."deletedAt" IS NULL ${includeUnapproved ? '' : 'AND q."ownerId" IS NULL'}`,
+  const rows = await query<
+    SsrQuestion & {
+      examName?: string
+      examSlug?: string
+      userSlug?: string
+      examImageFilename?: string
+      examQuestionCount?: number
+      examApprovedQuestionCount?: number
+      examRequiredScore?: number
+      examRating?: SsrRating
+    }
+  >(
+    `SELECT q."id", COALESCE(q."slug", q."id") AS "slug", q."examId", q."title", q."imageFilename", q."difficulty", q."type", COALESCE(e."slug", e."id") AS "examSlug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = e."creatorId"), e."creatorId") AS "userSlug", e."name" AS "examName", e."imageFilename" AS "examImageFilename", e."questionCount" AS "examQuestionCount", e."approvedQuestionCount" AS "examApprovedQuestionCount", e."requiredScore" AS "examRequiredScore", e."rating" AS "examRating", q."rating"${userMark} FROM "questions" q LEFT JOIN "exams" e ON e."id" = q."examId"${userJoin} WHERE (q."slug" = $1 OR q."id" = $1) AND q."deletedAt" IS NULL ${includeUnapproved ? '' : 'AND q."ownerId" IS NULL'}`,
     values
   )
   if (!rows[0]) return undefined
-  const { examName, examSlug, userSlug, ...q } = rows[0]
-  return { ...q, exam: examName ? { id: q.examId!, slug: examSlug!, userSlug: userSlug!, name: examName } : undefined }
+  const {
+    examName,
+    examSlug,
+    userSlug,
+    examImageFilename,
+    examQuestionCount,
+    examApprovedQuestionCount,
+    examRequiredScore,
+    examRating,
+    ...q
+  } = rows[0]
+  return {
+    ...q,
+    creator: userSlug ? await getUser(userSlug) : undefined,
+    exam: examName
+      ? {
+          id: q.examId!,
+          slug: examSlug!,
+          userSlug: userSlug!,
+          name: examName,
+          imageFilename: examImageFilename,
+          questionCount: examQuestionCount,
+          approvedQuestionCount: examApprovedQuestionCount,
+          requiredScore: examRequiredScore,
+          rating: examRating
+        }
+      : undefined
+  }
 }
 export async function getUsers(size = 50) {
   return query<SsrUser>(

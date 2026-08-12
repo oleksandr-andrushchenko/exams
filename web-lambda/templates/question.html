@@ -26,7 +26,14 @@
 {% set rating = question.rating %}{% set ratingClass = "fs-4" %}{% include "fragments/rating.html" %}
 <p><a href="/login">Log in</a> to rate this question.</p>
 {% endif %}{% if question.exam %}
-<p>Exam: <a href="/{{ question.exam.userSlug }}/{{ question.exam.slug }}">{{ question.exam.name }}</a></p>
+{% if question.creator %}
+<h2 class="h4 mt-4">Author</h2>
+{% set user = question.creator %}{% include "fragments/user.html" %}
+{% endif %}
+{% if question.exam %}
+<h2 class="h4 mt-4">Exam</h2>
+{% set exam = question.exam %}{% include "fragments/exam.html" %}
+{% endif %}
 {% endif %}
 <p class="text-secondary">{{ question.difficulty or '' }} {{ question.type or '' }}</p>
 {% else %}
