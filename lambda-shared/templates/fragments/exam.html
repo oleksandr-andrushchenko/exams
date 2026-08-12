@@ -10,12 +10,7 @@
       <h2 class="h5 card-title mb-0 text-break">
         <a class="link-body-emphasis text-decoration-none" href="/{{ exam.userSlug }}/{{ exam.slug }}">{{ exam.name }}</a>
       </h2>
-      <div class="rating-summary" aria-label="{{ exam.rating.averageMark or 0 }} out of 5">
-        <span class="rating-stars" aria-hidden="true" style="--rating: {{ exam.rating.averageMark or 0 }}">★★★★★</span>
-        <span class="small text-secondary">
-          {{ (exam.rating.averageMark or 0) | round(1) }}/5 ({{ exam.rating.markCount or 0 }} votes)
-        </span>
-      </div>
+      {% set rating = exam.rating %}{% set ratingClass = "" %}{% include "fragments/rating.html" %}
       <div class="small text-secondary">
         <i class="bi bi-journal-text" aria-hidden="true"></i>
         {{ exam.questionCount or 0 }} questions

@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block content %}
 {% set breadcrumbs = [["Home", "/"], ["Questions", none]] %}
-{% include "fragements/breadcrumbs.html" %}
+{% include "fragments/breadcrumbs.html" %}
 <h1>Latest Questions</h1>
 <p class="small text-secondary">Recently Added Questions</p>
 <section class="d-flex flex-column gap-3 mb-4">
@@ -25,7 +25,7 @@
 <section class="d-flex flex-column gap-4">
   <div class="d-flex flex-column gap-3">
     {% for question in page.data %}
-    {% include "fragements/question.html" %}
+    {% include "fragments/question.html" %}
     {% else %}
     <div class="card p-3">No questions found.</div>
     {% endfor %}

@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block content %}
 {% set breadcrumbs = [["Home", "/"], ["Exams", none]] %}
-{% include "fragements/breadcrumbs.html" %}
+{% include "fragments/breadcrumbs.html" %}
 <h1>Latest Exams</h1>
 <p class="small text-secondary">Recently Added Exams</p>
 <section class="d-flex flex-column gap-3 mb-4">
@@ -23,7 +23,7 @@
 <section class="d-flex flex-column gap-4">
   <div class="row g-3">
     {% for exam in page.data %}
-    {% include "fragements/exam.html" %}
+    {% include "fragments/exam.html" %}
     {% else %}
     <p>No exams found.</p>
     {% endfor %}

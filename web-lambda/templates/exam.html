@@ -1,14 +1,9 @@
 {% extends "layout.html" %}{% block content %}{% if exam %}
 {% set breadcrumbs = [['Home', '/'], ['Exams', '/exams'], [exam.name, none]] %}
-{% include "fragements/breadcrumbs.html" %}
+{% include "fragments/breadcrumbs.html" %}
 {% if exam.imageFilename %}<img alt="{{ exam.name }}" class="entity-image entity-image-lg"
                                 src="/static/{{ exam.imageFilename }}"/>{% endif %}<h1>{{ exam.name }}</h1>
-<div aria-label="{{ exam.rating.averageMark or 0 }} out of 5" class="rating-summary">
-  <span class="rating-stars" style="--rating: {{ exam.rating.averageMark or 0 }}">★★★★★</span>
-  <span class="text-secondary"
-  >{{ (exam.rating.averageMark or 0) | round(1) }}/5 ({{ exam.rating.markCount or 0 }} votes)</span
-  >
-</div>
+{% set rating = exam.rating %}{% set ratingClass = "" %}{% include "fragments/rating.html" %}
 <p class="lead">{{ exam.questionCount or 0 }} questions</p>
 <dl class="row">
   <dt class="col-sm-3">Required score</dt>
@@ -18,7 +13,7 @@
 </dl>
 <h2 class="h4 mt-4">Questions</h2>
 <div class="d-flex flex-column gap-3">
-  {% for question in exam.questions %}{% include "fragements/question.html" %}{% else %}
+  {% for question in exam.questions %}{% include "fragments/question.html" %}{% else %}
   <div class="card p-3">No questions found.</div>
   {% endfor %}
 </div>

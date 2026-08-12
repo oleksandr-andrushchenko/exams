@@ -9,7 +9,7 @@
 {% else %}
 {% set breadcrumbs = [['Home', '/'], ['Exams', '/exams'], [question.title, none]] %}
 {% endif %}
-{% include "fragements/breadcrumbs.html" %}
+{% include "fragments/breadcrumbs.html" %}
 {% if question.imageFilename %}
 <img
   class="entity-image entity-image-lg"
@@ -20,9 +20,10 @@
 <h1>{{ question.title }}</h1>
 {% if currentUser %}
 <form class="rating-form mb-4" method="post" action="/questions/{{ question.id }}/rating">
-  {% set rating = question.rating %}{% set userMark = question.userMark %}{% include "rating.html" %}
+  {% set rating = question.rating %}{% set userMark = question.userMark %}{% include "fragments/rating-form.html" %}
 </form>
 {% else %}
+{% set rating = question.rating %}{% set ratingClass = "fs-4" %}{% include "fragments/rating.html" %}
 <p><a href="/login">Log in</a> to rate this question.</p>
 {% endif %}{% if question.exam %}
 <p>Exam: <a href="/{{ question.exam.userSlug }}/{{ question.exam.slug }}">{{ question.exam.name }}</a></p>

@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block content %}
 {% set breadcrumbs = [["Home", "/"], ["Users", none]] %}
-{% include "fragements/breadcrumbs.html" %}
+{% include "fragments/breadcrumbs.html" %}
 <h1>Recently Joined Users</h1>
 <p class="small text-secondary">Recently Joined Users</p>
 <section class="d-flex flex-column gap-3 mb-4">
@@ -24,7 +24,7 @@
   <div class="row g-3">
     {% set columns = { md: 4 } %}
     {% for user in page.data %}
-    {% include "fragements/user.html" %}
+    {% include "fragments/user.html" %}
     {% else %}
     <div class="col-12">
       <div class="card p-3">No users found.</div>

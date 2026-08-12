@@ -7,7 +7,10 @@ type RatingTemplateData = {
   rating: { averageMark?: number; markCount?: number }
   userMark?: number
 }
-const template = fs.readFileSync(path.resolve(process.cwd(), 'lambda-shared/templates/rating.html'), 'utf8')
+const template = fs.readFileSync(
+  path.resolve(process.cwd(), 'lambda-shared/templates/fragments/rating-form.html'),
+  'utf8'
+)
 export default class RatingTemplateRenderer {
   public render(data: RatingTemplateData): string {
     return nunjucks.renderString(template, data)

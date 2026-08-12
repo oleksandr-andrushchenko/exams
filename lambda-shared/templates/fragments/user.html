@@ -13,12 +13,7 @@
       <span class="d-flex min-w-0 flex-column gap-1">
         <span class="h5 mb-0 text-body-emphasis text-break">{{ user.name or user.id }}</span>
         <span class="small text-secondary">Joined {{ user.createdAt or "" }}</span>
-        <span class="rating-summary" aria-label="{{ user.rating.averageMark or 0 }} out of 5">
-          <span class="rating-stars" aria-hidden="true" style="--rating: {{ user.rating.averageMark or 0 }}">★★★★★</span>
-          <span class="small text-secondary">
-            {{ (user.rating.averageMark or 0) | round(1) }}/5 ({{ user.rating.markCount or 0 }} votes)
-          </span>
-        </span>
+        {% set rating = user.rating %}{% set ratingClass = "" %}{% include "fragments/rating.html" %}
         <span class="small text-secondary">
           {{ user.createdExamCount or 0 }} exams · {{ user.createdQuestionCount or 0 }} questions ·
           {{ user.examSessionCount or 0 }} sessions

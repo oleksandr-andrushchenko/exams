@@ -23,7 +23,7 @@
     <div class="row g-3">
       {% set columns = { md: 3 } %}
       {% for user in data.popularUsers %}
-      {% include "fragements/user.html" %}
+      {% include "fragments/user.html" %}
       {% else %}
       <div class="col-12">
         <div class="card p-3">No users found.</div>
@@ -51,7 +51,7 @@
     <div class="row g-3">
       {% set columns = { md: 3 } %}
       {% for exam in data.popularExams %}
-      {% include "fragements/exam.html" %}
+      {% include "fragments/exam.html" %}
       {% else %}
       <div class="col-12">
         <div class="card p-3">No exams found.</div>
@@ -64,7 +64,7 @@
     <h2 class="h5 mb-0 text-decoration-underline">Latest exams</h2>
     <div class="row g-3">
       {% for exam in data.exams %}
-      {% include "fragements/exam.html" %}
+      {% include "fragments/exam.html" %}
       {% else %}
       <div class="col-12">
         <div class="card p-3">No exams found.</div>
@@ -77,7 +77,7 @@
     <h2 class="h5 mb-0"><a href="/questions" class="link-body-emphasis">Latest questions</a></h2>
     <div class="d-flex flex-column gap-3">
       {% for question in data.questions %}
-      {% include "fragements/question.html" %}
+      {% include "fragments/question.html" %}
       {% else %}
       <div class="card p-3">No questions found.</div>
       {% endfor %}
@@ -88,7 +88,7 @@
     <h2 class="h5 mb-0"><a href="/questions" class="link-body-emphasis">Popular questions</a></h2>
     <div class="d-flex flex-column gap-3">
       {% for question in data.popularQuestions %}
-      {% include "fragements/question.html" %}
+      {% include "fragments/question.html" %}
       {% else %}
       <div class="card p-3">No questions found.</div>
       {% endfor %}

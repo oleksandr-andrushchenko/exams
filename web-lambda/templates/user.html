@@ -1,6 +1,6 @@
 {% extends "layout.html" %}{% block content %}{% if user %}
 {% set breadcrumbs = [['Home', '/'], ['Users', '/users'], [user.name or user.id, none]] %}
-{% include "fragements/breadcrumbs.html" %}
+{% include "fragments/breadcrumbs.html" %}
 {% if user.imageFilename %}
 <img
   class="entity-image entity-image-lg"
@@ -9,15 +9,10 @@
 />
 {% endif %}
 <h1>{{ user.name or user.id }}</h1>
-<div class="rating-summary" aria-label="{{ user.rating.averageMark or 0 }} out of 5">
-  <span class="rating-stars" style="--rating: {{ user.rating.averageMark or 0 }}">★★★★★</span>
-  <span class="text-secondary"
-    >{{ (user.rating.averageMark or 0) | round(1) }}/5 ({{ user.rating.markCount or 0 }} votes)</span
-  >
-</div>
+{% set rating = user.rating %}{% set ratingClass = "" %}{% include "fragments/rating.html" %}
 <h2 class="h4 mt-4">Exams</h2>
 <div class="row g-3">
-  {% for exam in exams.data %}{% include "fragements/exam.html" %}{% else %}
+  {% for exam in exams.data %}{% include "fragments/exam.html" %}{% else %}
   <div class="col-12"><div class="card p-3">No exams.</div></div>
   {% endfor %}
 </div>

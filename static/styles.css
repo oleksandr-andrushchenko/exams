@@ -30,23 +30,6 @@ h6,
   }
 }
 
-.rating-stars {
-  background: linear-gradient(
-    90deg,
-    #f5b301 calc(var(--rating, 0) / 5 * 100%),
-    #d9dee7 calc(var(--rating, 0) / 5 * 100%)
-  );
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
-  letter-spacing: 0.08em;
-  font-size: 1.25rem;
-}
-
-.rating-summary {
-  margin-top: 0.25rem;
-}
-
 .rating-vote {
   display: flex;
   flex-wrap: wrap;
