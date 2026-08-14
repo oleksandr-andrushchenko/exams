@@ -3,6 +3,7 @@
 # Generated server and Next output
 **/.next/
 api-lambda/dist/
+web-lambda/dist/
 node_modules/
 static/*
 !static/styles.css
