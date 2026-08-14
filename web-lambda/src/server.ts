@@ -55,6 +55,7 @@ app.use((request, response, next) => {
   response.locals.siteDescription = 'Practice exams and explore questions.'
   response.locals.requestPath = request.path
   response.locals.query = request.query
+  response.locals.canEdit = (permission: string) => canViewUnapproved(response.locals.currentUser, permission)
   next()
 })
 app.use(async (request, response, next) => {
@@ -78,6 +79,8 @@ app.use(async (request, response, next) => {
   next()
 })
 
+const redirectPath = (value: unknown, fallback = '/') =>
+  typeof value === 'string' && value.startsWith('/') && !value.startsWith('//') ? value : fallback
 const number = (value: unknown, fallback: number) => {
   const parsed = Number(value)
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback
@@ -283,6 +286,57 @@ app.get('/questions/:questionId/edit', (request, response, next) =>
 app.post('/questions/:questionId/edit', uploadImage, (request, response, next) =>
   updateResource(request, response, 'question', request.params.questionId).catch(next)
 )
+app.get('/exams/new', (request, response) => {
+  if (!response.locals.currentUser) {
+    response.redirect('/login?redirect=' + encodeURIComponent('/exams/new'))
+    return
+  }
+  response.render('create-exam.html', { title: 'Create exam' })
+})
+
+app.post('/exams/new', uploadImage, async (request, response) => {
+  if (!response.locals.currentUser) {
+    response.redirect('/login?redirect=' + encodeURIComponent('/exams/new'))
+    return
+  }
+
+  const token = request.headers.cookie
+    ?.split(';')
+    .map((cookie) => cookie.trim())
+    .find((cookie) => cookie.startsWith('authenticationToken='))
+    ?.slice('authenticationToken='.length)
+  try {
+    const result = await fetch(process.env.GRAPHQL_URL || 'http://localhost:8080/graphql', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
+      body: JSON.stringify({
+        query: 'mutation CreateExam($input: CreateExam!) { createExam(createExam: $input) { id slug } }',
+        variables: {
+          input: {
+            name: request.body.name,
+            requiredScore: Number(request.body.requiredScore || 0),
+            imageFilename: request.file?.filename
+          }
+        }
+      })
+    })
+    const payload = (await result.json()) as {
+      data?: { createExam?: { slug?: string } }
+      errors?: Array<{ message?: string }>
+    }
+    if (!result.ok || payload.errors?.length || !payload.data?.createExam?.slug) {
+      throw new Error(payload.errors?.[0]?.message || 'Unable to create exam')
+    }
+    response.redirect('/' + response.locals.currentUser.slug + '/' + payload.data.createExam.slug)
+  } catch (error) {
+    response.status(400).render('create-exam.html', {
+      title: 'Create exam',
+      error: error instanceof Error ? error.message : 'Unable to create exam',
+      exam: { name: request.body.name, requiredScore: request.body.requiredScore }
+    })
+  }
+})
+
 app.get('/exams/:examId', async (request, response, next) => {
   try {
     const exam = await getExam(request.params.examId, canViewUnapproved(response.locals.currentUser, 'getExam'))
@@ -327,18 +381,20 @@ app.get('/tags/:slug', async (request, response, next) => {
     next(error)
   }
 })
-app.get('/login', async (_request, response) => {
+app.get('/login', async (request, response) => {
+  const target = redirectPath(request.query.redirect)
   if (!isDevelopmentEnvironment()) {
-    response.render('login.html', { title: 'Login' })
+    response.render('login.html', { title: 'Login', redirect: target })
     return
   }
 
   try {
     await authenticate(response, { email: 'root@examme.test', password: 'Root123!' }, false)
-    response.redirect('/')
+    response.redirect(target)
   } catch (error) {
     response.status(500).render('login.html', {
       title: 'Login',
+      redirect: target,
       error: error instanceof Error ? error.message : 'Development authentication failed'
     })
   }
@@ -374,12 +430,14 @@ async function authenticate(
 }
 
 app.post('/login', async (request, response) => {
+  const target = redirectPath(request.body.redirect)
   try {
     await authenticate(response, { email: request.body.email, password: request.body.password }, false)
-    response.redirect('/')
+    response.redirect(target)
   } catch (error) {
     response.status(401).render('login.html', {
       title: 'Login',
+      redirect: target,
       error: error instanceof Error ? error.message : 'Authentication failed'
     })
   }

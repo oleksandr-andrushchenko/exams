@@ -3,6 +3,8 @@
 {% include "fragments/breadcrumbs.html" %}
 {% if exam.imageFilename %}<img alt="{{ exam.name }}" class="entity-image entity-image-lg"
                                 src="/static/{{ exam.imageFilename }}"/>{% endif %}<h1>{{ exam.name }}</h1>
+{% if canEdit("updateExam") %}<a class="btn btn-outline-primary mb-3" href="/exams/{{ exam.id }}/edit">Edit exam</a>{% endif %}
+{% if currentUser and exam.ownerId and currentUser.id == exam.ownerId %}<a class="btn btn-primary mb-3" href="/questions/create?examId={{ exam.id }}">Add question</a>{% endif %}
 {% set rating = exam.rating %}{% set ratingClass = "" %}{% include "fragments/rating.html" %}
 {% if exam.creator %}
 <h2 class="h4 mt-4">Author</h2>

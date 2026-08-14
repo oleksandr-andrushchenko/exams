@@ -18,6 +18,7 @@
 />
 {% endif %}
 <h1>{{ question.title }}</h1>
+{% if canEdit("updateQuestion") %}<a class="btn btn-outline-primary mb-3" href="/questions/{{ question.id }}/edit">Edit question</a>{% endif %}
 {% if currentUser %}
 <form class="rating-form mb-4" method="post" action="/questions/{{ question.id }}/rating">
   {% set rating = question.rating %}{% set userMark = question.userMark %}{% include "fragments/rating-form.html" %}

@@ -14,6 +14,7 @@ export type SsrExam = {
   tags?: SsrTag[]
   questions?: SsrQuestion[]
   creator?: SsrUser
+  ownerId?: string
 }
 export type SsrQuestion = {
   id: string
@@ -242,7 +243,7 @@ export async function getExamOptions(size = 100) {
 
 export async function getExam(examSlug: string, includeUnapproved = false) {
   const exams = await query<SsrExam>(
-    `SELECT "id", COALESCE("slug", "id") AS "slug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = "exams"."creatorId"), "creatorId") AS "userSlug", "name", "imageFilename", "questionCount", "approvedQuestionCount", "requiredScore", "rating", ${examTagsSelect} FROM "exams" WHERE ("slug" = $1 OR "id" = $1) AND ${deletedFilter} ${includeUnapproved ? '' : 'AND "ownerId" IS NULL'}`,
+    `SELECT "id", COALESCE("slug", "id") AS "slug", COALESCE((SELECT u."slug" FROM "users" u WHERE u."id" = "exams"."creatorId"), "creatorId") AS "userSlug", "name", "imageFilename", "questionCount", "approvedQuestionCount", "requiredScore", "rating", "ownerId", ${examTagsSelect} FROM "exams" WHERE ("slug" = $1 OR "id" = $1) AND ${deletedFilter} ${includeUnapproved ? '' : 'AND "ownerId" IS NULL'}`,
     [examSlug]
   )
   if (!exams[0]) return undefined

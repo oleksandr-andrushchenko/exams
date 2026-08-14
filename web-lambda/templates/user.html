@@ -9,6 +9,7 @@
 />
 {% endif %}
 <h1>{{ user.name or user.id }}</h1>
+{% if canEdit("updateUser") %}<a class="btn btn-outline-primary mb-3" href="/users/{{ user.id }}/edit">Edit user</a>{% endif %}
 {% set rating = user.rating %}{% set ratingClass = "" %}{% include "fragments/rating.html" %}
 <h2 class="h4 mt-4">Exams</h2>
 <div class="row g-3">
