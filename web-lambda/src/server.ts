@@ -327,7 +327,22 @@ app.get('/tags/:slug', async (request, response, next) => {
     next(error)
   }
 })
-app.get('/login', (_request, response) => response.render('login.html', { title: 'Login' }))
+app.get('/login', async (_request, response) => {
+  if (!isDevelopmentEnvironment()) {
+    response.render('login.html', { title: 'Login' })
+    return
+  }
+
+  try {
+    await authenticate(response, { email: 'root@examme.test', password: 'Root123!' }, false)
+    response.redirect('/')
+  } catch (error) {
+    response.status(500).render('login.html', {
+      title: 'Login',
+      error: error instanceof Error ? error.message : 'Development authentication failed'
+    })
+  }
+})
 app.get('/register', (_request, response) => response.render('register.html', { title: 'Register' }))
 
 async function authenticate(
