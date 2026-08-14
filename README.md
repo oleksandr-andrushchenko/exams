@@ -14,6 +14,11 @@ Monorepo containing the ExamMe API, frontend, and local development environment.
 2. Copy `.env.example` to `.env` and configure it if needed.
 3. Run `make up` from the repository root.
 
+## Environment variables
+
+- `ENV`: application environment. Available values are `development` (default), `test`, and `production`.
+- `STAGE`: deployment stage. Available values are `local` (default), `development`, `staging`, and `production`.
+
 ## Available commands
 
 ```

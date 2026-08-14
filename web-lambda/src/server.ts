@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { isDevelopmentEnvironment } from './environment'
 import express, { type Request, type Response } from 'express'
 import multer from 'multer'
 import * as jwt from 'jsonwebtoken'
@@ -434,7 +435,7 @@ app.use((error: Error, _request: Request, response: Response, _next: express.Nex
   console.error('SSR request failed', error)
   response.status(500).render('error.html', {
     title: 'Internal Server Error',
-    error: process.env.NODE_ENV === 'production' ? undefined : error.message
+    error: isDevelopmentEnvironment() ? error.message : undefined
   })
 })
 

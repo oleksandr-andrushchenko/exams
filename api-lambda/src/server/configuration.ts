@@ -6,6 +6,7 @@ import EnvValidator from './services/config/EnvValidator'
 import ExamPermission from './enums/exam/ExamPermission'
 import QuestionPermission from './enums/question/QuestionPermission'
 import ExamSessionPermission from './enums/examSession/ExamSessionPermission'
+import { isDevelopmentEnvironment } from './services/config/Environment'
 
 const env = new Env(process.env)
 EnvValidator.validateEnv(env)
@@ -42,8 +43,8 @@ export default {
   },
   logger: {
     enabled: environment !== 'test',
-    level: environment === 'development' ? 'debug' : 'info',
-    format: environment === 'development' ? 'dev' : 'tiny'
+    level: isDevelopmentEnvironment(environment) ? 'debug' : 'info',
+    format: isDevelopmentEnvironment(environment) ? 'dev' : 'tiny'
   },
   db: {
     type: env.DATABASE_TYPE as 'postgres',
@@ -51,7 +52,7 @@ export default {
     schema: env.DATABASE_SCHEMA || (environment === 'test' ? 'test' : 'public'),
     dropSchema: environment === 'test',
     synchronize: true,
-    logging: environment === 'development'
+    logging: isDevelopmentEnvironment(environment)
   },
   jwt: {
     secret: 'any'

@@ -10,7 +10,7 @@ services:
     env_file:
       - .env
     environment:
-      NODE_ENV: development
+      NODE_ENV: ${ENV:-development}
       PORT: 8080
       DATABASE_TYPE: postgres
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/examme
@@ -30,7 +30,7 @@ services:
     env_file:
       - .env
     environment:
-      NODE_ENV: development
+      NODE_ENV: ${ENV:-development}
       PORT: 3000
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/examme
       GRAPHQL_URL: http://graphql:8080/graphql
