@@ -5,6 +5,7 @@ export const globalSetup = async () => {
   globalThis.framework = new TestFramework()
 
   await globalThis.framework.serverUp()
+  await globalThis.framework.seedDemoData()
 }
 
 export const globalTeardown = async () => {

@@ -46,7 +46,7 @@ describe('Get questions', () => {
     expect(res.body.data.questions).toEqual([])
   })
   test('Not empty by exam (ownership)', async () => {
-    await framework.clear()
+    await framework.clear(Question)
     const user = await framework.fixture<User>(User)
     const token = (await framework.auth(user)).token
     const exam = await framework.fixture<Exam>(Exam, { creatorId: user.id })

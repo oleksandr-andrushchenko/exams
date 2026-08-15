@@ -1,4 +1,4 @@
-import { describe, expect, test } from '@jest/globals'
+import { beforeAll, describe, expect, test } from '@jest/globals'
 import request from 'supertest'
 import User from '../../../../api-lambda/src/server/entities/user/User'
 import ExamSession from '../../../../api-lambda/src/server/entities/examSession/ExamSession'
@@ -10,6 +10,13 @@ import GetExamSessions from '../../../../api-lambda/src/server/schema/examSessio
 import TestFramework from '../../TestFramework'
 
 const framework: TestFramework = globalThis.framework
+
+let validationToken: string
+
+beforeAll(async () => {
+  const user = await framework.fixture<User>(User)
+  validationToken = (await framework.auth(user)).token
+})
 
 describe('Get examSessions', () => {
   test('Unauthorized', async () => {
@@ -30,12 +37,10 @@ describe('Get examSessions', () => {
     { case: 'invalid order type', query: { order: 1 } },
     { case: 'not allowed order', query: { order: 'any' } }
   ])('Bad request ($case)', async ({ query }) => {
-    const user = await framework.fixture<User>(User)
-    const token = (await framework.auth(user)).token
     const res = await request(framework.app)
       .post('/')
       .send(getExamSessions(query as GetExamSessions))
-      .auth(token, { type: 'bearer' })
+      .auth(validationToken, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
     expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))

@@ -29,9 +29,9 @@ const numbered = (items: string[], index: number): string => {
   return cycle ? `${value} ${cycle + 1}` : value
 }
 
-export const nextExamName = (): string => numbered(values.exams, nextIndex('exam'))
-export const nextQuestionTitle = (): string => numbered(values.questions, nextIndex('question'))
-export const nextTagName = (): string => numbered(values.tags, nextIndex('tag'))
+export const nextExamName = (): string => `Test exam - ${numbered(values.exams, nextIndex('exam'))}`
+export const nextQuestionTitle = (): string => `Test question - ${numbered(values.questions, nextIndex('question'))}`
+export const nextTagName = (): string => `Test tag - ${numbered(values.tags, nextIndex('tag'))}`
 export const nextPerson = (): string => numbered(values.people, nextIndex('person'))
 
 export const roleName = (permissions: Permission[] = [Permission.Regular]): string => {

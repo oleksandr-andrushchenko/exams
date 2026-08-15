@@ -14,7 +14,13 @@ const config: Config = {
   moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx', 'json', 'node'],
   testMatch: ['<rootDir>/__tests__/functional/cases/**/*.ts'],
   transform: {
-    '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: 'api-lambda/tsconfig.json' }]
+    '^.+\\.(ts|tsx)$': [
+      'ts-jest',
+      {
+        diagnostics: false,
+        tsconfig: 'api-lambda/tsconfig.json'
+      }
+    ]
   },
   globalSetup: '<rootDir>/__tests__/functional/globalSetup.ts',
   globalTeardown: '<rootDir>/__tests__/functional/globalTeardown.ts'

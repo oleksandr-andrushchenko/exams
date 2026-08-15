@@ -53,7 +53,7 @@ describe('Get current examSessions', () => {
     expect(res.body).toEqual({ data: { currentExamSessions: [] } })
   })
   test('Non-empty', async () => {
-    await framework.clear()
+    await framework.clear(ExamSession)
     const exams = await Promise.all([
       framework.fixture<Exam>(Exam),
       framework.fixture<Exam>(Exam),

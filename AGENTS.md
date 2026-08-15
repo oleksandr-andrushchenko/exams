@@ -9,6 +9,10 @@
 - Before handing off work, run the relevant formatter or formatting check and
   confirm that the updated files have no formatting issues.
 
+## Testing
+
+- Run `make tests` after all functional changes and before handing off the work.
+
 ## Shared Lambda code
 
 - Put common functions and behavior that may be used by both Lambdas in `lambda-shared`.

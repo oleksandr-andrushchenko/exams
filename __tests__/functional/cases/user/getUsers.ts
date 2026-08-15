@@ -10,7 +10,7 @@ import GetUsers from '../../../../api-lambda/src/server/schema/user/GetUsers'
 const framework: TestFramework = globalThis.framework
 describe('Get users', () => {
   test('Public', async () => {
-    await framework.clear()
+    await framework.clear(User)
     await framework.fixture<User>(User)
     const res = await request(framework.app).post('/').send(getUsers())
 
@@ -18,7 +18,7 @@ describe('Get users', () => {
     expect(res.body.data.users).toHaveLength(1)
   })
   test('Public for authenticated users without list permission', async () => {
-    await framework.clear()
+    await framework.clear(User)
     const user = await framework.fixture<User>(User)
     const token = (await framework.auth(user)).token
     const res = await request(framework.app).post('/').send(getUsers()).auth(token, { type: 'bearer' })
@@ -47,7 +47,7 @@ describe('Get users', () => {
     expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
   })
   test('No filter', async () => {
-    await framework.clear()
+    await framework.clear(User)
     const user = await framework.fixture<User>(User, {
       permissions: [UserPermission.Get, UserPermission.GetEmail, UserPermission.GetPermissions]
     })
@@ -74,7 +74,7 @@ describe('Get users', () => {
     }
   })
   test('Search filter', async () => {
-    await framework.clear()
+    await framework.clear(User)
     const user = await framework.fixture<User>(User, {
       permissions: [UserPermission.Get, UserPermission.GetEmail, UserPermission.GetPermissions]
     })

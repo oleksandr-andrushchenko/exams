@@ -44,7 +44,7 @@ describe('Update me', () => {
   test('Updated', async () => {
     const user = await framework.fixture<User>(User, { permissions: [Permission.Root] })
     const token = (await framework.auth(user)).token
-    const update = { name: 'any' }
+    const update = { name: String('Updated ') + user.id.toString().slice(-12) }
     const now = Date.now()
     const res = await request(framework.app)
       .post('/')
