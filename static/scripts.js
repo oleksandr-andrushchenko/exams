@@ -1,60 +1,59 @@
-const setRatingPreview = (widget, mark, preview) => {
-  const average = Number(widget.dataset.averageMark || 0)
-  widget.querySelectorAll('.rating-star').forEach((item) => {
-    const value = Number(item.value)
-    const active = preview ? value <= mark : value <= average
-    const icon = item.querySelector('i')
-    if (!icon) return
-    icon.classList.toggle('bi-star-fill', active)
-    icon.classList.toggle('bi-star', !active)
-    icon.classList.toggle('text-warning', active)
-    icon.classList.toggle('text-secondary', !active)
-    item.classList.toggle('text-warning', active)
-    item.classList.toggle('text-secondary', !active)
+const setRatingPreview = ($widget, mark, preview) => {
+  const average = Number($widget.attr('data-average-mark') || 0)
+  $widget.find('.rating-star').each(function () {
+    const $item = $(this)
+    const active = preview ? Number($item.val()) <= mark : Number($item.val()) <= average
+    const $icon = $item.find('i')
+    $icon.toggleClass('bi-star-fill', active)
+    $icon.toggleClass('bi-star', !active)
+    $icon.toggleClass('text-warning', active)
+    $icon.toggleClass('text-secondary', !active)
+    $item.toggleClass('text-warning', active)
+    $item.toggleClass('text-secondary', !active)
   })
 }
 
-document.addEventListener('click', (event) => {
-  const star = event.target.closest('.rating-star')
-  if (!star) return
-  star.closest('.rating-form').querySelector('.rating-mark').value = star.value
-})
-
-document.addEventListener('pointerover', (event) => {
-  const star = event.target.closest('.rating-star')
-  if (!star) return
-  setRatingPreview(star.closest('[data-rating-widget]'), Number(star.value), true)
-})
-
-document.addEventListener('pointerout', (event) => {
-  const control = event.target.closest('.rating-control')
-  if (!control || control.contains(event.relatedTarget)) return
-  const widget = control.closest('[data-rating-widget]')
-  setRatingPreview(widget, Number(widget.dataset.averageMark || 0), false)
-})
-
-document.addEventListener('submit', async (event) => {
-  const form = event.target.closest('.rating-form')
-  if (!form) return
-  event.preventDefault()
-  const body = new URLSearchParams(new FormData(form))
-  if (event.submitter?.name) body.set(event.submitter.name, event.submitter.value)
-  if (!body.get('mark')) {
-    window.alert('Please select a rating.')
-    return
-  }
-  const response = await fetch(form.action, { method: 'POST', headers: { Accept: 'application/json' }, body })
-  const result = await response.json()
-  if (!response.ok || !result.ok || !result.html) {
-    window.alert(result.error?.message || result.error || 'Unable to save your rating.')
-    return
-  }
-  const template = document.createElement('template')
-  template.innerHTML = result.html.trim()
-  const replacement = document.createElement('form')
-  replacement.className = form.className
-  replacement.method = form.method
-  replacement.action = form.action
-  replacement.append(...template.content.childNodes)
-  form.replaceWith(replacement)
-})
+$(document)
+  .on('click', '.rating-star', function () {
+    $(this).closest('.rating-form').find('.rating-mark').val($(this).val())
+  })
+  .on('pointerover', '.rating-star', function () {
+    setRatingPreview($(this).closest('[data-rating-widget]'), Number($(this).val()), true)
+  })
+  .on('pointerout', '.rating-control', function (event) {
+    if ($(this).has(event.relatedTarget).length) return
+    const $widget = $(this).closest('[data-rating-widget]')
+    setRatingPreview($widget, Number($widget.attr('data-average-mark') || 0), false)
+  })
+  .on('submit', '.rating-form', function (event) {
+    event.preventDefault()
+    const $form = $(this)
+    const mark = $form.find('.rating-mark').val()
+    if (!mark) {
+      window.alert('Please select a rating.')
+      return
+    }
+    $.ajax({
+      url: $form.attr('action'),
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+      data: $form.serialize(),
+      dataType: 'json'
+    })
+      .done((result) => {
+        if (!result.ok || !result.html) {
+          window.alert(result.error?.message || result.error || 'Unable to save your rating.')
+          return
+        }
+        const $replacement = $('<form>', {
+          class: $form.attr('class'),
+          method: $form.attr('method'),
+          action: $form.attr('action')
+        }).append($(result.html.trim()))
+        $form.replaceWith($replacement)
+      })
+      .fail((response) => {
+        const result = response.responseJSON || {}
+        window.alert(result.error?.message || result.error || 'Unable to save your rating.')
+      })
+  })
