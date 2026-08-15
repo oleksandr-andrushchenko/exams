@@ -167,7 +167,7 @@ async function submitRating(request: Request, response: Response, id: string) {
 
   const field = 'questionId'
   const mutation = 'rateQuestion'
-  const result = await fetch(process.env.GRAPHQL_URL || 'http://localhost:8080/graphql', {
+  const result = await fetch(process.env.API_URL || 'http://localhost:8080/graphql', {
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
     body: JSON.stringify({
@@ -254,7 +254,7 @@ async function updateResource(
     }
   }
   const definition = definitions[resource]
-  const result = await fetch(process.env.GRAPHQL_URL || 'http://localhost:8080/graphql', {
+  const result = await fetch(process.env.API_URL || 'http://localhost:8080/graphql', {
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
     body: JSON.stringify({ query: definition.query, variables: { id, input: definition.input } })
@@ -306,7 +306,7 @@ app.post('/exams/new', uploadImage, async (request, response) => {
     .find((cookie) => cookie.startsWith('authenticationToken='))
     ?.slice('authenticationToken='.length)
   try {
-    const result = await fetch(process.env.GRAPHQL_URL || 'http://localhost:8080/graphql', {
+    const result = await fetch(process.env.API_URL || 'http://localhost:8080/graphql', {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
       body: JSON.stringify({
@@ -410,7 +410,7 @@ async function authenticate(
     ? 'mutation Register($createMe: CreateMe!, $credentials: Credentials!) { createMe(createMe: $createMe) { id } createAuthenticationToken(credentials: $credentials) { token } }'
     : 'mutation Login($email: String!, $password: String!) { createAuthenticationToken(credentials: { email: $email, password: $password }) { token } }'
   const variables = register ? { createMe: credentials, credentials } : credentials
-  const result = await fetch(process.env.GRAPHQL_URL || 'http://localhost:8080/graphql', {
+  const result = await fetch(process.env.API_URL || 'http://localhost:8080/graphql', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ query, variables })
@@ -505,7 +505,7 @@ app.get('/:userSlug', async (request, response, next) => {
   }
 })
 app.use((error: Error, _request: Request, response: Response, _next: express.NextFunction) => {
-  console.error('SSR request failed', error)
+  console.error('Web request failed', error)
   response.status(500).render('error.html', {
     title: 'Internal Server Error',
     error: isDevelopmentEnvironment() ? error.message : undefined

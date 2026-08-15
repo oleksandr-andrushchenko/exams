@@ -1,13 +1,13 @@
 services:
-  graphql:
+  api:
     build:
       context: .
-      dockerfile: Dockerfile-graphql
+      dockerfile: Dockerfile-api
     depends_on:
       - postgres
     volumes:
       - .:/usr/app
-      - graphql-node-modules:/usr/app/node_modules
+      - api-node-modules:/usr/app/node_modules
     env_file:
       - .env
     environment:
@@ -20,22 +20,22 @@ services:
     ports:
       - '${BE_PORT}:8080'
 
-  ssr:
+  web:
     build:
       context: .
-      dockerfile: Dockerfile-ssr
+      dockerfile: Dockerfile-web
     depends_on:
       - postgres
     volumes:
       - .:/usr/app
-      - ssr-node-modules:/usr/app/node_modules
+      - web-node-modules:/usr/app/node_modules
     env_file:
       - .env
     environment:
       NODE_ENV: ${ENV:-development}
       PORT: 3000
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/examme
-      GRAPHQL_URL: http://graphql:8080/graphql
+      API_URL: http://api:8080/graphql
     ports:
       - '${FE_PORT}:3000'
 
@@ -52,6 +52,6 @@ services:
       - '${POSTGRES_PORT:-5432}:5432'
 
 volumes:
-  graphql-node-modules:
-  ssr-node-modules:
+  api-node-modules:
+  web-node-modules:
   postgres-data:

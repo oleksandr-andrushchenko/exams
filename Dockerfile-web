@@ -6,4 +6,4 @@ COPY --chown=node:node package*.json ./
 USER node
 RUN npm ci
 
-CMD ["npm", "run", "ssr:dev"]
+CMD ["npm", "run", "web:dev"]

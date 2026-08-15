@@ -16,7 +16,7 @@
 
 ## Static assets
 
-- Serve web assets and store SSR uploads under the repository-level `static` directory; the web Lambda exposes it at `/static`.
+- Serve web assets and store web uploads under the repository-level `static` directory; the web Lambda exposes it at `/static`.
 
 ## UI styling
 
