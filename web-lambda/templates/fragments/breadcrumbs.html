@@ -2,12 +2,12 @@
 <!-- Breadcrumbs -->
 <nav aria-label="breadcrumb" style="--bs-breadcrumb-divider: '>';">
   <ol class="breadcrumb my-3">
-    {% for label, url in breadcrumbs %}
-    {% if loop.last or url is none %}
+    {% for label, breadcrumbUrl in breadcrumbs %}
+    {% if loop.last or breadcrumbUrl is none %}
     <li class="breadcrumb-item active" aria-current="page">{{ label }}</li>
     {% else %}
     <li class="breadcrumb-item">
-      <a href="{{ url }}" class="link-body-emphasis text-decoration-none">{{ label }}</a>
+      <a href="{{ breadcrumbUrl }}" class="link-body-emphasis text-decoration-none">{{ label }}</a>
     </li>
     {% endif %}
     {% endfor %}
