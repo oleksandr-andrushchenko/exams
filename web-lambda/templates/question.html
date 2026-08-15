@@ -43,10 +43,17 @@
 <script>
   const setRatingPreview = (widget, mark, preview) => {
     const average = Number(widget.dataset.averageMark || 0)
-    widget.querySelectorAll('.rating-star').forEach((item) => {
+    widget.querySelectorAll(".rating-star").forEach((item) => {
       const value = Number(item.value)
-      item.classList.toggle('is-filled', !preview && value <= average)
-      item.classList.toggle('is-preview', preview && value <= mark)
+      const active = preview ? value <= mark : value <= average
+      const icon = item.querySelector("i")
+      if (!icon) return
+      icon.classList.toggle("bi-star-fill", active)
+      icon.classList.toggle("bi-star", !active)
+      icon.classList.toggle("text-warning", active)
+      icon.classList.toggle("text-secondary", !active)
+      item.classList.toggle("text-warning", active)
+      item.classList.toggle("text-secondary", !active)
     })
   }
   document.addEventListener('click', (event) => {

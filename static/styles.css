@@ -42,31 +42,6 @@ h6,
   gap: 0.6rem;
 }
 
-.rating-control {
-  display: inline-flex;
-  align-items: center;
-}
-
-.rating-star {
-  border: 0;
-  background: transparent;
-  color: #d9dee7;
-  cursor: pointer;
-  font-size: 1.8rem;
-  line-height: 1;
-  padding: 0.1rem;
-}
-
-.rating-star.is-filled,
-.rating-star.is-preview {
-  color: #f5b301;
-}
-
-.rating-star:focus-visible {
-  outline: 2px solid var(--bs-primary);
-  border-radius: 0.25rem;
-}
-
 .rating-user-vote {
   color: var(--bs-secondary-color);
 }
