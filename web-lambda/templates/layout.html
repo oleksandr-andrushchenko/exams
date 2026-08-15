@@ -6,22 +6,22 @@
   <title>{{ title }} · {{ siteName }}</title>
   <meta content="{{ siteDescription }}" name="description"/>
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="/static/favicon-96x96.png" sizes="96x96"/>
-  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg"/>
-  <link rel="shortcut icon" href="/static/favicon.ico"/>
-  <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png"/>
+  <link rel="icon" type="image/png" href="{{ staticUrl("favicon-96x96.png") }}" sizes="96x96"/>
+  <link rel="icon" type="image/svg+xml" href="{{ staticUrl("favicon.svg") }}"/>
+  <link rel="shortcut icon" href="{{ staticUrl("favicon.ico") }}"/>
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ staticUrl("apple-touch-icon.png") }}"/>
   <meta name="apple-mobile-web-app-title" content="{{ siteName }}"/>
-  <link rel="manifest" href="/static/site.webmanifest"/>
+  <link rel="manifest" href="{{ staticUrl("site.webmanifest") }}"/>
   <link href="https://fonts.googleapis.com/css2?family=Rethink+Sans:wght@400;700&display=swap"
         rel="stylesheet"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link href="/static/styles.css" rel="stylesheet"/>
+  <link href="{{ staticUrl("styles.css") }}" rel="stylesheet"/>
 </head>
 <body class="d-flex flex-column min-vh-100">
 <header>
   <nav class="navbar navbar-expand-md bg-dark" data-bs-theme="dark">
     <div class="container">
-      <a class="navbar-brand" href="/">
+      <a class="navbar-brand" href="{{ url("home") }}">
         <i class="bi bi-folder-check"></i>
         {{ siteName }}
       </a>
@@ -35,26 +35,26 @@
       </button>
       <div class="collapse navbar-collapse" id="navigation">
         <ul class="navbar-nav me-auto">
-          <li class="nav-item"><a class="nav-link" href="/exams">Exams</a></li>
-          <li class="nav-item"><a class="nav-link" href="/questions">Questions</a></li>
-          <li class="nav-item"><a class="nav-link" href="/users">Users</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url("exams") }}">Exams</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url("questions") }}">Questions</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url("users") }}">Users</a></li>
         </ul>
         <ul class="navbar-nav">
           <li class="nav-item">
-            <a class="nav-link" href="{% if currentUser %}/exams/new{% else %}/login?redirect=%2Fexams%2Fnew{% endif %}">
+            <a class="nav-link" href="{% if currentUser %}{{ url("newExam") }}{% else %}{{ url("login", {}, { redirect: url("newExam") }) }}{% endif %}">
               <i class="bi bi-plus-circle"></i>
               Create exam
             </a>
           </li>
           {% if currentUser %}
           <li class="nav-item">
-            <a class="nav-link" href="/{{ currentUser.slug }}">
+            <a class="nav-link" href="{{ userUrl(currentUser) }}">
               <i class="bi bi-person-circle"></i>
               {{ currentUser.name }}
             </a>
           </li>
           <li class="nav-item">
-            <form action="/logout" method="post">
+            <form action="{{ url("logout") }}" method="post">
               <button class="nav-link btn btn-link" type="submit">
                 Logout
                 <i class="bi bi-box-arrow-right"></i>
@@ -63,7 +63,7 @@
           </li>
           {% else %}
           <li class="nav-item">
-            <a class="nav-link" href="/login">
+            <a class="nav-link" href="{{ url("login") }}">
               <i class="bi bi-box-arrow-in-right"></i>
               Login
             </a>
@@ -84,6 +84,6 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"
         integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-<script src="/static/scripts.js"></script>
+<script src="{{ staticUrl("scripts.js") }}"></script>
 </body>
 </html>

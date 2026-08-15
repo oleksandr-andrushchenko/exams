@@ -6,7 +6,7 @@
 <p class="small text-secondary">Recently Added Questions</p>
 <section class="d-flex flex-column gap-3 mb-4">
   <h2 class="h5 mb-0 text-decoration-underline bi bi-filter">Filter questions</h2>
-  <form method="get" action="/questions" class="filter-form d-flex flex-wrap align-items-center gap-2">
+  <form method="get" action="{{ url("questions") }}" class="filter-form d-flex flex-wrap align-items-center gap-2">
     <input class="form-control w-auto" name="search" value="{{ filters.search or "" }}" placeholder="Search">
     <input class="form-control w-auto" name="exam" value="{{ filters.exam or "" }}" placeholder="Exam id">
     <input class="form-control w-auto" name="difficulty" value="{{ filters.difficulty or "" }}" placeholder="Difficulty">

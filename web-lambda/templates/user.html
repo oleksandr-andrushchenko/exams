@@ -1,19 +1,19 @@
 {% extends "layout.html" %}
 
 {% block content %}
-{% set breadcrumbs = [['Home', '/'], ['Users', '/users'], [user.name or user.id, none]] %}
+{% set breadcrumbs = [["Home", url("home")], ["Users", url("users")], [user.name or user.id, none]] %}
 {% include "fragments/breadcrumbs.html" %}
 
 <div class="d-flex align-items-start gap-3">
   {% if user.imageFilename %}
-  <img class="entity-image entity-image-lg" src="/static/{{ user.imageFilename }}" alt="{{ user.name or user.id }}"/>
+  <img class="entity-image entity-image-lg" src="{{ staticUrl(user.imageFilename) }}" alt="{{ user.name or user.id }}"/>
   {% endif %}
 
   <div>
     <h1>{{ user.name or user.id }}</h1>
 
     {% if canEdit("updateUser") %}
-    <a class="btn btn-outline-primary mb-3" href="/users/{{ user.id }}/edit">Edit user</a>
+    <a class="btn btn-outline-primary mb-3" href="{{ url("userEdit", { userId: user.id }) }}">Edit user</a>
     {% endif %}
 
     {% set rating = user.rating %}

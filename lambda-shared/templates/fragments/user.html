@@ -1,11 +1,11 @@
 {% set userColumns = columns or { md: 4 } %}
 <article class="col{% if userColumns.xs %}-{{ userColumns.xs }}{% else %}-12{% endif %}{% if userColumns.sm %} col-sm-{{ userColumns.sm }}{% endif %}{% if userColumns.md %} col-md-{{ userColumns.md }}{% endif %}{% if userColumns.lg %} col-lg-{{ userColumns.lg }}{% endif %}{% if userColumns.xl %} col-xl-{{ userColumns.xl }}{% endif %}{% if userColumns.xxl %} col-xxl-{{ userColumns.xxl }}{% endif %}">
   <div class="user-item border rounded p-3 h-100">
-    <a class="d-flex align-items-start gap-3 text-decoration-none" href="/{{ user.slug }}">
+    <a class="d-flex align-items-start gap-3 text-decoration-none" href="{{ userUrl(user) }}">
       {% if user.imageFilename %}
       <img
         class="rounded-circle object-fit-cover flex-shrink-0"
-        src="/static/{{ user.imageFilename }}"
+        src="{{ staticUrl(user.imageFilename) }}"
         alt="{{ user.name or user.id }}"
         loading="lazy" width="64" height="64"
       >

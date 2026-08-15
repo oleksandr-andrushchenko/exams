@@ -2,26 +2,26 @@
 
 {% block content %}
 {% if question.exam %}
-{% set breadcrumbs = [['Home', '/'], ['Exams', '/exams'], [question.exam.name, '/' + question.exam.userSlug + '/' + question.exam.slug], [question.title, none]] %}
+{% set breadcrumbs = [["Home", url("home")], ["Exams", url("exams")], [question.exam.name, examUrl(question.exam)], [question.title, none]] %}
 {% else %}
-{% set breadcrumbs = [['Home', '/'], ['Exams', '/exams'], [question.title, none]] %}
+{% set breadcrumbs = [["Home", url("home")], ["Exams", url("exams")], [question.title, none]] %}
 {% endif %}
 {% include "fragments/breadcrumbs.html" %}
 
 <div class="d-flex align-items-start gap-3">
   {% if question.imageFilename %}
-  <img class="entity-image entity-image-lg" src="/static/{{ question.imageFilename }}" alt="{{ question.title }}"/>
+  <img class="entity-image entity-image-lg" src="{{ staticUrl(question.imageFilename) }}" alt="{{ question.title }}"/>
   {% endif %}
 
   <div>
     <h1>{{ question.title }}</h1>
 
     {% if canEdit("updateQuestion") %}
-    <a class="btn btn-outline-primary mb-3" href="/questions/{{ question.id }}/edit">Edit question</a>
+    <a class="btn btn-outline-primary mb-3" href="{{ url("questionEdit", { questionId: question.id }) }}">Edit question</a>
     {% endif %}
 
     {% if currentUser %}
-    <form class="rating-form mb-4" method="post" action="/questions/{{ question.id }}/rating">
+    <form class="rating-form mb-4" method="post" action="{{ url("questionRating", { questionId: question.id }) }}">
       {% set rating = question.rating %}{% set userMark = question.userMark %}
       {% include "fragments/rating-form.html" %}
     </form>
@@ -31,7 +31,7 @@
     {% set ratingClass = "fs-4" %}
     {% include "fragments/rating.html" %}
 
-    <p><a href="/login">Log in</a> to rate this question.</p>
+    <p><a href="{{ url("login") }}">Log in</a> to rate this question.</p>
     {% endif %}
 
     <p class="text-secondary">{{ question.difficulty or '' }} {{ question.type or '' }}</p>

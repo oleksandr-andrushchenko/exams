@@ -11,7 +11,7 @@
     <h2 class="h5 mb-0 text-decoration-underline">Popular topics</h2>
     <div>
       {% for tag in data.tags %}
-      <a class="btn btn-light border" href="/tags/{{ tag.slug }}">{{ tag.name }}</a>
+      <a class="btn btn-light border" href="{{ url("tagBySlug", { slug: tag.slug }) }}">{{ tag.name }}</a>
       {% else %}
       <span class="text-secondary">No topics found.</span>
       {% endfor %}
@@ -19,7 +19,7 @@
   </section>
 
   <section class="d-flex flex-column gap-3 mt-4">
-    <h2 class="h5 mb-0"><a href="/users" class="link-body-emphasis">Popular users</a></h2>
+    <h2 class="h5 mb-0"><a href="{{ url("users") }}" class="link-body-emphasis">Popular users</a></h2>
     <div class="row g-3">
       {% set columns = { md: 3 } %}
       {% for user in data.popularUsers %}
@@ -36,7 +36,7 @@
             <div class="text-muted small">Join our community, share your ideas, and earn money from your content.</div>
             <div>
               <a href="/earn-with-us" class="btn btn-sm btn-warning bi bi-currency-dollar"> Earn with us</a>
-              <a href="/login?redirect_url=%2Fexams%2Fnew" class="btn btn-sm btn-primary bi bi-pencil-fill">
+              <a href="{{ url("login", {}, { redirect: url("newExam") }) }}" class="btn btn-sm btn-primary bi bi-pencil-fill">
                 Create an exam
               </a>
             </div>
@@ -47,7 +47,7 @@
   </section>
 
   <section class="d-flex flex-column gap-3 mt-4">
-    <h2 class="h5 mb-0"><a href="/exams" class="link-body-emphasis">Popular exams</a></h2>
+    <h2 class="h5 mb-0"><a href="{{ url("exams") }}" class="link-body-emphasis">Popular exams</a></h2>
     <div class="row g-3">
       {% set columns = { md: 3 } %}
       {% for exam in data.popularExams %}
@@ -74,7 +74,7 @@
   </section>
 
   <section class="d-flex flex-column gap-3 mt-4">
-    <h2 class="h5 mb-0"><a href="/questions" class="link-body-emphasis">Latest questions</a></h2>
+    <h2 class="h5 mb-0"><a href="{{ url("questions") }}" class="link-body-emphasis">Latest questions</a></h2>
     <div class="d-flex flex-column gap-3">
       {% for question in data.questions %}
       {% include "fragments/question.html" %}
@@ -85,7 +85,7 @@
   </section>
 
   <section class="d-flex flex-column gap-3 mt-4">
-    <h2 class="h5 mb-0"><a href="/questions" class="link-body-emphasis">Popular questions</a></h2>
+    <h2 class="h5 mb-0"><a href="{{ url("questions") }}" class="link-body-emphasis">Popular questions</a></h2>
     <div class="d-flex flex-column gap-3">
       {% for question in data.popularQuestions %}
       {% include "fragments/question.html" %}

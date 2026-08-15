@@ -2,10 +2,10 @@
 <article class="question-item border rounded p-3">
   <div class="d-flex align-items-start gap-3">
     {% if question.imageFilename %}
-    <a class="flex-shrink-0" href="/{{ questionExam.userSlug }}/{{ questionExam.slug }}/{{ question.slug }}">
+    <a class="flex-shrink-0" href="{{ questionUrl(question, questionExam) }}">
       <img
         class="entity-image"
-        src="/static/{{ question.imageFilename }}"
+        src="{{ staticUrl(question.imageFilename) }}"
         alt=""
         loading="lazy"
       >
@@ -13,18 +13,18 @@
     {% endif %}
     <div class="d-flex min-w-0 flex-column gap-1">
       <h2 class="h5 mb-0 text-break">
-        <a class="link-body-emphasis text-decoration-none" href="/{{ questionExam.userSlug }}/{{ questionExam.slug }}/{{ question.slug }}">
+        <a class="link-body-emphasis text-decoration-none" href="{{ questionUrl(question, questionExam) }}">
           {{ question.title }}
         </a>
       </h2>
       {% set rating = question.rating %}{% set ratingClass = "fs-4" %}{% include "fragments/rating.html" %}
       <div class="small text-secondary mt-auto d-flex flex-wrap gap-2">
-        <a class="text-secondary text-decoration-none" href="/{{ questionExam.userSlug }}/{{ questionExam.slug }}">
+        <a class="text-secondary text-decoration-none" href="{{ examUrl(questionExam) }}">
           <i class="bi bi-journal-text" aria-hidden="true"></i>
           {{ questionExam.name }}
         </a>
         <span aria-hidden="true">·</span>
-        <a class="text-secondary text-decoration-none" href="/{{ questionExam.userSlug }}">
+        <a class="text-secondary text-decoration-none" href="{{ userUrl(questionExam.userSlug) }}">
           <i class="bi bi-person-circle" aria-hidden="true"></i>
           {{ questionExam.userSlug }}
         </a>

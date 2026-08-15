@@ -6,7 +6,7 @@
 <p class="small text-secondary">Recently Joined Users</p>
 <section class="d-flex flex-column gap-3 mb-4">
   <h2 class="h5 mb-0 text-decoration-underline bi bi-filter">Filter users</h2>
-  <form method="get" action="/users" class="filter-form d-flex flex-wrap align-items-center gap-2">
+  <form method="get" action="{{ url("users") }}" class="filter-form d-flex flex-wrap align-items-center gap-2">
     <input class="form-control w-auto" name="search" value="{{ filters.search or "" }}" placeholder="Search by name">
     <select class="form-select w-auto" name="sort">
       <option value="">Newest</option>

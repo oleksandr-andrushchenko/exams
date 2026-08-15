@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { isDevelopmentEnvironment } from './environment'
+import { examUrl, questionUrl, route, staticUrl, url, userUrl } from './routes'
 import express, { type Request, type Response } from 'express'
 import multer from 'multer'
 import * as jwt from 'jsonwebtoken'
@@ -55,6 +56,17 @@ app.use((request, response, next) => {
   response.locals.siteDescription = 'Practice exams and explore questions.'
   response.locals.requestPath = request.path
   response.locals.query = request.query
+  const origin = request.protocol + '://' + request.get('host')
+  response.locals.url = (name: Parameters<typeof url>[0], params = {}, query = {}, absolute = false) =>
+    url(name, params, query, absolute, origin)
+  response.locals.staticUrl = (asset: string, absolute = false) => staticUrl(asset, absolute, origin)
+  response.locals.examUrl = (exam: Parameters<typeof examUrl>[0], absolute = false) => examUrl(exam, absolute, origin)
+  response.locals.questionUrl = (
+    question: Parameters<typeof questionUrl>[0],
+    exam: Parameters<typeof questionUrl>[1] = undefined,
+    absolute = false
+  ) => questionUrl(question, exam, absolute, origin)
+  response.locals.userUrl = (user: Parameters<typeof userUrl>[0], absolute = false) => userUrl(user, absolute, origin)
   response.locals.canEdit = (permission: string) => canViewUnapproved(response.locals.currentUser, permission)
   next()
 })
@@ -230,7 +242,7 @@ async function updateResource(
     user: {
       query: 'mutation Update($id: ID!, $input: UpdateUser!) { updateUser(userId: $id, updateUser: $input) { id } }',
       input: { name: request.body.name, email: request.body.email, imageFilename: request.file?.filename },
-      target: '/users/' + id
+      target: route('userById', { userId: id })
     },
     exam: {
       query: 'mutation Update($id: ID!, $input: UpdateExam!) { updateExam(examId: $id, updateExam: $input) { id } }',
@@ -239,7 +251,7 @@ async function updateResource(
         requiredScore: Number(request.body.requiredScore),
         imageFilename: request.file?.filename
       },
-      target: '/exams/' + id
+      target: route('examById', { examId: id })
     },
     question: {
       query:
@@ -250,7 +262,7 @@ async function updateResource(
         type: request.body.type,
         imageFilename: request.file?.filename
       },
-      target: '/questions/' + id
+      target: route('questionById', { questionId: id })
     }
   }
   const definition = definitions[resource]
@@ -288,7 +300,7 @@ app.post('/questions/:questionId/edit', uploadImage, (request, response, next) =
 )
 app.get('/exams/new', (request, response) => {
   if (!response.locals.currentUser) {
-    response.redirect('/login?redirect=' + encodeURIComponent('/exams/new'))
+    response.redirect(route('login', {}, { redirect: route('newExam') }))
     return
   }
   response.render('create-exam.html', { title: 'Create exam' })
@@ -296,7 +308,7 @@ app.get('/exams/new', (request, response) => {
 
 app.post('/exams/new', uploadImage, async (request, response) => {
   if (!response.locals.currentUser) {
-    response.redirect('/login?redirect=' + encodeURIComponent('/exams/new'))
+    response.redirect(route('login', {}, { redirect: route('newExam') }))
     return
   }
 
@@ -327,7 +339,9 @@ app.post('/exams/new', uploadImage, async (request, response) => {
     if (!result.ok || payload.errors?.length || !payload.data?.createExam?.slug) {
       throw new Error(payload.errors?.[0]?.message || 'Unable to create exam')
     }
-    response.redirect('/' + response.locals.currentUser.slug + '/' + payload.data.createExam.slug)
+    response.redirect(
+      route('examProfile', { userSlug: response.locals.currentUser.slug, examSlug: payload.data.createExam.slug })
+    )
   } catch (error) {
     response.status(400).render('create-exam.html', {
       title: 'Create exam',
@@ -444,7 +458,7 @@ app.post('/login', async (request, response) => {
 })
 app.post('/logout', (_request, response) => {
   response.clearCookie('authenticationToken')
-  response.redirect('/')
+  response.redirect(route('home'))
 })
 app.post('/register', uploadImage, async (request, response) => {
   try {
@@ -453,7 +467,7 @@ app.post('/register', uploadImage, async (request, response) => {
       { email: request.body.email, password: request.body.password, imageFilename: request.file?.filename },
       true
     )
-    response.redirect('/')
+    response.redirect(route('home'))
   } catch (error) {
     response.status(400).render('register.html', {
       title: 'Register',
