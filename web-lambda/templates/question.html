@@ -1,43 +1,48 @@
-{% extends "layout.html" %}{% block content %}{% if question %}
+{% extends "layout.html" %}
+
+{% block content %}
 {% if question.exam %}
-{% set breadcrumbs = [
-  ['Home', '/'],
-  ['Exams', '/exams'],
-  [question.exam.name, '/' + question.exam.userSlug + '/' + question.exam.slug],
-  [question.title, none]
-] %}
+{% set breadcrumbs = [['Home', '/'], ['Exams', '/exams'], [question.exam.name, '/' + question.exam.userSlug + '/' + question.exam.slug], [question.title, none]] %}
 {% else %}
 {% set breadcrumbs = [['Home', '/'], ['Exams', '/exams'], [question.title, none]] %}
 {% endif %}
 {% include "fragments/breadcrumbs.html" %}
-{% if question.imageFilename %}
-<img
-  class="entity-image entity-image-lg"
-  src="/static/{{ question.imageFilename }}"
-  alt="{{ question.title }}"
-/>
-{% endif %}
-<h1>{{ question.title }}</h1>
-{% if canEdit("updateQuestion") %}<a class="btn btn-outline-primary mb-3" href="/questions/{{ question.id }}/edit">Edit question</a>{% endif %}
-{% if currentUser %}
-<form class="rating-form mb-4" method="post" action="/questions/{{ question.id }}/rating">
-  {% set rating = question.rating %}{% set userMark = question.userMark %}{% include "fragments/rating-form.html" %}
-</form>
-{% else %}
-{% set rating = question.rating %}{% set ratingClass = "fs-4" %}{% include "fragments/rating.html" %}
-<p><a href="/login">Log in</a> to rate this question.</p>
-{% endif %}{% if question.exam %}
-{% if question.creator %}
-<h2 class="h4 mt-4">Author</h2>
-{% set user = question.creator %}{% include "fragments/user.html" %}
-{% endif %}
-{% if question.exam %}
-<h2 class="h4 mt-4">Exam</h2>
-{% set exam = question.exam %}{% include "fragments/exam.html" %}
-{% endif %}
-{% endif %}
-<p class="text-secondary">{{ question.difficulty or '' }} {{ question.type or '' }}</p>
-{% else %}
-<h1>Question not found</h1>
-<a href="/questions">Back to questions</a>{% endif %}
+
+<div class="d-flex align-items-start gap-3">
+  {% if question.imageFilename %}
+  <img class="entity-image entity-image-lg" src="/static/{{ question.imageFilename }}" alt="{{ question.title }}"/>
+  {% endif %}
+
+  <div>
+    <h1>{{ question.title }}</h1>
+
+    {% if canEdit("updateQuestion") %}
+    <a class="btn btn-outline-primary mb-3" href="/questions/{{ question.id }}/edit">Edit question</a>
+    {% endif %}
+
+    {% if currentUser %}
+    <form class="rating-form mb-4" method="post" action="/questions/{{ question.id }}/rating">
+      {% set rating = question.rating %}{% set userMark = question.userMark %}
+      {% include "fragments/rating-form.html" %}
+    </form>
+    {% else %}
+
+    {% set rating = question.rating %}
+    {% set ratingClass = "fs-4" %}
+    {% include "fragments/rating.html" %}
+
+    <p><a href="/login">Log in</a> to rate this question.</p>
+    {% endif %}
+
+    <p class="text-secondary">{{ question.difficulty or '' }} {{ question.type or '' }}</p>
+  </div>
+</div>
+
+<h2 class="h5 mb-0 text-decoration-underline">Author</h2>
+{% set user = question.creator %}
+{% include "fragments/user.html" %}
+
+<h2 class="h5 mb-0 text-decoration-underline">Exam</h2>
+{% set exam = question.exam %}
+{% include "fragments/exam.html" %}
 {% endblock %}

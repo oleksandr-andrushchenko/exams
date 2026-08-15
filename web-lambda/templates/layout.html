@@ -41,7 +41,7 @@
         </ul>
         <ul class="navbar-nav">
           <li class="nav-item">
-            <a class="nav-link btn btn-primary btn-sm my-1 ms-md-2" href="{% if currentUser %}/exams/new{% else %}/login?redirect=%2Fexams%2Fnew{% endif %}">
+            <a class="nav-link" href="{% if currentUser %}/exams/new{% else %}/login?redirect=%2Fexams%2Fnew{% endif %}">
               <i class="bi bi-plus-circle"></i>
               Create exam
             </a>

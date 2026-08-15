@@ -1,33 +1,57 @@
-{% extends "layout.html" %}{% block content %}{% if exam %}
+{% extends "layout.html" %}
+
+{% block content %}
 {% set breadcrumbs = [['Home', '/'], ['Exams', '/exams'], [exam.name, none]] %}
 {% include "fragments/breadcrumbs.html" %}
-{% if exam.imageFilename %}<img alt="{{ exam.name }}" class="entity-image entity-image-lg"
-                                src="/static/{{ exam.imageFilename }}"/>{% endif %}<h1>{{ exam.name }}</h1>
-{% if canEdit("updateExam") %}<a class="btn btn-outline-primary mb-3" href="/exams/{{ exam.id }}/edit">Edit exam</a>{% endif %}
-{% if currentUser and exam.ownerId and currentUser.id == exam.ownerId %}<a class="btn btn-primary mb-3" href="/questions/create?examId={{ exam.id }}">Add question</a>{% endif %}
-{% set rating = exam.rating %}{% set ratingClass = "" %}{% include "fragments/rating.html" %}
-{% if exam.creator %}
-<h2 class="h4 mt-4">Author</h2>
-{% set user = exam.creator %}{% include "fragments/user.html" %}
-{% endif %}
-<p class="lead">{{ exam.questionCount or 0 }} questions</p>
-<dl class="row">
-  <dt class="col-sm-3">Required score</dt>
-  <dd class="col-sm-9">{{ exam.requiredScore or 0 }}</dd>
-  <dt class="col-sm-3">Approved questions</dt>
-  <dd class="col-sm-9">{{ exam.approvedQuestionCount or 0 }}</dd>
-</dl>
-<h2 class="h4 mt-4">Questions</h2>
+
+<div class="d-flex align-items-start gap-3">
+  {% if exam.imageFilename %}
+  <img alt="{{ exam.name }}" class="entity-image entity-image-lg" src="/static/{{ exam.imageFilename }}"/>
+  {% endif %}
+
+  <div>
+    <h1>{{ exam.name }}</h1>
+
+    {% if canEdit("updateExam") %}
+    <a class="btn btn-outline-primary mb-3" href="/exams/{{ exam.id }}/edit">Edit exam</a>
+    {% endif %}
+
+    {% if currentUser and exam.ownerId and currentUser.id == exam.ownerId %}
+    <a class="btn btn-primary mb-3" href="/questions/create?examId={{ exam.id }}">Add question</a>
+    {% endif %}
+
+    {% set rating = exam.rating %}
+    {% set ratingClass = "" %}
+    {% include "fragments/rating.html" %}
+
+    <dl class="row">
+      <dt class="col-sm-3">Required score</dt>
+      <dd class="col-sm-9">{{ exam.requiredScore or 0 }}</dd>
+      <dt class="col-sm-3">Approved questions</dt>
+      <dd class="col-sm-9">{{ exam.approvedQuestionCount or 0 }}</dd>
+    </dl>
+
+    <h2 class="h5 mb-0 text-decoration-underline">Topics</h2>
+    <div class="d-flex gap-2">
+      {% for tag in exam.tags %}
+      <a class="btn btn-light border" href="/tags/{{ tag.slug }}">{{ tag.name }}</a>
+      {% else %}
+      <span class="text-secondary">No topics.</span>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<h2 class="h5 mb-0 text-decoration-underline">Author</h2>
+{% set user = exam.creator %}
+{% include "fragments/user.html" %}
+
+<h2 class="h5 mb-0 text-decoration-underline">Questions</h2>
 <div class="d-flex flex-column gap-3">
-  {% for question in exam.questions %}{% include "fragments/question.html" %}{% else %}
+  {% for question in exam.questions %}
+  {% include "fragments/question.html" %}
+  {% else %}
   <div class="card p-3">No questions found.</div>
   {% endfor %}
 </div>
-<h2 class="h4 mt-4">Topics</h2>
-<div class="d-flex gap-2">
-  {% for tag in exam.tags %}<a class="btn btn-light border" href="/tags/{{ tag.slug }}">{{ tag.name }}</a>{% else
-  %}<span class="text-secondary">No topics.</span>{% endfor %}
-</div>
-{% else %}
-<h1>Exam not found</h1>
-<a href="/exams">Back to exams</a>{% endif %}{% endblock %}
+{% endblock %}

@@ -1,34 +1,49 @@
-{% extends "layout.html" %}{% block content %}{% if user %}
+{% extends "layout.html" %}
+
+{% block content %}
 {% set breadcrumbs = [['Home', '/'], ['Users', '/users'], [user.name or user.id, none]] %}
 {% include "fragments/breadcrumbs.html" %}
-{% if user.imageFilename %}
-<img
-  class="entity-image entity-image-lg"
-  src="/static/{{ user.imageFilename }}"
-  alt="{{ user.name or user.id }}"
-/>
-{% endif %}
-<h1>{{ user.name or user.id }}</h1>
-{% if canEdit("updateUser") %}<a class="btn btn-outline-primary mb-3" href="/users/{{ user.id }}/edit">Edit user</a>{% endif %}
-{% set rating = user.rating %}{% set ratingClass = "" %}{% include "fragments/rating.html" %}
-<h2 class="h4 mt-4">Exams</h2>
+
+<div class="d-flex align-items-start gap-3">
+  {% if user.imageFilename %}
+  <img class="entity-image entity-image-lg" src="/static/{{ user.imageFilename }}" alt="{{ user.name or user.id }}"/>
+  {% endif %}
+
+  <div>
+    <h1>{{ user.name or user.id }}</h1>
+
+    {% if canEdit("updateUser") %}
+    <a class="btn btn-outline-primary mb-3" href="/users/{{ user.id }}/edit">Edit user</a>
+    {% endif %}
+
+    {% set rating = user.rating %}
+    {% set ratingClass = "" %}
+    {% include "fragments/rating.html" %}
+  </div>
+</div>
+
+<h2 class="h5 mb-0 text-decoration-underline">Exams</h2>
 <div class="row g-3">
-  {% for exam in exams.data %}{% include "fragments/exam.html" %}{% else %}
-  <div class="col-12"><div class="card p-3">No exams.</div></div>
+  {% for exam in exams.data %}
+  {% include "fragments/exam.html" %}
+  {% else %}
+  <div class="col-12">
+    <div class="card p-3">No exams.</div>
+  </div>
   {% endfor %}
 </div>
-<h2 class="h4 mt-4">Exam sessions</h2>
+
+<h2 class="h5 mb-0 text-decoration-underline">Exam sessions</h2>
 <div class="d-flex flex-column gap-3">
   {% for session in sessions %}
   <div class="card p-3">
-    {{ session.exam.name if session.exam else session.examId }}<span class="d-block small text-secondary"
-      >{{ session.answeredQuestionCount }}/{{ session.questionCount }} answered</span
-    >
+    {{ session.exam.name if session.exam else session.examId }}
+    <span class="d-block small text-secondary">
+      {{ session.answeredQuestionCount }}/{{ session.questionCount }} answered
+    </span>
   </div>
   {% else %}
   <div class="card p-3">No exam sessions.</div>
   {% endfor %}
 </div>
-{% else %}
-<h1>User not found</h1>
-<a href="/users">Back to users</a>{% endif %}{% endblock %}
+{% endblock %}
