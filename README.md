@@ -40,5 +40,4 @@ Use [RealFaviconGenerator](https://realfavicongenerator.net/) to generate favico
 ## TODO
 
 - Implement live reload for application code and all local Lambda functions in the development environment.
-- speed up local env docker reboots, introcude change watch mode locally
 - implement client application - which will contain all the browser logic/handlers (scripts.js)

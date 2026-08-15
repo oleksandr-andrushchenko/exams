@@ -7,6 +7,7 @@ services:
       - postgres
     volumes:
       - .:/usr/app
+      - graphql-node-modules:/usr/app/node_modules
     env_file:
       - .env
     environment:
@@ -27,6 +28,7 @@ services:
       - postgres
     volumes:
       - .:/usr/app
+      - ssr-node-modules:/usr/app/node_modules
     env_file:
       - .env
     environment:
@@ -50,4 +52,6 @@ services:
       - '${POSTGRES_PORT:-5432}:5432'
 
 volumes:
+  graphql-node-modules:
+  ssr-node-modules:
   postgres-data:

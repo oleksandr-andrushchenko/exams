@@ -33,7 +33,8 @@ down: ## Stop local Docker containers
 	$(DC) down
 
 .PHONY: restart
-restart: down up ## Restart local Docker containers
+restart: ## Restart local Docker containers
+	$(DC) up -d --build --force-recreate --remove-orphans
 
 .PHONY: rebuild
 rebuild: ## Rebuild and start Docker containers
