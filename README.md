@@ -40,3 +40,8 @@ Use [RealFaviconGenerator](https://realfavicongenerator.net/) to generate favico
 ## TODO
 
 - redirect to the same source page after the login
+- move login/logout processing to api lambda
+- add cloud formations & deployment scripts
+- replace graphql with rest
+- move api-lambda/src/server/* -> api-lambda/src/*
+- move common peaces from api-labmda to lambda-shared and reuse in both lambdas, for example: getQuestion or getExam
