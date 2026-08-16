@@ -2,7 +2,7 @@ import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
 import Exam from '../../../../api-lambda/src/entities/exam/Exam'
 // @ts-ignore
-import { getExams } from '../../graphql/exam/getExams'
+import { getExams } from '../../requests/exam/getExams'
 import GetExams from '../../../../api-lambda/src/schema/exam/GetExams'
 import TestFramework from '../../TestFramework'
 
@@ -33,7 +33,7 @@ describe('Get exams', () => {
       .send(getExams(query as GetExams))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
+    expect(res.body).toMatchObject(framework.apiError('BadRequestError'))
   })
   test.each([{ size: 1 }, { size: 2 }, { size: 3 }, { size: 4 }])(
     'Cursor (id, id:asc, size: $size)',

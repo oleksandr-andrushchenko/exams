@@ -7,6 +7,7 @@ export type RouteName =
   | 'examEdit'
   | 'questionEdit'
   | 'newExam'
+  | 'newQuestion'
   | 'examById'
   | 'questionById'
   | 'userById'
@@ -27,6 +28,7 @@ const definitions: Record<RouteName, string> = {
   examEdit: '/exams/:examId/edit',
   questionEdit: '/questions/:questionId/edit',
   newExam: '/exams/new',
+  newQuestion: '/questions/new',
   examById: '/exams/:examId',
   questionById: '/questions/:questionId',
   userById: '/users/:userId',

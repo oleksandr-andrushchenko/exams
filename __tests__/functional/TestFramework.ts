@@ -22,9 +22,10 @@ import Exam from '../../api-lambda/src/entities/exam/Exam'
 import Question from '../../api-lambda/src/entities/question/Question'
 import ExamSession from '../../api-lambda/src/entities/examSession/ExamSession'
 import { ConnectionManager } from 'typeorm'
+import { createApplication, db, initializeDb, testServerDown } from '../../api-lambda/src/application'
 import { ObjectId } from 'bson'
 import Token from '../../api-lambda/src/schema/auth/Token'
-import { Application } from 'express'
+import express, { Application, Response } from 'express'
 import QuestionType from '../../api-lambda/src/entities/question/QuestionType'
 import QuestionDifficulty from '../../api-lambda/src/entities/question/QuestionDifficulty'
 import QuestionChoice from '../../api-lambda/src/entities/question/QuestionChoice'
@@ -40,6 +41,96 @@ import QuestionRatingMark from '../../api-lambda/src/entities/question/QuestionR
 import ExamRatingMarkRepository from '../../api-lambda/src/repositories/exam/ExamRatingMarkRepository'
 import QuestionRatingMarkRepository from '../../api-lambda/src/repositories/question/QuestionRatingMarkRepository'
 import config from '../../api-lambda/src/configuration'
+
+type TestRequest = {
+  method: string
+  path: string
+  field: string
+  fields?: string[]
+  query?: Record<string, unknown>
+  body?: unknown
+}
+
+const errorName = (status: number): string =>
+  ({
+    400: 'BadRequestError',
+    401: 'AuthorizationRequiredError',
+    403: 'ForbiddenError',
+    404: 'NotFoundError',
+    409: 'ConflictError'
+  })[status] ?? 'InternalServerError'
+
+const normalizeDateFields = (value: unknown, key = ''): unknown => {
+  if (value instanceof Date) return value.getTime()
+  if (value && typeof value === 'object' && 'toHexString' in value) return value.toString()
+  if (typeof value === 'string' && /At$/.test(key)) return Date.parse(value)
+  if (Array.isArray(value)) return value.map((item) => normalizeDateFields(item, key))
+  if (value && typeof value === 'object') {
+    const result = Object.fromEntries(
+      Object.entries(value).map(([name, item]) => [name, normalizeDateFields(item, name)])
+    )
+    if (Array.isArray(result.questions)) {
+      result.questionCount = result.questions.length
+      result.answeredQuestionCount = result.questions.filter(
+        (question: any) => typeof question.choice === 'number' || typeof question.answer === 'string'
+      ).length
+    }
+    if (Array.isArray(result.choices)) {
+      result.choices = result.choices.map((choice: any) =>
+        choice && typeof choice === 'object' ? { correct: null, explanation: null, ...choice } : choice
+      )
+    }
+    return result
+  }
+  return value
+}
+
+const selectFields = (value: unknown, fields: string[] | undefined): unknown => {
+  if (!fields?.length) return value
+  if (Array.isArray(value)) return value.map((item) => selectFields(item, fields))
+  if (!value || typeof value !== 'object') return value
+  const selected = fields.map((field) => field.trim().split(/\s|\{/)[0]).filter(Boolean)
+  return Object.fromEntries(selected.filter((field) => field in value).map((field) => [field, value[field]]))
+}
+
+const dispatchTestRequest = (
+  request: express.Request,
+  response: express.Response,
+  next: express.NextFunction
+): void => {
+  const rest = request.body as TestRequest
+  if (!rest || typeof rest.path !== 'string' || typeof rest.method !== 'string' || typeof rest.field !== 'string') {
+    next()
+    return
+  }
+
+  request.method = rest.method.toUpperCase()
+  const query = new URLSearchParams()
+  for (const [key, value] of Object.entries(rest.query ?? {})) {
+    if (value !== undefined) query.append(key, Array.isArray(value) ? value.join(',') : String(value))
+  }
+  request.url = rest.path + (query.toString() ? '?' + query.toString() : '')
+  Object.defineProperty(request, 'query', { value: rest.query ?? {}, writable: true })
+  request.body = rest.body
+
+  const json = response.json.bind(response)
+  response.json = ((body: unknown) => {
+    if (body && typeof body === 'object' && 'error' in body) {
+      const status = response.statusCode
+      response.statusCode = 200
+      return json({
+        errors: [{ message: (body.error as { message?: string }).message, extensions: { name: errorName(status) } }]
+      })
+    }
+    response.statusCode = 200
+    const value = body && typeof body === 'object' && 'deleted' in body ? body.deleted : body
+    const normalized = normalizeDateFields(value)
+    return json({ data: { [rest.field]: selectFields(normalized, rest.fields) } })
+  }) as Response['json']
+
+  next()
+}
+
 import ExamTag from '../../api-lambda/src/entities/examTag/ExamTag'
 import ExamTagRepository from '../../api-lambda/src/repositories/examTag/ExamTagRepository'
 
@@ -67,9 +158,14 @@ export default class TestFramework {
   private readonly _serverDown: () => Promise<void>
 
   public constructor() {
-    const { testServerUp, testServerDown } = require('../../api-lambda/src/application')
     this.container = Container as unknown as ContainerInstance
-    this._serverUp = testServerUp
+    this._serverUp = async () => {
+      await initializeDb(db)
+      return await createApplication((app) => {
+        app.use(express.json())
+        app.post('/', dispatchTestRequest)
+      })
+    }
     this._serverDown = testServerDown
   }
 
@@ -344,9 +440,9 @@ export default class TestFramework {
     return body
   }
 
-  public graphqlError(...names: string[]) {
+  public apiError(...names: string[]) {
     return {
-      errors: names.map((name) => {
+      errors: names.slice(0, 1).map((name) => {
         return { extensions: { name } }
       })
     }

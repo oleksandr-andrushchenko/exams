@@ -5,9 +5,9 @@ import ExamTag from '../../../../api-lambda/src/entities/examTag/ExamTag'
 import User from '../../../../api-lambda/src/entities/user/User'
 import ExamPermission from '../../../../api-lambda/src/enums/exam/ExamPermission'
 import TestFramework from '../../TestFramework'
-import { createExam } from '../../graphql/exam/createExam'
-import { updateExam } from '../../graphql/exam/updateExam'
-import { getExams } from '../../graphql/exam/getExams'
+import { createExam } from '../../requests/exam/createExam'
+import { updateExam } from '../../requests/exam/updateExam'
+import { getExams } from '../../requests/exam/getExams'
 
 const framework: TestFramework = globalThis.framework
 const tagFields = ['tags { name slug rating examsCount imageFilename }']
@@ -99,7 +99,7 @@ describe('Exam tags', () => {
       .post('/')
       .send(getExams({ tag: 'typescript' }))
 
-    expect(res.body.data.exams).toEqual([{ id: tagged.body.data.createExam.id }])
+    expect(res.body.data.exams).toEqual([expect.objectContaining({ id: tagged.body.data.createExam.id })])
   })
 
   test('Rejects too many tags', async () => {
@@ -115,6 +115,6 @@ describe('Exam tags', () => {
       )
       .auth(token, { type: 'bearer' })
 
-    expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
+    expect(res.body).toMatchObject(framework.apiError('BadRequestError'))
   })
 })

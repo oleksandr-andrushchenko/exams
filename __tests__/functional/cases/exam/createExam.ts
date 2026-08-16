@@ -5,7 +5,7 @@ import User from '../../../../api-lambda/src/entities/user/User'
 import { ObjectId } from 'bson'
 import ExamPermission from '../../../../api-lambda/src/enums/exam/ExamPermission'
 // @ts-ignore
-import { createExam } from '../../graphql/exam/createExam'
+import { createExam } from '../../requests/exam/createExam'
 import CreateExam from '../../../../api-lambda/src/schema/exam/CreateExam'
 import TestFramework from '../../TestFramework'
 import Activity from '../../../../api-lambda/src/entities/activity/Activity'
@@ -20,7 +20,7 @@ describe('Create exam', () => {
       .send(createExam({ createExam: { name: 'any' } }))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
+    expect(res.body).toMatchObject(framework.apiError('AuthorizationRequiredError'))
   })
   test.each([
     { case: 'empty exam', exam: {} },
@@ -43,7 +43,7 @@ describe('Create exam', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
+    expect(res.body).toMatchObject(framework.apiError('BadRequestError'))
   })
   test('Forbidden', async () => {
     const user = await framework.fixture<User>(User, { permissions: [] })
@@ -54,7 +54,7 @@ describe('Create exam', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('ForbiddenError'))
+    expect(res.body).toMatchObject(framework.apiError('ForbiddenError'))
   })
   test('Conflict', async () => {
     await framework.clear(Exam)
@@ -67,7 +67,7 @@ describe('Create exam', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('ConflictError'))
+    expect(res.body).toMatchObject(framework.apiError('ConflictError'))
   })
   test('Created', async () => {
     await framework.clear(Exam)

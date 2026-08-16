@@ -2,7 +2,7 @@ import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
 import Question from '../../../../api-lambda/src/entities/question/Question'
 // @ts-ignore
-import { getQuestion } from '../../graphql/question/getQuestion'
+import { getQuestion } from '../../requests/question/getQuestion'
 import TestFramework from '../../TestFramework'
 import User from '../../../../api-lambda/src/entities/user/User'
 import QuestionType from '../../../../api-lambda/src/entities/question/QuestionType'
@@ -18,7 +18,7 @@ describe('Get question', () => {
       .send(getQuestion({ questionId: questionId.toString() }))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('NotFoundError'))
+    expect(res.body).toMatchObject(framework.apiError('NotFoundError'))
   })
   test('Bad request (invalid id)', async () => {
     const res = await request(framework.app)
@@ -26,7 +26,7 @@ describe('Get question', () => {
       .send(getQuestion({ questionId: 'invalid' }))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
+    expect(res.body).toMatchObject(framework.apiError('BadRequestError'))
   })
   test('Found (ownership)', async () => {
     const question = await framework.fixture<Question>(Question)

@@ -2,7 +2,7 @@ import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
 import User from '../../../../api-lambda/src/entities/user/User'
 // @ts-ignore
-import { createAuthenticationToken } from '../../graphql/authenticate/createAuthenticationToken'
+import { createAuthenticationToken } from '../../requests/authenticate/createAuthenticationToken'
 import { Credentials } from '../../../../api-lambda/src/schema/auth/Credentials'
 import TestFramework from '../../TestFramework'
 
@@ -26,14 +26,14 @@ describe('Create authentication token', () => {
       .send(createAuthenticationToken({ credentials: credentials as Credentials }))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError(...Array(times).fill('BadRequestError')))
+    expect(res.body).toMatchObject(framework.apiError(...Array(times).fill('BadRequestError')))
   })
   test('Not Found', async () => {
     const credentials = { email: 'any@any.com', password: 'password' }
     const res = await request(framework.app).post('/').send(createAuthenticationToken({ credentials }))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('NotFoundError'))
+    expect(res.body).toMatchObject(framework.apiError('NotFoundError'))
   })
   test('Forbidden', async () => {
     const user = await framework.fixture<User>(User)
@@ -41,7 +41,7 @@ describe('Create authentication token', () => {
     const res = await request(framework.app).post('/').send(createAuthenticationToken({ credentials }))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('ForbiddenError'))
+    expect(res.body).toMatchObject(framework.apiError('AuthorizationRequiredError'))
   })
   test('Created', async () => {
     const user = await framework.fixture<User>(User, { password: 'password' })

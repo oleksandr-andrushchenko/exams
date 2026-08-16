@@ -3,7 +3,7 @@ import request from 'supertest'
 import TestFramework from '../../TestFramework'
 import User from '../../../../api-lambda/src/entities/user/User'
 // @ts-ignore
-import { getUsers } from '../../graphql/user/getUsers'
+import { getUsers } from '../../requests/user/getUsers'
 import UserPermission from '../../../../api-lambda/src/enums/user/UserPermission'
 import GetUsers from '../../../../api-lambda/src/schema/user/GetUsers'
 
@@ -44,7 +44,7 @@ describe('Get users', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
+    expect(res.body).toMatchObject(framework.apiError('BadRequestError'))
   })
   test('No filter', async () => {
     await framework.clear(User)

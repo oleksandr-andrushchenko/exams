@@ -2,7 +2,7 @@ import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
 import ExamTag from '../../../../api-lambda/src/entities/examTag/ExamTag'
 import TestFramework from '../../TestFramework'
-import { getExamTags } from '../../graphql/examTag/getExamTags'
+import { getExamTags } from '../../requests/examTag/getExamTags'
 
 const framework: TestFramework = globalThis.framework
 

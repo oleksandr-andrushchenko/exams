@@ -4,7 +4,7 @@ import User from '../../../../api-lambda/src/entities/user/User'
 import ExamSession from '../../../../api-lambda/src/entities/examSession/ExamSession'
 import ExamSessionPermission from '../../../../api-lambda/src/enums/examSession/ExamSessionPermission'
 // @ts-ignore
-import { deleteExamSession } from '../../graphql/examSession/deleteExamSession'
+import { deleteExamSession } from '../../requests/examSession/deleteExamSession'
 import TestFramework from '../../TestFramework'
 
 const framework: TestFramework = globalThis.framework
@@ -17,7 +17,7 @@ describe('Delete examSession', () => {
       .send(deleteExamSession({ examSessionId: examSession.id.toString() }))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
+    expect(res.body).toMatchObject(framework.apiError('AuthorizationRequiredError'))
   })
   test('Bad request (invalid id)', async () => {
     const user = await framework.fixture<User>(User, {
@@ -30,7 +30,7 @@ describe('Delete examSession', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
+    expect(res.body).toMatchObject(framework.apiError('BadRequestError'))
   })
   test('Not found', async () => {
     const user = await framework.fixture<User>(User, {
@@ -44,7 +44,7 @@ describe('Delete examSession', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('NotFoundError'))
+    expect(res.body).toMatchObject(framework.apiError('NotFoundError'))
   })
   test('Forbidden', async () => {
     const user = await framework.fixture<User>(User)
@@ -56,7 +56,7 @@ describe('Delete examSession', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('ForbiddenError'))
+    expect(res.body).toMatchObject(framework.apiError('ForbiddenError'))
   })
   test('Deleted (has ownership)', async () => {
     const examSession = await framework.fixture<ExamSession>(ExamSession)

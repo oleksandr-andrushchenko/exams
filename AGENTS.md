@@ -46,7 +46,7 @@
 ## Lambda and client boundaries
 
 - The web Lambda owns GET page endpoints, including login and registration pages. All non-GET endpoints, including login, logout, uploads, and resource mutations, belong to the API Lambda. The web Lambda may pass the configured API URL to client scripts, but it must not proxy API requests.
-- The API Lambda owns resource operations, mutations, and GraphQL responses. The browser client communicates with it through AJAX calls only.
+- The API Lambda owns resource operations, mutations, authentication, uploads, and JSON/HTML responses through Express routes. The browser client communicates with it through AJAX calls only.
 - API responses may contain rendered HTML fragments, such as updated rating markup. The client should replace the corresponding page fragment with that response.
 - Shared HTML fragments used by both Lambdas belong in lambda-shared/templates/fragments.
 - Authentication cookies and their supporting token logic must be compatible between the web and API Lambdas.

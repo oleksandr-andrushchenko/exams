@@ -4,7 +4,7 @@ import Exam from '../../../../api-lambda/src/entities/exam/Exam'
 import User from '../../../../api-lambda/src/entities/user/User'
 import ExamPermission from '../../../../api-lambda/src/enums/exam/ExamPermission'
 // @ts-ignore
-import { deleteExam } from '../../graphql/exam/deleteExam'
+import { deleteExam } from '../../requests/exam/deleteExam'
 import TestFramework from '../../TestFramework'
 
 const framework: TestFramework = globalThis.framework
@@ -17,7 +17,7 @@ describe('Delete exam', () => {
       .send(deleteExam({ examId: exam.id.toString() }))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
+    expect(res.body).toMatchObject(framework.apiError('AuthorizationRequiredError'))
   })
   test('Bad request (invalid id)', async () => {
     const user = await framework.fixture<User>(User, { permissions: [ExamPermission.Delete] })
@@ -28,7 +28,7 @@ describe('Delete exam', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
+    expect(res.body).toMatchObject(framework.apiError('BadRequestError'))
   })
   test('Not found', async () => {
     const user = await framework.fixture<User>(User, { permissions: [ExamPermission.Delete] })
@@ -40,7 +40,7 @@ describe('Delete exam', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('NotFoundError'))
+    expect(res.body).toMatchObject(framework.apiError('NotFoundError'))
   })
   test('Forbidden', async () => {
     const user = await framework.fixture<User>(User)
@@ -52,7 +52,7 @@ describe('Delete exam', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('ForbiddenError'))
+    expect(res.body).toMatchObject(framework.apiError('ForbiddenError'))
   })
   test('Deleted (has ownership)', async () => {
     const exam = await framework.fixture<Exam>(Exam)

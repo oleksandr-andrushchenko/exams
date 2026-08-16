@@ -3,7 +3,7 @@ import request from 'supertest'
 import User from '../../../../api-lambda/src/entities/user/User'
 import config from '../../../../api-lambda/src/configuration'
 // @ts-ignore
-import { getPermission } from '../../graphql/permission/getPermission'
+import { getPermission } from '../../requests/permission/getPermission'
 import Permission from '../../../../api-lambda/src/enums/Permission'
 import TestFramework from '../../TestFramework'
 
@@ -16,7 +16,7 @@ describe('Get permission', () => {
       .send(getPermission(['items', 'hierarchy {regular root}']))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
+    expect(res.body).toMatchObject(framework.apiError('AuthorizationRequiredError'))
   })
   test('OK', async () => {
     const user = await framework.fixture<User>(User)

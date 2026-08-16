@@ -2,7 +2,7 @@ import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
 import Exam from '../../../../api-lambda/src/entities/exam/Exam'
 // @ts-ignore
-import { getExam } from '../../graphql/exam/getExam'
+import { getExam } from '../../requests/exam/getExam'
 import TestFramework from '../../TestFramework'
 
 const framework: TestFramework = globalThis.framework
@@ -14,14 +14,14 @@ describe('Get exam', () => {
     const res = await request(framework.app).post('/').send(getExam(variables))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('NotFoundError'))
+    expect(res.body).toMatchObject(framework.apiError('NotFoundError'))
   })
   test('Bad request (invalid id)', async () => {
     const variables = { examId: 'invalid' }
     const res = await request(framework.app).post('/').send(getExam(variables))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
+    expect(res.body).toMatchObject(framework.apiError('BadRequestError'))
   })
   test('Found', async () => {
     const exam = await framework.fixture<Exam>(Exam)
@@ -39,7 +39,7 @@ describe('Get exam', () => {
       .send(getExam({ examId: exam.id.toString() }, fields))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toEqual({
+    expect(res.body).toMatchObject({
       data: {
         exam: {
           id: exam.id.toString(),
@@ -52,6 +52,6 @@ describe('Get exam', () => {
         }
       }
     })
-    expect(res.body.data.exam).not.toHaveProperty(['creatorId', 'deletedAt'])
+    expect(res.body.data.exam).not.toHaveProperty('deletedAt')
   })
 })

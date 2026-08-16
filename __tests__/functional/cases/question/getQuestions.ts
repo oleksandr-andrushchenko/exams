@@ -3,7 +3,7 @@ import request from 'supertest'
 import Exam from '../../../../api-lambda/src/entities/exam/Exam'
 import Question from '../../../../api-lambda/src/entities/question/Question'
 // @ts-ignore
-import { getQuestions } from '../../graphql/question/getQuestions'
+import { getQuestions } from '../../requests/question/getQuestions'
 import GetQuestions from '../../../../api-lambda/src/schema/question/GetQuestions'
 import TestFramework from '../../TestFramework'
 import User from '../../../../api-lambda/src/entities/user/User'
@@ -33,7 +33,7 @@ describe('Get questions', () => {
       .send(getQuestions(query as GetQuestions))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
+    expect(res.body).toMatchObject(framework.apiError('BadRequestError'))
   })
   test('Empty by exam', async () => {
     await framework.clear(Question)

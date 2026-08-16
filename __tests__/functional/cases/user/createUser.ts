@@ -4,7 +4,7 @@ import User from '../../../../api-lambda/src/entities/user/User'
 import { ObjectId } from 'bson'
 import UserPermission from '../../../../api-lambda/src/enums/user/UserPermission'
 // @ts-ignore
-import { createUser } from '../../graphql/user/createUser'
+import { createUser } from '../../requests/user/createUser'
 import CreateUser from '../../../../api-lambda/src/schema/user/CreateUser'
 import Permission from '../../../../api-lambda/src/enums/Permission'
 import TestFramework from '../../TestFramework'
@@ -18,7 +18,7 @@ describe('Create user', () => {
       .send(createUser({ createUser: { email: 'a@a.com', password: 'password' } }))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
+    expect(res.body).toMatchObject(framework.apiError('AuthorizationRequiredError'))
   })
   test.each([
     { case: 'empty user', user: {}, times: 2 },
@@ -51,7 +51,7 @@ describe('Create user', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError(...Array(times).fill('BadRequestError')))
+    expect(res.body).toMatchObject(framework.apiError(...Array(times).fill('BadRequestError')))
   })
   test('Forbidden', async () => {
     const user = await framework.fixture<User>(User)
@@ -70,7 +70,7 @@ describe('Create user', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('ForbiddenError'))
+    expect(res.body).toMatchObject(framework.apiError('ForbiddenError'))
   })
   test('Conflict (email)', async () => {
     const user1 = await framework.fixture<User>(User)
@@ -90,7 +90,7 @@ describe('Create user', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('ConflictError'))
+    expect(res.body).toMatchObject(framework.apiError('ConflictError'))
   })
   test('Created', async () => {
     await framework.clear(User)

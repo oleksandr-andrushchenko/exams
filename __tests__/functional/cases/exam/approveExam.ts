@@ -4,7 +4,7 @@ import Exam from '../../../../api-lambda/src/entities/exam/Exam'
 import User from '../../../../api-lambda/src/entities/user/User'
 import ExamPermission from '../../../../api-lambda/src/enums/exam/ExamPermission'
 // @ts-ignore
-import { toggleExamApprove } from '../../graphql/exam/toggleExamApprove'
+import { toggleExamApprove } from '../../requests/exam/toggleExamApprove'
 import TestFramework from '../../TestFramework'
 import Activity from '../../../../api-lambda/src/entities/activity/Activity'
 import ExamEvent from '../../../../api-lambda/src/enums/exam/ExamEvent'
@@ -18,7 +18,7 @@ describe('Approve exam', () => {
     const res = await request(framework.app).post('/').send(toggleExamApprove({ examId }))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
+    expect(res.body).toMatchObject(framework.apiError('AuthorizationRequiredError'))
   })
   test('Bad request (invalid exam id)', async () => {
     const user = await framework.fixture<User>(User, { permissions: [ExamPermission.Approve] })
@@ -29,7 +29,7 @@ describe('Approve exam', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
+    expect(res.body).toMatchObject(framework.apiError('BadRequestError'))
   })
   test('Not found', async () => {
     const user = await framework.fixture<User>(User, { permissions: [ExamPermission.Approve] })
@@ -41,7 +41,7 @@ describe('Approve exam', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('NotFoundError'))
+    expect(res.body).toMatchObject(framework.apiError('NotFoundError'))
   })
   test('Forbidden (no permission)', async () => {
     const user = await framework.fixture<User>(User)
@@ -54,7 +54,7 @@ describe('Approve exam', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('ForbiddenError'))
+    expect(res.body).toMatchObject(framework.apiError('ForbiddenError'))
   })
   test('Forbidden (ownership without permission)', async () => {
     const user = await framework.fixture<User>(User)
@@ -67,7 +67,7 @@ describe('Approve exam', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('ForbiddenError'))
+    expect(res.body).toMatchObject(framework.apiError('ForbiddenError'))
   })
   test('Approved', async () => {
     await framework.clear(Exam)

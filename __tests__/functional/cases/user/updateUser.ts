@@ -2,7 +2,7 @@ import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
 import User from '../../../../api-lambda/src/entities/user/User'
 // @ts-ignore
-import { updateUser } from '../../graphql/user/updateUser'
+import { updateUser } from '../../requests/user/updateUser'
 import TestFramework from '../../TestFramework'
 import UserPermission from '../../../../api-lambda/src/enums/user/UserPermission'
 import UpdateUser from '../../../../api-lambda/src/schema/user/UpdateUser'
@@ -19,7 +19,7 @@ describe('Update user', () => {
       .send(updateUser({ userId: user.id.toString(), updateUser: { name: 'any' } }))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
+    expect(res.body).toMatchObject(framework.apiError('AuthorizationRequiredError'))
   })
   test('Bad request (invalid id)', async () => {
     const user = await framework.fixture<User>(User, { permissions: [UserPermission.Update] })
@@ -30,7 +30,7 @@ describe('Update user', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
+    expect(res.body).toMatchObject(framework.apiError('BadRequestError'))
   })
   test('Not found', async () => {
     const user = await framework.fixture<User>(User, { permissions: [UserPermission.Update] })
@@ -42,7 +42,7 @@ describe('Update user', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('NotFoundError'))
+    expect(res.body).toMatchObject(framework.apiError('NotFoundError'))
   })
   test.each([
     { case: 'name is an object', body: { name: {} } },
@@ -65,7 +65,7 @@ describe('Update user', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
+    expect(res.body).toMatchObject(framework.apiError('BadRequestError'))
     expect(res.body.errors).toHaveLength(1)
   })
   test('Forbidden', async () => {
@@ -82,7 +82,7 @@ describe('Update user', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('ForbiddenError'))
+    expect(res.body).toMatchObject(framework.apiError('ForbiddenError'))
   })
   test('Conflict (email)', async () => {
     const user1 = await framework.fixture<User>(User)
@@ -100,7 +100,7 @@ describe('Update user', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('ConflictError'))
+    expect(res.body).toMatchObject(framework.apiError('ConflictError'))
   })
   test('Updated (has ownership)', async () => {
     await framework.clear(User)

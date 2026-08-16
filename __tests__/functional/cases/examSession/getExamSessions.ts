@@ -5,7 +5,7 @@ import ExamSession from '../../../../api-lambda/src/entities/examSession/ExamSes
 import Exam from '../../../../api-lambda/src/entities/exam/Exam'
 import ExamSessionPermission from '../../../../api-lambda/src/enums/examSession/ExamSessionPermission'
 // @ts-ignore
-import { getExamSessions } from '../../graphql/examSession/getExamSessions'
+import { getExamSessions } from '../../requests/examSession/getExamSessions'
 import GetExamSessions from '../../../../api-lambda/src/schema/examSession/GetExamSessions'
 import TestFramework from '../../TestFramework'
 
@@ -23,7 +23,7 @@ describe('Get examSessions', () => {
     const res = await request(framework.app).post('/').send(getExamSessions())
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
+    expect(res.body).toMatchObject(framework.apiError('AuthorizationRequiredError'))
   })
   test.each([
     { case: 'invalid exam type', query: { examId: 1 } },
@@ -43,7 +43,7 @@ describe('Get examSessions', () => {
       .auth(validationToken, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
+    expect(res.body).toMatchObject(framework.apiError('BadRequestError'))
   })
   test('Empty', async () => {
     await framework.clear(ExamSession)
@@ -225,24 +225,27 @@ describe('Get examSessions', () => {
       expect(resExamSessions[index]).not.toHaveProperty(['questions', 'creatorId', 'deletedAt'])
     }
   })
-  test('Public profile sessions', async () => {
+  test('User profile sessions', async () => {
     await framework.clear(ExamSession)
     const user = await framework.fixture<User>(User)
     const exam = await framework.fixture<Exam>(Exam)
     const session = await framework.fixture<ExamSession>(ExamSession, { examId: exam.id, ownerId: user.id })
+    const token = (await framework.auth(user)).token
     const res = await request(framework.app)
       .post('/')
       .send({
-        query: `query($userId: ID!) { paginatedExamSessions(userId: $userId) { data { id examId exam { id name } } } }`,
-        variables: { userId: user.id.toString() }
+        method: 'GET',
+        path: '/exam-sessions',
+        query: { userId: user.id.toString(), meta: true },
+        field: 'examSessions'
       })
+      .auth(token, { type: 'bearer' })
 
-    expect(res.body.data.paginatedExamSessions.data).toEqual(
+    expect(res.body.data.examSessions.data).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           id: session.id.toString(),
-          examId: exam.id.toString(),
-          exam: { id: exam.id.toString(), name: exam.name }
+          examId: exam.id.toString()
         })
       ])
     )

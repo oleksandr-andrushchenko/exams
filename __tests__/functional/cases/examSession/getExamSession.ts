@@ -4,7 +4,7 @@ import ExamSession from '../../../../api-lambda/src/entities/examSession/ExamSes
 import User from '../../../../api-lambda/src/entities/user/User'
 import ExamSessionPermission from '../../../../api-lambda/src/enums/examSession/ExamSessionPermission'
 // @ts-ignore
-import { getExamSession } from '../../graphql/examSession/getExamSession'
+import { getExamSession } from '../../requests/examSession/getExamSession'
 import TestFramework from '../../TestFramework'
 
 const framework: TestFramework = globalThis.framework
@@ -17,7 +17,7 @@ describe('Get examSession', () => {
       .send(getExamSession({ examSessionId: examSession.id.toString() }))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
+    expect(res.body).toMatchObject(framework.apiError('AuthorizationRequiredError'))
   })
   test('Bad request (invalid id)', async () => {
     const user = await framework.fixture<User>(User, { permissions: [ExamSessionPermission.Get] })
@@ -28,7 +28,7 @@ describe('Get examSession', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
+    expect(res.body).toMatchObject(framework.apiError('BadRequestError'))
   })
   test('Not found', async () => {
     const user = await framework.fixture<User>(User, { permissions: [ExamSessionPermission.Get] })
@@ -40,7 +40,7 @@ describe('Get examSession', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('NotFoundError'))
+    expect(res.body).toMatchObject(framework.apiError('NotFoundError'))
   })
   test('Forbidden', async () => {
     const user = await framework.fixture<User>(User)
@@ -52,7 +52,7 @@ describe('Get examSession', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('ForbiddenError'))
+    expect(res.body).toMatchObject(framework.apiError('ForbiddenError'))
   })
   test('Found (ownership)', async () => {
     const examSession = await framework.fixture<ExamSession>(ExamSession)

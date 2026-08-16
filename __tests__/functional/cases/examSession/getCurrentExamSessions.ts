@@ -4,7 +4,7 @@ import User from '../../../../api-lambda/src/entities/user/User'
 import ExamSession from '../../../../api-lambda/src/entities/examSession/ExamSession'
 import Exam from '../../../../api-lambda/src/entities/exam/Exam'
 // @ts-ignore
-import { getCurrentExamSessions } from '../../graphql/examSession/getCurrentExamSessions'
+import { getCurrentExamSessions } from '../../requests/examSession/getCurrentExamSessions'
 import TestFramework from '../../TestFramework'
 import GetCurrentExamSessions from '../../../../api-lambda/src/schema/examSession/GetCurrentExamSessions'
 
@@ -18,7 +18,7 @@ describe('Get current examSessions', () => {
       .send(getCurrentExamSessions({ examIds: [exam.id.toString()] }))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
+    expect(res.body).toMatchObject(framework.apiError('AuthorizationRequiredError'))
   })
   test.each([
     { case: 'empty body', query: {} },
@@ -37,7 +37,7 @@ describe('Get current examSessions', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
+    expect(res.body).toMatchObject(framework.apiError('BadRequestError'))
   })
   test('Empty', async () => {
     await framework.clear(ExamSession)

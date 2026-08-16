@@ -4,7 +4,7 @@ import ExamSession from '../../../../api-lambda/src/entities/examSession/ExamSes
 import Question from '../../../../api-lambda/src/entities/question/Question'
 import User from '../../../../api-lambda/src/entities/user/User'
 // @ts-ignore
-import { createExamSessionQuestionAnswer } from '../../graphql/examSession/createExamSessionQuestionAnswer'
+import { createExamSessionQuestionAnswer } from '../../requests/examSession/createExamSessionQuestionAnswer'
 import CreateExamSessionQuestionAnswer from '../../../../api-lambda/src/schema/examSession/CreateExamSessionQuestionAnswer'
 import ExamSessionPermission from '../../../../api-lambda/src/enums/examSession/ExamSessionPermission'
 import TestFramework from '../../TestFramework'
@@ -34,7 +34,7 @@ describe('Create examSession question answer', () => {
       )
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
+    expect(res.body).toMatchObject(framework.apiError('AuthorizationRequiredError'))
   })
   test('Not found (examSession)', async () => {
     const user = await framework.fixture<User>(User, {
@@ -55,7 +55,7 @@ describe('Create examSession question answer', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('NotFoundError'))
+    expect(res.body).toMatchObject(framework.apiError('NotFoundError'))
   })
   test('Not found (question)', async () => {
     const examSession = await framework.fixture<ExamSession>(ExamSession)
@@ -74,7 +74,7 @@ describe('Create examSession question answer', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('NotFoundError'))
+    expect(res.body).toMatchObject(framework.apiError('NotFoundError'))
   })
   test('Bad request (empty body)', async () => {
     const user = await framework.fixture<User>(User, {
@@ -95,7 +95,7 @@ describe('Create examSession question answer', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
+    expect(res.body).toMatchObject(framework.apiError('BadRequestError'))
   })
   test('Forbidden', async () => {
     const user = await framework.fixture<User>(User)
@@ -120,7 +120,7 @@ describe('Create examSession question answer', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('ForbiddenError'))
+    expect(res.body).toMatchObject(framework.apiError('ForbiddenError'))
   })
   test('Created', async () => {
     const examSession = await framework.fixture<ExamSession>(ExamSession)

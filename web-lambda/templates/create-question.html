@@ -1,0 +1,24 @@
+{% extends "layout.html" %}{% block content %}
+<h1>Add question to {{ exam.name }}</h1>
+<form class="card card-body d-flex gap-3" data-api-form="createQuestion" data-success-url="{{ url("questionProfile", { userSlug: currentUser.slug, examSlug: exam.slug, questionSlug: "__SLUG__" }) }}">
+  <input name="examId" type="hidden" value="{{ exam.id }}">
+  <label>Title<textarea class="form-control" name="title" minlength="10" maxlength="3000" required></textarea></label>
+  <label>Difficulty<select class="form-select" name="difficulty" required>
+    <option value="easy">Easy</option>
+    <option selected value="moderate">Moderate</option>
+    <option value="difficult">Difficult</option>
+    <option value="expert">Expert</option>
+  </select></label>
+  <input name="type" type="hidden" value="choice">
+  <fieldset class="d-flex flex-column gap-2">
+    <legend class="fs-6">Choices</legend>
+    {% for number in [1, 2, 3, 4] %}
+    <div class="choice border rounded p-2">
+      <label>Choice {{ number }}<input class="form-control" name="choiceTitle" minlength="10" maxlength="3000" required></label>
+      <label class="form-check"><input class="form-check-input" name="choiceCorrect" type="checkbox" value="true"> Correct answer</label>
+    </div>
+    {% endfor %}
+  </fieldset>
+  <button class="btn btn-primary">Add question</button>
+</form>
+{% endblock %}

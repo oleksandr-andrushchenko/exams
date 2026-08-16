@@ -3,7 +3,7 @@ import request from 'supertest'
 import User from '../../../../api-lambda/src/entities/user/User'
 import QuestionPermission from '../../../../api-lambda/src/enums/question/QuestionPermission'
 // @ts-ignore
-import { rateQuestion } from '../../graphql/question/rateQuestion'
+import { rateQuestion } from '../../requests/question/rateQuestion'
 import TestFramework from '../../TestFramework'
 import QuestionRatingMark from '../../../../api-lambda/src/entities/question/QuestionRatingMark'
 import Question from '../../../../api-lambda/src/entities/question/Question'
@@ -20,7 +20,7 @@ describe('Rate question', () => {
       .send(rateQuestion({ questionId, mark: 1 }))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
+    expect(res.body).toMatchObject(framework.apiError('AuthorizationRequiredError'))
   })
   test.each([
     { case: 'no question', body: {} },
@@ -36,7 +36,7 @@ describe('Rate question', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
+    expect(res.body).toMatchObject(framework.apiError('BadRequestError'))
   })
   test.each([
     { case: 'no mark', body: {} },
@@ -56,7 +56,7 @@ describe('Rate question', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
+    expect(res.body).toMatchObject(framework.apiError('BadRequestError'))
   })
   test('Not found', async () => {
     const user = await framework.fixture<User>(User, { permissions: [QuestionPermission.Rate] })
@@ -68,7 +68,7 @@ describe('Rate question', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('NotFoundError'))
+    expect(res.body).toMatchObject(framework.apiError('NotFoundError'))
   })
   test('Forbidden (no permission)', async () => {
     const user = await framework.fixture<User>(User, { permissions: [] })
@@ -81,7 +81,7 @@ describe('Rate question', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('ForbiddenError'))
+    expect(res.body).toMatchObject(framework.apiError('ForbiddenError'))
   })
   test('Rated', async () => {
     await framework.clear([QuestionRatingMark, Question])

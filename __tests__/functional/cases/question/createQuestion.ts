@@ -7,7 +7,7 @@ import Question from '../../../../api-lambda/src/entities/question/Question'
 import { faker } from '@faker-js/faker'
 import QuestionPermission from '../../../../api-lambda/src/enums/question/QuestionPermission'
 // @ts-ignore
-import { createQuestion } from '../../graphql/question/createQuestion'
+import { createQuestion } from '../../requests/question/createQuestion'
 import CreateQuestion from '../../../../api-lambda/src/schema/question/CreateQuestion'
 import TestFramework from '../../TestFramework'
 import QuestionType from '../../../../api-lambda/src/entities/question/QuestionType'
@@ -31,7 +31,7 @@ describe('Create question', () => {
       .send(createQuestion({ createQuestion: create }))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
+    expect(res.body).toMatchObject(framework.apiError('AuthorizationRequiredError'))
   })
   test('Not found (exam)', async () => {
     const examId = await framework.fakeId()
@@ -50,7 +50,7 @@ describe('Create question', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('NotFoundError'))
+    expect(res.body).toMatchObject(framework.apiError('NotFoundError'))
   })
   const createBadRequestBody = (key: keyof CreateQuestion, value: any): Partial<CreateQuestion> => {
     return {
@@ -150,7 +150,7 @@ describe('Create question', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError(...Array(times).fill('BadRequestError')))
+    expect(res.body).toMatchObject(framework.apiError(...Array(times).fill('BadRequestError')))
   })
   test.each([
     { case: 'no permissions', permissions: [] }
@@ -173,7 +173,7 @@ describe('Create question', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('ForbiddenError'))
+    expect(res.body).toMatchObject(framework.apiError('ForbiddenError'))
   })
   test('Conflict', async () => {
     const user = await framework.fixture<User>(User)
@@ -193,7 +193,7 @@ describe('Create question', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('ConflictError'))
+    expect(res.body).toMatchObject(framework.apiError('ConflictError'))
   })
   test.each([
     { case: 'has exam ownership', ownership: true },

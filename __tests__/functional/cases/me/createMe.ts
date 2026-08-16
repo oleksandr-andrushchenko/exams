@@ -3,7 +3,7 @@ import request from 'supertest'
 import User from '../../../../api-lambda/src/entities/user/User'
 import { ObjectId } from 'bson'
 // @ts-ignore
-import { createMe } from '../../graphql/me/createMe'
+import { createMe } from '../../requests/me/createMe'
 import CreateMe from '../../../../api-lambda/src/schema/user/CreateMe'
 import TestFramework from '../../TestFramework'
 
@@ -34,7 +34,7 @@ describe('Create me', () => {
       .send(createMe({ createMe: me as CreateMe }))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError(...Array(times).fill('BadRequestError')))
+    expect(res.body).toMatchObject(framework.apiError(...Array(times).fill('BadRequestError')))
   })
   test('Conflict (email)', async () => {
     const user = await framework.fixture<User>(User)
@@ -51,7 +51,7 @@ describe('Create me', () => {
       )
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('ConflictError'))
+    expect(res.body).toMatchObject(framework.apiError('ConflictError'))
   })
   test('Created', async () => {
     await framework.clear(User)

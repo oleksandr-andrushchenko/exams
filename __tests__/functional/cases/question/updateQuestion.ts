@@ -5,7 +5,7 @@ import User from '../../../../api-lambda/src/entities/user/User'
 import { faker } from '@faker-js/faker'
 import QuestionPermission from '../../../../api-lambda/src/enums/question/QuestionPermission'
 // @ts-ignore
-import { updateQuestion } from '../../graphql/question/updateQuestion'
+import { updateQuestion } from '../../requests/question/updateQuestion'
 import UpdateQuestion from '../../../../api-lambda/src/schema/question/UpdateQuestion'
 import TestFramework from '../../TestFramework'
 import QuestionType from '../../../../api-lambda/src/entities/question/QuestionType'
@@ -22,7 +22,7 @@ describe('Update question', () => {
       .send(updateQuestion({ questionId: question.id.toString(), updateQuestion: { title: 'any' } }))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
+    expect(res.body).toMatchObject(framework.apiError('AuthorizationRequiredError'))
   })
   test('Bad request (invalid question id)', async () => {
     const user = await framework.fixture<User>(User, { permissions: [QuestionPermission.Update] })
@@ -33,7 +33,7 @@ describe('Update question', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
+    expect(res.body).toMatchObject(framework.apiError('BadRequestError'))
   })
   test('Not found (question)', async () => {
     const user = await framework.fixture<User>(User, { permissions: [QuestionPermission.Update] })
@@ -45,7 +45,7 @@ describe('Update question', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('NotFoundError'))
+    expect(res.body).toMatchObject(framework.apiError('NotFoundError'))
   })
   test('Not found (exam)', async () => {
     const examId = await framework.fakeId()
@@ -63,7 +63,7 @@ describe('Update question', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('NotFoundError'))
+    expect(res.body).toMatchObject(framework.apiError('NotFoundError'))
   })
   test.each([
     { case: 'exam id as object', body: { examId: {} } },
@@ -130,7 +130,7 @@ describe('Update question', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
+    expect(res.body).toMatchObject(framework.apiError('BadRequestError'))
   })
   test.each([
     { case: 'no permissions', permissions: [] }
@@ -152,7 +152,7 @@ describe('Update question', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('ForbiddenError'))
+    expect(res.body).toMatchObject(framework.apiError('ForbiddenError'))
   })
   test('Conflict', async () => {
     const question1 = await framework.fixture<Question>(Question)
@@ -170,7 +170,7 @@ describe('Update question', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('ConflictError'))
+    expect(res.body).toMatchObject(framework.apiError('ConflictError'))
   })
   test('Updated (has ownership)', async () => {
     await framework.clear(Question)

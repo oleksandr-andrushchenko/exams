@@ -4,7 +4,7 @@ import Question from '../../../../api-lambda/src/entities/question/Question'
 import User from '../../../../api-lambda/src/entities/user/User'
 import QuestionPermission from '../../../../api-lambda/src/enums/question/QuestionPermission'
 // @ts-ignore
-import { deleteQuestion } from '../../graphql/question/deleteQuestion'
+import { deleteQuestion } from '../../requests/question/deleteQuestion'
 import TestFramework from '../../TestFramework'
 
 const framework: TestFramework = globalThis.framework
@@ -17,7 +17,7 @@ describe('Delete question', () => {
       .send(deleteQuestion({ questionId: question.id.toString() }))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
+    expect(res.body).toMatchObject(framework.apiError('AuthorizationRequiredError'))
   })
   test('Bad request (invalid id)', async () => {
     const user = await framework.fixture<User>(User, { permissions: [QuestionPermission.Delete] })
@@ -28,7 +28,7 @@ describe('Delete question', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
+    expect(res.body).toMatchObject(framework.apiError('BadRequestError'))
   })
   test('Not found', async () => {
     const user = await framework.fixture<User>(User, { permissions: [QuestionPermission.Delete] })
@@ -40,7 +40,7 @@ describe('Delete question', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('NotFoundError'))
+    expect(res.body).toMatchObject(framework.apiError('NotFoundError'))
   })
   test('Forbidden', async () => {
     const user = await framework.fixture<User>(User)
@@ -52,7 +52,7 @@ describe('Delete question', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('ForbiddenError'))
+    expect(res.body).toMatchObject(framework.apiError('ForbiddenError'))
   })
   test('Deleted (has ownership)', async () => {
     const question = await framework.fixture<Question>(Question)

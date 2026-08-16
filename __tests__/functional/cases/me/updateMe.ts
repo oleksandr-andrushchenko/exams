@@ -2,7 +2,7 @@ import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
 import User from '../../../../api-lambda/src/entities/user/User'
 // @ts-ignore
-import { updateMe } from '../../graphql/me/updateMe'
+import { updateMe } from '../../requests/me/updateMe'
 import UpdateMe from '../../../../api-lambda/src/schema/user/UpdateMe'
 import TestFramework from '../../TestFramework'
 import Permission from '../../../../api-lambda/src/enums/Permission'
@@ -16,7 +16,7 @@ describe('Update me', () => {
       .send(updateMe({ updateMe: { name: 'any' } }))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
+    expect(res.body).toMatchObject(framework.apiError('AuthorizationRequiredError'))
   })
   test('Bad request (empty body)', async () => {
     const user = await framework.fixture<User>(User)
@@ -27,7 +27,7 @@ describe('Update me', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
+    expect(res.body).toMatchObject(framework.apiError('BadRequestError'))
   })
   test('Conflict (email)', async () => {
     const user1 = await framework.fixture<User>(User)
@@ -39,7 +39,7 @@ describe('Update me', () => {
       .auth(token, { type: 'bearer' })
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('ConflictError'))
+    expect(res.body).toMatchObject(framework.apiError('ConflictError'))
   })
   test('Updated', async () => {
     const user = await framework.fixture<User>(User, { permissions: [Permission.Root] })

@@ -33,24 +33,9 @@ $(document)
       window.alert('Please select a rating.')
       return
     }
-    $.ajax({
-      url: document.body.dataset.apiUrl,
-      method: 'POST',
-      contentType: 'application/json',
-      data: JSON.stringify({
-        query:
-          'mutation RateQuestion($questionId: ID!, $mark: Int!) { rateQuestion(questionId: $questionId, mark: $mark) { rating { html } } }',
-        variables: { questionId: $form.data('question-id'), mark }
-      }),
-      dataType: 'json',
-      xhrFields: { withCredentials: true }
-    })
+    apiRequest('/questions/' + $form.data('question-id') + '/rating', { mark })
       .done((result) => {
-        if (result.errors?.length) {
-          window.alert(result.errors[0].message || 'Unable to save your rating.')
-          return
-        }
-        const html = result.data?.rateQuestion?.rating?.html
+        const html = result.html
         if (!html) {
           window.alert('Unable to save your rating.')
           return
@@ -62,15 +47,17 @@ $(document)
         }).append($(html.trim()))
         $form.replaceWith($replacement)
       })
-      .fail((response) => window.alert(response.responseJSON?.errors?.[0]?.message || 'Unable to save your rating.'))
+      .fail(showApiError)
   })
 
-const graphqlRequest = (query, variables) =>
+const apiEndpoint = (path) => document.body.dataset.apiUrl.replace(/\/$/, '') + path
+
+const apiRequest = (path, data, method = 'POST') =>
   $.ajax({
-    url: document.body.dataset.apiUrl,
-    method: 'POST',
+    url: apiEndpoint(path),
+    method,
     contentType: 'application/json',
-    data: JSON.stringify({ query, variables }),
+    data: data === undefined ? undefined : JSON.stringify(data),
     dataType: 'json',
     xhrFields: { withCredentials: true }
   })
@@ -81,7 +68,7 @@ const uploadImage = ($form) => {
   const body = new FormData()
   body.append('image', file)
   return $.ajax({
-    url: document.body.dataset.apiUrl.replace(/\/graphql$/, '/upload'),
+    url: apiEndpoint('/upload'),
     method: 'POST',
     data: body,
     processData: false,
@@ -95,8 +82,6 @@ const showApiError = (response) => {
   const error = response.responseJSON?.errors?.[0] || response.responseJSON?.error
   window.alert(error?.message || error || 'Request failed.')
 }
-
-const apiEndpoint = (path) => document.body.dataset.apiUrl.replace(/\/graphql$/, path)
 
 $(document).on('click', '[data-api-form="login"] button', function (event) {
   event.preventDefault()
@@ -154,19 +139,13 @@ $(document).on('submit', '[data-api-form="createMe"]', function (event) {
     : Promise.resolve(undefined)
   imageData
     .then((encodedImage) =>
-      graphqlRequest('mutation CreateMe($createMe: CreateMe!) { createMe(createMe: $createMe) { id } }', {
-        createMe: {
-          email: $form.find('[name="email"]').val(),
-          password: $form.find('[name="password"]').val(),
-          imageData: encodedImage
-        }
+      apiRequest('/me', {
+        email: $form.find('[name="email"]').val(),
+        password: $form.find('[name="password"]').val(),
+        imageData: encodedImage
       })
     )
     .done((result) => {
-      if (result.errors?.length) {
-        showApiError({ responseJSON: result })
-        return
-      }
       window.location.href = $form.data('success-url')
     })
     .fail(showApiError)
@@ -177,20 +156,41 @@ $(document).on('submit', '[data-api-form="createExam"]', function (event) {
   const $form = $(this)
   uploadImage($form)
     .then((imageFilename) =>
-      graphqlRequest('mutation CreateExam($createExam: CreateExam!) { createExam(createExam: $createExam) { slug } }', {
-        createExam: {
-          name: $form.find('[name="name"]').val(),
-          requiredScore: Number($form.find('[name="requiredScore"]').val() || 0),
-          imageFilename
-        }
+      apiRequest('/exams', {
+        name: $form.find('[name="name"]').val(),
+        requiredScore: Number($form.find('[name="requiredScore"]').val() || 0),
+        imageFilename
       })
     )
     .done((result) => {
-      if (result.errors?.length) {
-        showApiError({ responseJSON: result })
-        return
+      const slug = result.slug
+      if (slug) window.location.href = $form.data('success-url').replace('__SLUG__', encodeURIComponent(slug))
+    })
+    .fail(showApiError)
+})
+
+$(document).on('submit', '[data-api-form="createQuestion"]', function (event) {
+  event.preventDefault()
+  const $form = $(this)
+  const choices = $form
+    .find('.choice')
+    .map(function () {
+      const $choice = $(this)
+      return {
+        title: $choice.find('[name="choiceTitle"]').val(),
+        correct: $choice.find('[name="choiceCorrect"]').is(':checked')
       }
-      const slug = result.data?.createExam?.slug
+    })
+    .get()
+  apiRequest('/questions', {
+    examId: $form.find('[name="examId"]').val(),
+    title: $form.find('[name="title"]').val(),
+    difficulty: $form.find('[name="difficulty"]').val(),
+    type: $form.find('[name="type"]').val(),
+    choices
+  })
+    .done((result) => {
+      const slug = result.slug
       if (slug) window.location.href = $form.data('success-url').replace('__SLUG__', encodeURIComponent(slug))
     })
     .fail(showApiError)
@@ -207,24 +207,10 @@ $(document).on('submit', '[data-api-form^="update"]', function (event) {
   uploadImage($form)
     .then((imageFilename) => {
       if (imageFilename) input.imageFilename = imageFilename
-      return graphqlRequest(
-        'mutation Update($id: ID!, $input: Update' +
-          resource +
-          '!) { update' +
-          resource +
-          '(' +
-          resource.toLowerCase() +
-          'Id: $id, update' +
-          resource +
-          ': $input) { id } }',
-        { id: $form.data('resource-id'), input }
-      )
+      const endpoint = resource === 'User' ? 'users' : resource === 'Exam' ? 'exams' : 'questions'
+      return apiRequest('/' + endpoint + '/' + $form.data('resource-id'), input, 'PATCH')
     })
     .done((result) => {
-      if (result.errors?.length) {
-        showApiError({ responseJSON: result })
-        return
-      }
       window.location.href = $form.data('success-url')
     })
     .fail(showApiError)

@@ -2,7 +2,7 @@ import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
 import User from '../../../../api-lambda/src/entities/user/User'
 import TestFramework from '../../TestFramework'
-import { getUser } from '../../graphql/user/getUser'
+import { getUser } from '../../requests/user/getUser'
 
 const framework: TestFramework = globalThis.framework
 
@@ -24,7 +24,7 @@ describe('Get user', () => {
     const res = await request(framework.app).post('/').send(getUser('invalid'))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('BadRequestError'))
+    expect(res.body).toMatchObject(framework.apiError('BadRequestError'))
   })
 
   test('Not found', async () => {
@@ -32,6 +32,6 @@ describe('Get user', () => {
     const res = await request(framework.app).post('/').send(getUser(id.toString()))
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('NotFoundError'))
+    expect(res.body).toMatchObject(framework.apiError('NotFoundError'))
   })
 })

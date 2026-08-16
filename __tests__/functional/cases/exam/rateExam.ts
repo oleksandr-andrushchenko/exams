@@ -6,11 +6,11 @@ const framework: TestFramework = globalThis.framework
 
 describe('Exam ratings', () => {
   test('exam voting is not exposed', async () => {
-    const res = await request(framework.app).post('/').send({
-      query: 'mutation { rateExam(examId: "000000000000000000000000", mark: 5) { id } }'
-    })
+    const res = await request(framework.app)
+      .post('/')
+      .send({ method: 'POST', path: '/exams/000000000000000000000000/rating', body: { mark: 5 }, field: 'rateExam' })
 
-    expect([200, 400]).toContain(res.status)
+    expect(res.status).toEqual(200)
     expect(res.body.errors).toBeDefined()
   })
 })

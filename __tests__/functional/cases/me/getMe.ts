@@ -2,7 +2,7 @@ import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
 import User from '../../../../api-lambda/src/entities/user/User'
 // @ts-ignore
-import { getMe } from '../../graphql/me/getMe'
+import { getMe } from '../../requests/me/getMe'
 import TestFramework from '../../TestFramework'
 
 const framework: TestFramework = globalThis.framework
@@ -12,7 +12,7 @@ describe('Get me', () => {
     const res = await request(framework.app).post('/').send(getMe())
 
     expect(res.status).toEqual(200)
-    expect(res.body).toMatchObject(framework.graphqlError('AuthorizationRequiredError'))
+    expect(res.body).toMatchObject(framework.apiError('AuthorizationRequiredError'))
   })
   test('Found', async () => {
     const user = await framework.fixture<User>(User)
