@@ -54,12 +54,10 @@
             </a>
           </li>
           <li class="nav-item">
-            <form action="{{ url("logout") }}" method="post">
-              <button class="nav-link btn btn-link" type="submit">
-                Logout
-                <i class="bi bi-box-arrow-right"></i>
-              </button>
-            </form>
+            <button class="nav-link btn btn-link" data-api-form="logout" type="button">
+              Logout
+              <i class="bi bi-box-arrow-right"></i>
+            </button>
           </li>
           {% else %}
           <li class="nav-item">

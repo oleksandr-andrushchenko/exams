@@ -33,6 +33,8 @@ import morgan from 'morgan'
 import { DataSource } from 'typeorm/data-source/DataSource'
 import { Client } from 'pg'
 import slugify from './services/normalizers/SlugNormalizer'
+import UserProvider from './services/user/UserProvider'
+import TokenService from './services/token/TokenService'
 
 const serverlessExpress = require('@vendia/serverless-express')
 
@@ -111,6 +113,9 @@ const imageExtensions: Record<string, string> = {
   'image/gif': '.gif',
   'image/webp': '.webp'
 }
+const userProvider = Container.get<UserProvider>(UserProvider)
+const tokenService = Container.get<TokenService>(TokenService)
+
 const uploadImage = multer({
   storage: multer.diskStorage({
     destination: path.resolve(process.cwd(), 'static'),
@@ -123,6 +128,38 @@ const uploadImage = multer({
 const prepareExpress = async (app: Application, apolloServer: ApolloServer): Promise<Application> => {
   app.use(morgan(loggerFormat, { stream: { write: logger.info.bind(logger) } }))
   app.use(cors({ origin: config.client_url, credentials: true }))
+  app.use(express.json({ limit: '10mb' }))
+  app.post('/login', async (request, response) => {
+    const target =
+      typeof request.body.redirect === 'string' &&
+      request.body.redirect.startsWith('/') &&
+      !request.body.redirect.startsWith('//')
+        ? request.body.redirect
+        : '/'
+    try {
+      const user = await userProvider.getUserByCredentials({
+        email: request.body.email,
+        password: request.body.password
+      })
+      const { token } = await tokenService.generateAccessToken(user, 100 * 24 * 60 * 60 * 1000)
+      response.cookie('authenticationToken', token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production'
+      })
+      response.json({ redirect: target })
+    } catch (error) {
+      response.status(401).json({
+        error: { status: 401, message: error instanceof Error ? error.message : 'Authentication failed' }
+      })
+    }
+  })
+
+  app.post('/logout', (_request, response) => {
+    response.clearCookie('authenticationToken')
+    response.json({ redirect: config.client_url })
+  })
+
   app.post('/upload', async (request, response, next) => {
     const user = await authChecker.getApolloContextUser(request)
     if (!user) {
@@ -141,7 +178,6 @@ const prepareExpress = async (app: Application, apolloServer: ApolloServer): Pro
       response.json({ filename: request.file.filename })
     })
   })
-  app.use(express.json({ limit: '10mb' }))
   app.use(compression())
   app.use(
     expressMiddleware(apolloServer, {

@@ -96,6 +96,50 @@ const showApiError = (response) => {
   window.alert(error?.message || error || 'Request failed.')
 }
 
+const apiEndpoint = (path) => document.body.dataset.apiUrl.replace(/\/graphql$/, path)
+
+$(document).on('click', '[data-api-form="login"] button', function (event) {
+  event.preventDefault()
+  const $form = $(this).closest('[data-api-form="login"]')
+  const email = $form.find('[name="email"]')[0]
+  const password = $form.find('[name="password"]')[0]
+  if (!email.checkValidity() || !password.checkValidity()) {
+    email.reportValidity()
+    password.reportValidity()
+    return
+  }
+  $.ajax({
+    url: apiEndpoint('/login'),
+    method: 'POST',
+    contentType: 'application/json',
+    data: JSON.stringify({
+      email: $form.find('[name="email"]').val(),
+      password: $form.find('[name="password"]').val(),
+      redirect: $form.find('[name="redirect"]').val()
+    }),
+    dataType: 'json',
+    xhrFields: { withCredentials: true }
+  })
+    .done((result) => {
+      window.location.href = result.redirect || '/'
+    })
+    .fail(showApiError)
+})
+
+$(document).on('click', '[data-api-form="logout"]', function (event) {
+  event.preventDefault()
+  $.ajax({
+    url: apiEndpoint('/logout'),
+    method: 'POST',
+    dataType: 'json',
+    xhrFields: { withCredentials: true }
+  })
+    .done((result) => {
+      window.location.href = result.redirect || '/'
+    })
+    .fail(showApiError)
+})
+
 $(document).on('submit', '[data-api-form="createMe"]', function (event) {
   event.preventDefault()
   const $form = $(this)

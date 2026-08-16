@@ -255,25 +255,6 @@ async function authenticate(response: Response, credentials: { email: string; pa
   })
 }
 
-app.post('/login', ah(async (request, response) => {
-  const target = redirectPath(request.body.redirect)
-  try {
-    await authenticate(response, { email: request.body.email, password: request.body.password })
-    response.redirect(target)
-  } catch (error) {
-    response.status(401).render('login.html', {
-      title: 'Login',
-      redirect: target,
-      error: error instanceof Error ? error.message : 'Authentication failed'
-    })
-  }
-}))
-
-app.post('/logout', (_request, response) => {
-  response.clearCookie('authenticationToken')
-  response.redirect(route('home'))
-})
-
 app.get('/:userSlug/:examSlug/:questionSlug', ah(async (request, response) => {
   const question = await getQuestion(
     request.params.questionSlug,
