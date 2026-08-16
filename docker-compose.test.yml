@@ -50,6 +50,11 @@ services:
       npm run web:dev'
     ports:
       - '${TEST_WEB_PORT:-13000}:3000'
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O - http://127.0.0.1:3000/ >/dev/null']
+      interval: 2s
+      timeout: 5s
+      retries: 30
 
   runner:
     build:
@@ -57,6 +62,8 @@ services:
       dockerfile: Dockerfile-api
     depends_on:
       api:
+        condition: service_healthy
+      web:
         condition: service_healthy
     volumes:
       - .:/usr/app
@@ -69,6 +76,8 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/examme_test
       DATABASE_SCHEMA: public
       CLIENT_URL: http://localhost:13000
+      API_URL: http://api:8080
+      WEB_URL: http://web:3000
     command: npm run test:functional
 
   postgres:

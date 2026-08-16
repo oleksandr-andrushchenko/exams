@@ -1,5 +1,5 @@
 import { describe, expect, test } from '@jest/globals'
-import request from 'supertest'
+import request from '../../httpRequest'
 import Question from '../../../../api-lambda/src/entities/question/Question'
 // @ts-ignore
 import { getQuestion } from '../../requests/question/getQuestion'

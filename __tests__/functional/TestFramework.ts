@@ -1,13 +1,23 @@
 import 'reflect-metadata'
 import fs from 'node:fs'
 import path from 'node:path'
+import { faker } from '@faker-js/faker'
 import { Container, ContainerInstance } from 'typedi'
+import { Client } from 'pg'
+import { ConnectionManager, useContainer as typeormUseContainer } from 'typeorm'
+import { DataSource } from 'typeorm/data-source/DataSource'
+import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions'
+import NullLogger from '../../api-lambda/src/services/logger/NullLogger'
+import ClassValidatorValidator from '../../api-lambda/src/services/validator/ClassValidatorValidator'
+import JwtTokenStrategyFactory from '../../api-lambda/src/services/token/strategy/JwtTokenStrategyFactory'
+import TokenStrategyInterface from '../../api-lambda/src/services/token/strategy/TokenStrategyInterface'
+import { entities } from '../../api-lambda/src/entities'
+import { subscribers } from '../../api-lambda/src/subscribers'
 import UserRepository from '../../api-lambda/src/repositories/UserRepository'
 import ExamRepository from '../../api-lambda/src/repositories/exam/ExamRepository'
 import QuestionRepository from '../../api-lambda/src/repositories/question/QuestionRepository'
 import ExamSessionRepository from '../../api-lambda/src/repositories/ExamSessionRepository'
 import User from '../../api-lambda/src/entities/user/User'
-import { faker } from '@faker-js/faker'
 import {
   defaultChoices,
   nextExamName,
@@ -21,11 +31,8 @@ import Permission from '../../api-lambda/src/enums/Permission'
 import Exam from '../../api-lambda/src/entities/exam/Exam'
 import Question from '../../api-lambda/src/entities/question/Question'
 import ExamSession from '../../api-lambda/src/entities/examSession/ExamSession'
-import { ConnectionManager } from 'typeorm'
-import { createApplication, db, initializeDb, testServerDown } from '../../api-lambda/src/application'
 import { ObjectId } from 'bson'
 import Token from '../../api-lambda/src/schema/auth/Token'
-import express, { Application, Response } from 'express'
 import QuestionType from '../../api-lambda/src/entities/question/QuestionType'
 import QuestionDifficulty from '../../api-lambda/src/entities/question/QuestionDifficulty'
 import QuestionChoice from '../../api-lambda/src/entities/question/QuestionChoice'
@@ -35,104 +42,59 @@ import AccessTokenCreator from '../../api-lambda/src/services/auth/AccessTokenCr
 import Activity from '../../api-lambda/src/entities/activity/Activity'
 import ActivityRepository from '../../api-lambda/src/repositories/ActivityRepository'
 import ExamEvent from '../../api-lambda/src/enums/exam/ExamEvent'
-import EntityRepository from '../../api-lambda/src/repositories/EntityRepository'
+import { Event } from '../../api-lambda/src/enums/Event'
 import ExamRatingMark from '../../api-lambda/src/entities/exam/ExamRatingMark'
 import QuestionRatingMark from '../../api-lambda/src/entities/question/QuestionRatingMark'
 import ExamRatingMarkRepository from '../../api-lambda/src/repositories/exam/ExamRatingMarkRepository'
 import QuestionRatingMarkRepository from '../../api-lambda/src/repositories/question/QuestionRatingMarkRepository'
-import config from '../../api-lambda/src/configuration'
-
-type TestRequest = {
-  method: string
-  path: string
-  field: string
-  fields?: string[]
-  query?: Record<string, unknown>
-  body?: unknown
-}
-
-const errorName = (status: number): string =>
-  ({
-    400: 'BadRequestError',
-    401: 'AuthorizationRequiredError',
-    403: 'ForbiddenError',
-    404: 'NotFoundError',
-    409: 'ConflictError'
-  })[status] ?? 'InternalServerError'
-
-const normalizeDateFields = (value: unknown, key = ''): unknown => {
-  if (value instanceof Date) return value.getTime()
-  if (value && typeof value === 'object' && 'toHexString' in value) return value.toString()
-  if (typeof value === 'string' && /At$/.test(key)) return Date.parse(value)
-  if (Array.isArray(value)) return value.map((item) => normalizeDateFields(item, key))
-  if (value && typeof value === 'object') {
-    const result = Object.fromEntries(
-      Object.entries(value).map(([name, item]) => [name, normalizeDateFields(item, name)])
-    )
-    if (Array.isArray(result.questions)) {
-      result.questionCount = result.questions.length
-      result.answeredQuestionCount = result.questions.filter(
-        (question: any) => typeof question.choice === 'number' || typeof question.answer === 'string'
-      ).length
-    }
-    if (Array.isArray(result.choices)) {
-      result.choices = result.choices.map((choice: any) =>
-        choice && typeof choice === 'object' ? { correct: null, explanation: null, ...choice } : choice
-      )
-    }
-    return result
-  }
-  return value
-}
-
-const selectFields = (value: unknown, fields: string[] | undefined): unknown => {
-  if (!fields?.length) return value
-  if (Array.isArray(value)) return value.map((item) => selectFields(item, fields))
-  if (!value || typeof value !== 'object') return value
-  const selected = fields.map((field) => field.trim().split(/\s|\{/)[0]).filter(Boolean)
-  return Object.fromEntries(selected.filter((field) => field in value).map((field) => [field, value[field]]))
-}
-
-const dispatchTestRequest = (
-  request: express.Request,
-  response: express.Response,
-  next: express.NextFunction
-): void => {
-  const rest = request.body as TestRequest
-  if (!rest || typeof rest.path !== 'string' || typeof rest.method !== 'string' || typeof rest.field !== 'string') {
-    next()
-    return
-  }
-
-  request.method = rest.method.toUpperCase()
-  const query = new URLSearchParams()
-  for (const [key, value] of Object.entries(rest.query ?? {})) {
-    if (value !== undefined) query.append(key, Array.isArray(value) ? value.join(',') : String(value))
-  }
-  request.url = rest.path + (query.toString() ? '?' + query.toString() : '')
-  Object.defineProperty(request, 'query', { value: rest.query ?? {}, writable: true })
-  request.body = rest.body
-
-  const json = response.json.bind(response)
-  response.json = ((body: unknown) => {
-    if (body && typeof body === 'object' && 'error' in body) {
-      const status = response.statusCode
-      response.statusCode = 200
-      return json({
-        errors: [{ message: (body.error as { message?: string }).message, extensions: { name: errorName(status) } }]
-      })
-    }
-    response.statusCode = 200
-    const value = body && typeof body === 'object' && 'deleted' in body ? body.deleted : body
-    const normalized = normalizeDateFields(value)
-    return json({ data: { [rest.field]: selectFields(normalized, rest.fields) } })
-  }) as Response['json']
-
-  next()
-}
-
 import ExamTag from '../../api-lambda/src/entities/examTag/ExamTag'
 import ExamTagRepository from '../../api-lambda/src/repositories/examTag/ExamTagRepository'
+import config from '../../api-lambda/src/configuration'
+
+let testDb: DataSource | undefined
+
+const initializeTestDatabase = async (): Promise<DataSource> => {
+  if (testDb?.isInitialized) return testDb
+
+  typeormUseContainer(Container)
+  Container.set('env', config.env)
+  Container.set('loggerFormat', config.logger.format)
+  Container.set('loggerLevel', config.logger.level)
+  Container.set('authPermissions', config.auth.permissions)
+  Container.set('validatorOptions', config.validator)
+  Container.set('logger', new NullLogger())
+  Container.set('validator', Container.get<ClassValidatorValidator>(ClassValidatorValidator))
+
+  const connectionManager = new ConnectionManager()
+  Container.set(ConnectionManager, connectionManager)
+  const tokenStrategy: TokenStrategyInterface = Container.get<JwtTokenStrategyFactory>(JwtTokenStrategyFactory).create(
+    config.jwt
+  )
+  Container.set('tokenStrategy', tokenStrategy)
+
+  const options: PostgresConnectionOptions = {
+    type: config.db.type,
+    url: config.db.url,
+    synchronize: true,
+    logging: false,
+    entities,
+    subscribers,
+    schema: config.db.schema,
+    dropSchema: false
+  }
+  testDb = connectionManager.create(options)
+
+  const schema = config.db.schema.replace(/"/g, '""')
+  const client = new Client({ connectionString: config.db.url })
+  await client.connect()
+  try {
+    await client.query('CREATE SCHEMA IF NOT EXISTS "' + schema + '"')
+  } finally {
+    await client.end()
+  }
+  await testDb.initialize()
+  return testDb
+}
 
 const demoImagesDir = path.resolve(process.cwd(), 'static')
 
@@ -151,30 +113,20 @@ const demoImageFilename = (prefix: string): string | undefined => {
 }
 
 export default class TestFramework {
-  public app: Application
+  public app = process.env.API_URL || 'http://api:8080'
 
   private readonly container: ContainerInstance
-  private readonly _serverUp: () => Promise<Application>
-  private readonly _serverDown: () => Promise<void>
 
   public constructor() {
     this.container = Container as unknown as ContainerInstance
-    this._serverUp = async () => {
-      await initializeDb(db)
-      return await createApplication((app) => {
-        app.use(express.json())
-        app.post('/', dispatchTestRequest)
-      })
-    }
-    this._serverDown = testServerDown
   }
 
   public async serverUp(): Promise<void> {
-    this.app = await this._serverUp()
+    await initializeTestDatabase()
   }
 
   public async serverDown(): Promise<void> {
-    await this._serverDown()
+    if (testDb?.isInitialized) await testDb.destroy()
   }
 
   public async clear(

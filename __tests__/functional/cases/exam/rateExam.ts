@@ -1,5 +1,5 @@
 import { describe, expect, test } from '@jest/globals'
-import request from 'supertest'
+import request from '../../httpRequest'
 import TestFramework from '../../TestFramework'
 
 const framework: TestFramework = globalThis.framework

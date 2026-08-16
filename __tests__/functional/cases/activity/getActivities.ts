@@ -1,5 +1,5 @@
 import { describe, expect, test } from '@jest/globals'
-import request from 'supertest'
+import request from '../../httpRequest'
 import Exam from '../../../../api-lambda/src/entities/exam/Exam'
 import TestFramework from '../../TestFramework'
 // @ts-ignore

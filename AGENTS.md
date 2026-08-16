@@ -12,11 +12,11 @@
 ## Testing
 
 - Run `make tests` after all functional changes and before handing off the work.
-- `make tests` uses the isolated `docker-compose.test.yml` stack: `api`, `web`, `runner`, and `postgres` services in the `test` Compose project. It does not reuse development containers or the development database. Use `make test-up` and `make test-down` when manually exercising the test web Lambda at port 13000.
+- `make tests` uses the isolated `docker-compose.test.yml` stack: `api`, `web`, `runner`, and `postgres` services in the `test` Compose project. It does not reuse development containers or the development database. Functional tests must call the API over the test Compose network (`API_URL`) and use their own database connection for fixtures/assertions; they must not import or mount the API Express app from `server.ts`. The runner waits for both API and web healthchecks. Use `make test-up` and `make test-down` when manually exercising the test web Lambda at port 13000.
 
 ## Shared Lambda code
 
-- API Lambda source files live directly under `api-lambda/src`; keep its runtime entrypoints (`server.ts`, `serverless.ts`, and `application.ts`) at that root.
+- API Lambda source files live directly under `api-lambda/src`; keep its single runtime entrypoint at `server.ts`. It must expose the application factory used by functional tests and the Lambda handler, while only starting a local HTTP server when run directly.
 
 - Put common functions and behavior that may be used by both Lambdas in `lambda-shared`.
 - For example, a shared exam-item fragment could be consumed by the web Lambda for rendering and by the API Lambda when returning content during subsequent lazy loads.
