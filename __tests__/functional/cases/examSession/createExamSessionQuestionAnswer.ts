@@ -1,14 +1,14 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
-import ExamSession from '../../../../api-lambda/src/server/entities/examSession/ExamSession'
-import Question from '../../../../api-lambda/src/server/entities/question/Question'
-import User from '../../../../api-lambda/src/server/entities/user/User'
+import ExamSession from '../../../../api-lambda/src/entities/examSession/ExamSession'
+import Question from '../../../../api-lambda/src/entities/question/Question'
+import User from '../../../../api-lambda/src/entities/user/User'
 // @ts-ignore
 import { createExamSessionQuestionAnswer } from '../../graphql/examSession/createExamSessionQuestionAnswer'
-import CreateExamSessionQuestionAnswer from '../../../../api-lambda/src/server/schema/examSession/CreateExamSessionQuestionAnswer'
-import ExamSessionPermission from '../../../../api-lambda/src/server/enums/examSession/ExamSessionPermission'
+import CreateExamSessionQuestionAnswer from '../../../../api-lambda/src/schema/examSession/CreateExamSessionQuestionAnswer'
+import ExamSessionPermission from '../../../../api-lambda/src/enums/examSession/ExamSessionPermission'
 import TestFramework from '../../TestFramework'
-import QuestionType from '../../../../api-lambda/src/server/entities/question/QuestionType'
+import QuestionType from '../../../../api-lambda/src/entities/question/QuestionType'
 
 const framework: TestFramework = globalThis.framework
 

@@ -1,4 +1,4 @@
-import CreateQuestion from '../../../../api-lambda/src/server/schema/question/CreateQuestion'
+import CreateQuestion from '../../../../api-lambda/src/schema/question/CreateQuestion'
 
 export const createQuestion = (variables: { createQuestion: CreateQuestion }, fields: string[] = ['id']) => {
   return {

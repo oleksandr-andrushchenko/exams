@@ -2,11 +2,11 @@ import 'reflect-metadata'
 import fs from 'node:fs'
 import path from 'node:path'
 import { Container, ContainerInstance } from 'typedi'
-import UserRepository from '../../api-lambda/src/server/repositories/UserRepository'
-import ExamRepository from '../../api-lambda/src/server/repositories/exam/ExamRepository'
-import QuestionRepository from '../../api-lambda/src/server/repositories/question/QuestionRepository'
-import ExamSessionRepository from '../../api-lambda/src/server/repositories/ExamSessionRepository'
-import User from '../../api-lambda/src/server/entities/user/User'
+import UserRepository from '../../api-lambda/src/repositories/UserRepository'
+import ExamRepository from '../../api-lambda/src/repositories/exam/ExamRepository'
+import QuestionRepository from '../../api-lambda/src/repositories/question/QuestionRepository'
+import ExamSessionRepository from '../../api-lambda/src/repositories/ExamSessionRepository'
+import User from '../../api-lambda/src/entities/user/User'
 import { faker } from '@faker-js/faker'
 import {
   defaultChoices,
@@ -17,31 +17,31 @@ import {
   nextUserCredentials,
   slugify
 } from './HumanReadableTestData'
-import Permission from '../../api-lambda/src/server/enums/Permission'
-import Exam from '../../api-lambda/src/server/entities/exam/Exam'
-import Question from '../../api-lambda/src/server/entities/question/Question'
-import ExamSession from '../../api-lambda/src/server/entities/examSession/ExamSession'
+import Permission from '../../api-lambda/src/enums/Permission'
+import Exam from '../../api-lambda/src/entities/exam/Exam'
+import Question from '../../api-lambda/src/entities/question/Question'
+import ExamSession from '../../api-lambda/src/entities/examSession/ExamSession'
 import { ConnectionManager } from 'typeorm'
 import { ObjectId } from 'bson'
-import Token from '../../api-lambda/src/server/schema/auth/Token'
+import Token from '../../api-lambda/src/schema/auth/Token'
 import { Application } from 'express'
-import QuestionType from '../../api-lambda/src/server/entities/question/QuestionType'
-import QuestionDifficulty from '../../api-lambda/src/server/entities/question/QuestionDifficulty'
-import QuestionChoice from '../../api-lambda/src/server/entities/question/QuestionChoice'
-import ExamSessionQuestion from '../../api-lambda/src/server/entities/examSession/ExamSessionQuestion'
-import Rating from '../../api-lambda/src/server/entities/rating/Rating'
-import AccessTokenCreator from '../../api-lambda/src/server/services/auth/AccessTokenCreator'
-import Activity from '../../api-lambda/src/server/entities/activity/Activity'
-import ActivityRepository from '../../api-lambda/src/server/repositories/ActivityRepository'
-import ExamEvent from '../../api-lambda/src/server/enums/exam/ExamEvent'
-import EntityRepository from '../../api-lambda/src/server/repositories/EntityRepository'
-import ExamRatingMark from '../../api-lambda/src/server/entities/exam/ExamRatingMark'
-import QuestionRatingMark from '../../api-lambda/src/server/entities/question/QuestionRatingMark'
-import ExamRatingMarkRepository from '../../api-lambda/src/server/repositories/exam/ExamRatingMarkRepository'
-import QuestionRatingMarkRepository from '../../api-lambda/src/server/repositories/question/QuestionRatingMarkRepository'
-import config from '../../api-lambda/src/server/configuration'
-import ExamTag from '../../api-lambda/src/server/entities/examTag/ExamTag'
-import ExamTagRepository from '../../api-lambda/src/server/repositories/examTag/ExamTagRepository'
+import QuestionType from '../../api-lambda/src/entities/question/QuestionType'
+import QuestionDifficulty from '../../api-lambda/src/entities/question/QuestionDifficulty'
+import QuestionChoice from '../../api-lambda/src/entities/question/QuestionChoice'
+import ExamSessionQuestion from '../../api-lambda/src/entities/examSession/ExamSessionQuestion'
+import Rating from '../../api-lambda/src/entities/rating/Rating'
+import AccessTokenCreator from '../../api-lambda/src/services/auth/AccessTokenCreator'
+import Activity from '../../api-lambda/src/entities/activity/Activity'
+import ActivityRepository from '../../api-lambda/src/repositories/ActivityRepository'
+import ExamEvent from '../../api-lambda/src/enums/exam/ExamEvent'
+import EntityRepository from '../../api-lambda/src/repositories/EntityRepository'
+import ExamRatingMark from '../../api-lambda/src/entities/exam/ExamRatingMark'
+import QuestionRatingMark from '../../api-lambda/src/entities/question/QuestionRatingMark'
+import ExamRatingMarkRepository from '../../api-lambda/src/repositories/exam/ExamRatingMarkRepository'
+import QuestionRatingMarkRepository from '../../api-lambda/src/repositories/question/QuestionRatingMarkRepository'
+import config from '../../api-lambda/src/configuration'
+import ExamTag from '../../api-lambda/src/entities/examTag/ExamTag'
+import ExamTagRepository from '../../api-lambda/src/repositories/examTag/ExamTagRepository'
 
 const demoImagesDir = path.resolve(process.cwd(), 'static')
 
@@ -67,7 +67,7 @@ export default class TestFramework {
   private readonly _serverDown: () => Promise<void>
 
   public constructor() {
-    const { testServerUp, testServerDown } = require('../../api-lambda/src/server/application')
+    const { testServerUp, testServerDown } = require('../../api-lambda/src/application')
     this.container = Container as unknown as ContainerInstance
     this._serverUp = testServerUp
     this._serverDown = testServerDown

@@ -1,4 +1,4 @@
-import RateExamRequest from '../../../../api-lambda/src/server/schema/exam/RateExamRequest'
+import RateExamRequest from '../../../../api-lambda/src/schema/exam/RateExamRequest'
 
 export const rateExam = (variables: RateExamRequest, fields: string[] = ['id']) => {
   return {

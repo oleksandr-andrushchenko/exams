@@ -1,5 +1,5 @@
-import UpdateExam from '../../../../api-lambda/src/server/schema/exam/UpdateExam'
-import GetExam from '../../../../api-lambda/src/server/schema/exam/GetExam'
+import UpdateExam from '../../../../api-lambda/src/schema/exam/UpdateExam'
+import GetExam from '../../../../api-lambda/src/schema/exam/GetExam'
 
 export const updateExam = (
   variables: GetExam & {

@@ -1,12 +1,12 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
-import User from '../../../../api-lambda/src/server/entities/user/User'
+import User from '../../../../api-lambda/src/entities/user/User'
 import { ObjectId } from 'bson'
-import UserPermission from '../../../../api-lambda/src/server/enums/user/UserPermission'
+import UserPermission from '../../../../api-lambda/src/enums/user/UserPermission'
 // @ts-ignore
 import { createUser } from '../../graphql/user/createUser'
-import CreateUser from '../../../../api-lambda/src/server/schema/user/CreateUser'
-import Permission from '../../../../api-lambda/src/server/enums/Permission'
+import CreateUser from '../../../../api-lambda/src/schema/user/CreateUser'
+import Permission from '../../../../api-lambda/src/enums/Permission'
 import TestFramework from '../../TestFramework'
 
 const framework: TestFramework = globalThis.framework

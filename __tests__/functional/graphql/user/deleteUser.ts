@@ -1,4 +1,4 @@
-import GetUser from '../../../../api-lambda/src/server/schema/user/GetUser'
+import GetUser from '../../../../api-lambda/src/schema/user/GetUser'
 
 export const deleteUser = (variables: GetUser) => {
   return {

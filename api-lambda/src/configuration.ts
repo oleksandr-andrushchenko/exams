@@ -15,7 +15,7 @@ const environment: string = env.NODE_ENV
 
 export default {
   env: environment,
-  projectDir: path.resolve(process.cwd(), 'api-lambda/src/server'),
+  projectDir: path.resolve(process.cwd(), 'api-lambda/src'),
   client_url: env.CLIENT_URL,
   app: {
     name: pkg.name,

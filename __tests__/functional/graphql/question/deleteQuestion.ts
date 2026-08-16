@@ -1,4 +1,4 @@
-import GetQuestion from '../../../../api-lambda/src/server/schema/question/GetQuestion'
+import GetQuestion from '../../../../api-lambda/src/schema/question/GetQuestion'
 
 export const deleteQuestion = (variables: GetQuestion) => {
   return {

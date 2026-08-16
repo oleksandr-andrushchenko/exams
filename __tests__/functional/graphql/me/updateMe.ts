@@ -1,4 +1,4 @@
-import UpdateMe from '../../../../api-lambda/src/server/schema/user/UpdateMe'
+import UpdateMe from '../../../../api-lambda/src/schema/user/UpdateMe'
 
 export const updateMe = (variables: { updateMe: UpdateMe }, fields: string[] = ['id']) => {
   return {

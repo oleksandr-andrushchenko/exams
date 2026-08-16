@@ -1,4 +1,4 @@
-import RateQuestionRequest from '../../../../api-lambda/src/server/schema/question/RateQuestionRequest'
+import RateQuestionRequest from '../../../../api-lambda/src/schema/question/RateQuestionRequest'
 
 export const rateQuestion = (variables: RateQuestionRequest, fields: string[] = ['id']) => {
   return {

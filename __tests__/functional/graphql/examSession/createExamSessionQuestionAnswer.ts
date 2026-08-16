@@ -1,5 +1,5 @@
-import CreateExamSessionQuestionAnswer from '../../../../api-lambda/src/server/schema/examSession/CreateExamSessionQuestionAnswer'
-import GetExamSessionQuestion from '../../../../api-lambda/src/server/schema/examSession/GetExamSessionQuestion'
+import CreateExamSessionQuestionAnswer from '../../../../api-lambda/src/schema/examSession/CreateExamSessionQuestionAnswer'
+import GetExamSessionQuestion from '../../../../api-lambda/src/schema/examSession/GetExamSessionQuestion'
 
 export const createExamSessionQuestionAnswer = (
   variables: GetExamSessionQuestion & {

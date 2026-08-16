@@ -1,16 +1,16 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
-import Question from '../../../../api-lambda/src/server/entities/question/Question'
-import User from '../../../../api-lambda/src/server/entities/user/User'
+import Question from '../../../../api-lambda/src/entities/question/Question'
+import User from '../../../../api-lambda/src/entities/user/User'
 import { faker } from '@faker-js/faker'
-import QuestionPermission from '../../../../api-lambda/src/server/enums/question/QuestionPermission'
+import QuestionPermission from '../../../../api-lambda/src/enums/question/QuestionPermission'
 // @ts-ignore
 import { updateQuestion } from '../../graphql/question/updateQuestion'
-import UpdateQuestion from '../../../../api-lambda/src/server/schema/question/UpdateQuestion'
+import UpdateQuestion from '../../../../api-lambda/src/schema/question/UpdateQuestion'
 import TestFramework from '../../TestFramework'
-import QuestionType from '../../../../api-lambda/src/server/entities/question/QuestionType'
-import ExamPermission from '../../../../api-lambda/src/server/enums/exam/ExamPermission'
-import Exam from '../../../../api-lambda/src/server/entities/exam/Exam'
+import QuestionType from '../../../../api-lambda/src/entities/question/QuestionType'
+import ExamPermission from '../../../../api-lambda/src/enums/exam/ExamPermission'
+import Exam from '../../../../api-lambda/src/entities/exam/Exam'
 
 const framework: TestFramework = globalThis.framework
 

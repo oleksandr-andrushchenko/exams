@@ -1,4 +1,4 @@
-import GetExam from '../../../../api-lambda/src/server/schema/exam/GetExam'
+import GetExam from '../../../../api-lambda/src/schema/exam/GetExam'
 
 export const deleteExam = (variables: GetExam) => {
   return {

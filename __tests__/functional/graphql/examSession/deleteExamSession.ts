@@ -1,4 +1,4 @@
-import GetExamSession from '../../../../api-lambda/src/server/schema/examSession/GetExamSession'
+import GetExamSession from '../../../../api-lambda/src/schema/examSession/GetExamSession'
 
 export const deleteExamSession = (variables: GetExamSession) => {
   return {

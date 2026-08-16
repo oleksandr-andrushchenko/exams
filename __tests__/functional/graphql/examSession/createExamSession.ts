@@ -1,4 +1,4 @@
-import CreateExamSession from '../../../../api-lambda/src/server/schema/examSession/CreateExamSession'
+import CreateExamSession from '../../../../api-lambda/src/schema/examSession/CreateExamSession'
 
 export const createExamSession = (variables: { createExamSession: CreateExamSession }, fields: string[] = ['id']) => {
   return {

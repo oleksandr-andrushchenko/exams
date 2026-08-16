@@ -1,4 +1,4 @@
-import ActivityQuery from '../../../../api-lambda/src/server/schema/activity/ActivityQuery'
+import ActivityQuery from '../../../../api-lambda/src/schema/activity/ActivityQuery'
 
 export const getActivities = (variables: ActivityQuery = {}, fields: string[] = ['id']) => {
   return {

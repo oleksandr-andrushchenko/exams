@@ -1,6 +1,6 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
-import User from '../../../../api-lambda/src/server/entities/user/User'
+import User from '../../../../api-lambda/src/entities/user/User'
 import TestFramework from '../../TestFramework'
 import { getUser } from '../../graphql/user/getUser'
 

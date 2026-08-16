@@ -1,14 +1,14 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
-import Exam from '../../../../api-lambda/src/server/entities/exam/Exam'
-import Question from '../../../../api-lambda/src/server/entities/question/Question'
+import Exam from '../../../../api-lambda/src/entities/exam/Exam'
+import Question from '../../../../api-lambda/src/entities/question/Question'
 // @ts-ignore
 import { getQuestions } from '../../graphql/question/getQuestions'
-import GetQuestions from '../../../../api-lambda/src/server/schema/question/GetQuestions'
+import GetQuestions from '../../../../api-lambda/src/schema/question/GetQuestions'
 import TestFramework from '../../TestFramework'
-import User from '../../../../api-lambda/src/server/entities/user/User'
-import QuestionType from '../../../../api-lambda/src/server/entities/question/QuestionType'
-import QuestionChoice from '../../../../api-lambda/src/server/entities/question/QuestionChoice'
+import User from '../../../../api-lambda/src/entities/user/User'
+import QuestionType from '../../../../api-lambda/src/entities/question/QuestionType'
+import QuestionChoice from '../../../../api-lambda/src/entities/question/QuestionChoice'
 
 const framework: TestFramework = globalThis.framework
 

@@ -1,4 +1,4 @@
-import GetUsers from '../../../../api-lambda/src/server/schema/user/GetUsers'
+import GetUsers from '../../../../api-lambda/src/schema/user/GetUsers'
 
 export const getUsers = (variables: GetUsers = {}, fields: string[] = ['id']) => {
   return {

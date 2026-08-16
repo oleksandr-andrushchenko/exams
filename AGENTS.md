@@ -15,6 +15,8 @@
 
 ## Shared Lambda code
 
+- API Lambda source files live directly under `api-lambda/src`; keep its runtime entrypoints (`server.ts`, `serverless.ts`, and `application.ts`) at that root.
+
 - Put common functions and behavior that may be used by both Lambdas in `lambda-shared`.
 - For example, a shared exam-item fragment could be consumed by the web Lambda for rendering and by the API Lambda when returning content during subsequent lazy loads.
 

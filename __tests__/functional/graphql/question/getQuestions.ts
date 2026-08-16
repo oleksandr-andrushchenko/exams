@@ -1,4 +1,4 @@
-import GetQuestions from '../../../../api-lambda/src/server/schema/question/GetQuestions'
+import GetQuestions from '../../../../api-lambda/src/schema/question/GetQuestions'
 
 export const getQuestions = (variables: GetQuestions = {}, fields: string[] = ['id']) => {
   return {

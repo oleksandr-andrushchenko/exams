@@ -1,9 +1,9 @@
 import { describe, expect, test } from '@jest/globals'
 import request from 'supertest'
-import Exam from '../../../../api-lambda/src/server/entities/exam/Exam'
+import Exam from '../../../../api-lambda/src/entities/exam/Exam'
 // @ts-ignore
 import { getExams } from '../../graphql/exam/getExams'
-import GetExams from '../../../../api-lambda/src/server/schema/exam/GetExams'
+import GetExams from '../../../../api-lambda/src/schema/exam/GetExams'
 import TestFramework from '../../TestFramework'
 
 const framework: TestFramework = globalThis.framework

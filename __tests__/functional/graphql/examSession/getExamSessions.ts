@@ -1,4 +1,4 @@
-import GetExamSessions from '../../../../api-lambda/src/server/schema/examSession/GetExamSessions'
+import GetExamSessions from '../../../../api-lambda/src/schema/examSession/GetExamSessions'
 
 export const getExamSessions = (variables: GetExamSessions = {}, fields: string[] = ['id']) => {
   return {

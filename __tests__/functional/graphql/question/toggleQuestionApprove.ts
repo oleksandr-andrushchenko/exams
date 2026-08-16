@@ -1,5 +1,5 @@
-import GetQuestion from '../../../../api-lambda/src/server/schema/question/GetQuestion'
-import Question from '../../../../api-lambda/src/server/entities/question/Question'
+import GetQuestion from '../../../../api-lambda/src/schema/question/GetQuestion'
+import Question from '../../../../api-lambda/src/entities/question/Question'
 
 export const toggleQuestionApprove = (variables: GetQuestion, fields: (keyof Question)[] = ['id']) => {
   return {
