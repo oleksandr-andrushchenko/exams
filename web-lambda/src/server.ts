@@ -1,7 +1,7 @@
 import { isDevelopmentEnvironment } from './environment'
 import { examUrl, questionUrl, route, staticUrl, url, userUrl } from './routes'
 import bcrypt from 'bcryptjs'
-import express, { type Request, type Response } from 'express'
+import express, { type Request, type RequestHandler, type Response } from 'express'
 import * as jwt from 'jsonwebtoken'
 import path from 'node:path'
 import nunjucks from 'nunjucks'
@@ -22,6 +22,11 @@ import {
 
 const app = express()
 
+const ah =
+  (handler: RequestHandler): RequestHandler =>
+    (request, response, next) =>
+      Promise.resolve(handler(request, response, next)).catch(next)
+
 class HttpError extends Error {
   public constructor(
     public readonly statusCode: number,
@@ -38,13 +43,15 @@ const canViewUnapproved = (user: { permissions?: string[] } | undefined, permiss
 const templateDir = path.resolve(__dirname, '../templates')
 const sharedTemplateDir = path.resolve(__dirname, '../../lambda-shared/templates')
 const staticDir = path.resolve(__dirname, '../../static')
-nunjucks.configure([templateDir, sharedTemplateDir], {
+nunjucks.configure([ templateDir, sharedTemplateDir ], {
   autoescape: true,
   express: app,
   noCache: process.env.NODE_ENV !== 'production'
 })
 app.use(express.urlencoded({ extended: true }))
+
 app.use('/static', express.static(staticDir, { maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0 }))
+
 app.use((request, response, next) => {
   response.locals.siteName = 'ExamMe'
   response.locals.siteDescription = 'Practice exams and explore questions.'
@@ -65,6 +72,7 @@ app.use((request, response, next) => {
   response.locals.canEdit = (permission: string) => canViewUnapproved(response.locals.currentUser, permission)
   next()
 })
+
 app.use(async (request, response, next) => {
   const token = request.headers.cookie
     ?.split(';')
@@ -105,81 +113,77 @@ const queryFilters = (request: Request) => ({
   order: request.query.order === 'asc' ? 'asc' : 'desc'
 })
 
-app.get('/', async (_request, response, next) => {
-  try {
-    response.render('home.html', {
-      data: await getHomeData(
-        8,
-        canViewUnapproved(response.locals.currentUser, 'getExam'),
-        canViewUnapproved(response.locals.currentUser, 'getQuestion')
-      ),
-      title: 'Home'
-    })
-  } catch (error) {
-    next(error)
-  }
-})
-app.get('/exams', async (request, response, next) => {
-  try {
-    response.render('exams.html', {
-      page: await getExamList(queryFilters(request), canViewUnapproved(response.locals.currentUser, 'getExam')),
-      filters: queryFilters(request),
-      title: 'Exams'
-    })
-  } catch (error) {
-    next(error)
-  }
-})
-app.get('/questions', async (request, response, next) => {
-  try {
-    response.render('questions.html', {
-      page: await getQuestionList(queryFilters(request), canViewUnapproved(response.locals.currentUser, 'getQuestion')),
-      filters: queryFilters(request),
-      title: 'Questions'
-    })
-  } catch (error) {
-    next(error)
-  }
-})
-app.get('/users', async (request, response, next) => {
-  try {
-    response.render('users.html', {
-      page: await getUserList(queryFilters(request)),
-      filters: queryFilters(request),
-      title: 'Users'
-    })
-  } catch (error) {
-    next(error)
-  }
-})
+app.get('/', ah(async (_request, response) => {
+  response.render('home.html', {
+    data: await getHomeData(
+      8,
+      canViewUnapproved(response.locals.currentUser, 'getExam'),
+      canViewUnapproved(response.locals.currentUser, 'getQuestion')
+    ),
+    title: 'Home'
+  })
+}))
 
-async function renderEdit(request: Request, response: Response, resource: 'user' | 'exam' | 'question', id: string) {
-  const permission = resource === 'user' ? 'updateUser' : resource === 'exam' ? 'updateExam' : 'updateQuestion'
-  if (!response.locals.currentUser || !canViewUnapproved(response.locals.currentUser, permission)) {
+app.get('/exams', ah(async (request, response) => {
+  response.render('exams.html', {
+    page: await getExamList(queryFilters(request), canViewUnapproved(response.locals.currentUser, 'getExam')),
+    filters: queryFilters(request),
+    title: 'Exams'
+  })
+}))
+
+app.get('/questions', ah(async (request, response) => {
+  response.render('questions.html', {
+    page: await getQuestionList(queryFilters(request), canViewUnapproved(response.locals.currentUser, 'getQuestion')),
+    filters: queryFilters(request),
+    title: 'Questions'
+  })
+}))
+
+app.get('/users', ah(async (request, response) => {
+  response.render('users.html', {
+    page: await getUserList(queryFilters(request)),
+    filters: queryFilters(request),
+    title: 'Users'
+  })
+}))
+
+app.get('/users/:userId/edit', ah(async (request, response) => {
+  if (!response.locals.currentUser || !canViewUnapproved(response.locals.currentUser, 'updateUser')) {
     throw new HttpError(
       response.locals.currentUser ? 403 : 401,
       response.locals.currentUser ? 'You are not authorized to edit this resource' : 'Authentication required'
     )
   }
-  const data =
-    resource === 'user'
-      ? { user: await getUser(id) }
-      : resource === 'exam'
-        ? { exam: await getExam(id, true) }
-        : { question: await getQuestion(id, response.locals.currentUser.id, true) }
-  const entity = (data as any)[resource]
-  if (!entity) throw new HttpError(404, resource[0].toUpperCase() + resource.slice(1) + ' not found')
-  response.render('edit.html', { resource, ...data })
-}
-app.get('/users/:userId/edit', (request, response, next) =>
-  renderEdit(request, response, 'user', request.params.userId).catch(next)
-)
-app.get('/exams/:examId/edit', (request, response, next) =>
-  renderEdit(request, response, 'exam', request.params.examId).catch(next)
-)
-app.get('/questions/:questionId/edit', (request, response, next) =>
-  renderEdit(request, response, 'question', request.params.questionId).catch(next)
-)
+  const user = await getUser(request.params.userId)
+  if (!user) throw new HttpError(404, 'User not found')
+  response.render('edit.html', { resource: 'user', user })
+}))
+
+app.get('/exams/:examId/edit', ah(async (request, response) => {
+  if (!response.locals.currentUser || !canViewUnapproved(response.locals.currentUser, 'updateExam')) {
+    throw new HttpError(
+      response.locals.currentUser ? 403 : 401,
+      response.locals.currentUser ? 'You are not authorized to edit this resource' : 'Authentication required'
+    )
+  }
+  const exam = await getExam(request.params.examId, true)
+  if (!exam) throw new HttpError(404, 'Exam not found')
+  response.render('edit.html', { resource: 'exam', exam })
+}))
+
+app.get('/questions/:questionId/edit', ah(async (request, response) => {
+  if (!response.locals.currentUser || !canViewUnapproved(response.locals.currentUser, 'updateQuestion')) {
+    throw new HttpError(
+      response.locals.currentUser ? 403 : 401,
+      response.locals.currentUser ? 'You are not authorized to edit this resource' : 'Authentication required'
+    )
+  }
+  const question = await getQuestion(request.params.questionId, response.locals.currentUser.id, true)
+  if (!question) throw new HttpError(404, 'Question not found')
+  response.render('edit.html', { resource: 'question', question })
+}))
+
 app.get('/exams/new', (request, response) => {
   if (!response.locals.currentUser) {
     response.redirect(route('login', {}, { redirect: route('newExam') }))
@@ -188,48 +192,36 @@ app.get('/exams/new', (request, response) => {
   response.render('create-exam.html', { title: 'Create exam' })
 })
 
-app.get('/exams/:examId', async (request, response, next) => {
-  try {
-    const exam = await getExam(request.params.examId, canViewUnapproved(response.locals.currentUser, 'getExam'))
-    if (!exam) throw new HttpError(404, 'Exam not found')
-    response.render('exam.html', { exam, title: exam.name })
-  } catch (error) {
-    next(error)
-  }
-})
-app.get('/questions/:questionId', async (request, response, next) => {
-  try {
-    const question = await getQuestion(
-      request.params.questionId,
-      response.locals.currentUser?.id,
-      canViewUnapproved(response.locals.currentUser, 'getQuestion')
-    )
-    if (!question) throw new HttpError(404, 'Question not found')
-    response.render('question.html', { question, title: question.title })
-  } catch (error) {
-    next(error)
-  }
-})
-app.get('/users/:userId', async (request, response, next) => {
-  try {
-    const user = await getUser(request.params.userId)
-    if (!user) throw new HttpError(404, 'User not found')
-    const [exams, sessions] = await Promise.all([getUserExams(user.id), getUserExamSessions(user.id)])
-    response.render('user.html', { user, exams, sessions, title: user.name })
-  } catch (error) {
-    next(error)
-  }
-})
-app.get('/tags/:slug', async (request, response, next) => {
-  try {
-    const tag = await getTag(request.params.slug)
-    if (!tag) throw new HttpError(404, 'Tag not found')
-    response.render('tag.html', { tag, title: tag.name })
-  } catch (error) {
-    next(error)
-  }
-})
-app.get('/login', async (request, response) => {
+app.get('/exams/:examId', ah(async (request, response) => {
+  const exam = await getExam(request.params.examId, canViewUnapproved(response.locals.currentUser, 'getExam'))
+  if (!exam) throw new HttpError(404, 'Exam not found')
+  response.render('exam.html', { exam, title: exam.name })
+}))
+
+app.get('/questions/:questionId', ah(async (request, response) => {
+  const question = await getQuestion(
+    request.params.questionId,
+    response.locals.currentUser?.id,
+    canViewUnapproved(response.locals.currentUser, 'getQuestion')
+  )
+  if (!question) throw new HttpError(404, 'Question not found')
+  response.render('question.html', { question, title: question.title })
+}))
+
+app.get('/users/:userId', ah(async (request, response) => {
+  const user = await getUser(request.params.userId)
+  if (!user) throw new HttpError(404, 'User not found')
+  const [ exams, sessions ] = await Promise.all([ getUserExams(user.id), getUserExamSessions(user.id) ])
+  response.render('user.html', { user, exams, sessions, title: user.name })
+}))
+
+app.get('/tags/:slug', ah(async (request, response) => {
+  const tag = await getTag(request.params.slug)
+  if (!tag) throw new HttpError(404, 'Tag not found')
+  response.render('tag.html', { tag, title: tag.name })
+}))
+
+app.get('/login', ah(async (request, response) => {
   const target = redirectPath(request.query.redirect)
   if (!isDevelopmentEnvironment()) {
     response.render('login.html', { title: 'Login', redirect: target })
@@ -237,7 +229,7 @@ app.get('/login', async (request, response) => {
   }
 
   try {
-    await authenticate(response, { email: 'root@examme.test', password: 'Root123!' }, false)
+    await authenticate(response, { email: 'root@examme.test', password: 'Root123!' })
     response.redirect(target)
   } catch (error) {
     response.status(500).render('login.html', {
@@ -246,10 +238,11 @@ app.get('/login', async (request, response) => {
       error: error instanceof Error ? error.message : 'Development authentication failed'
     })
   }
-})
+}))
+
 app.get('/register', (_request, response) => response.render('register.html', { title: 'Register' }))
 
-async function authenticate(response: Response, credentials: { email: string; password: string }, _register: boolean) {
+async function authenticate(response: Response, credentials: { email: string; password: string }) {
   const user = await getUserCredentials(credentials.email)
   if (!user || !(await bcrypt.compare(credentials.password, user.password))) {
     throw new Error('Authentication failed')
@@ -262,10 +255,10 @@ async function authenticate(response: Response, credentials: { email: string; pa
   })
 }
 
-app.post('/login', async (request, response) => {
+app.post('/login', ah(async (request, response) => {
   const target = redirectPath(request.body.redirect)
   try {
-    await authenticate(response, { email: request.body.email, password: request.body.password }, false)
+    await authenticate(response, { email: request.body.email, password: request.body.password })
     response.redirect(target)
   } catch (error) {
     response.status(401).render('login.html', {
@@ -274,60 +267,51 @@ app.post('/login', async (request, response) => {
       error: error instanceof Error ? error.message : 'Authentication failed'
     })
   }
-})
+}))
+
 app.post('/logout', (_request, response) => {
   response.clearCookie('authenticationToken')
   response.redirect(route('home'))
 })
-app.get('/:userSlug/:examSlug/:questionSlug', async (request, response, next) => {
-  try {
-    const question = await getQuestion(
-      request.params.questionSlug,
-      response.locals.currentUser?.id,
-      canViewUnapproved(response.locals.currentUser, 'getQuestion')
-    )
-    const matches =
-      !!question &&
-      question.exam?.slug === request.params.examSlug &&
-      question.exam.userSlug === request.params.userSlug
-    if (!matches) throw new HttpError(404, 'Question not found')
-    response.render('question.html', { question, title: question.title })
-  } catch (error) {
-    next(error)
-  }
-})
-app.get('/:userSlug/:examSlug', async (request, response, next) => {
-  try {
-    const exam = await getExam(request.params.examSlug, canViewUnapproved(response.locals.currentUser, 'getExam'))
-    const matches = !!exam && exam.slug === request.params.examSlug && exam.userSlug === request.params.userSlug
-    if (!matches) throw new HttpError(404, 'Exam not found')
-    response.render('exam.html', { exam, title: exam.name })
-  } catch (error) {
-    next(error)
-  }
-})
-app.get('/:userSlug', async (request, response, next) => {
-  try {
-    const user = await getUser(request.params.userSlug)
-    if (!user) throw new HttpError(404, 'User not found')
-    const [exams, sessions] = await Promise.all([getUserExams(user.id), getUserExamSessions(user.id)])
-    response.render('user.html', { user, exams, sessions, title: user.name })
-  } catch (error) {
-    next(error)
-  }
-})
+
+app.get('/:userSlug/:examSlug/:questionSlug', ah(async (request, response) => {
+  const question = await getQuestion(
+    request.params.questionSlug,
+    response.locals.currentUser?.id,
+    canViewUnapproved(response.locals.currentUser, 'getQuestion')
+  )
+  const matches =
+    !!question &&
+    question.exam?.slug === request.params.examSlug &&
+    question.exam.userSlug === request.params.userSlug
+  if (!matches) throw new HttpError(404, 'Question not found')
+  response.render('question.html', { question, title: question.title })
+}))
+
+app.get('/:userSlug/:examSlug', ah(async (request, response) => {
+  const exam = await getExam(request.params.examSlug, canViewUnapproved(response.locals.currentUser, 'getExam'))
+  const matches = !!exam && exam.slug === request.params.examSlug && exam.userSlug === request.params.userSlug
+  if (!matches) throw new HttpError(404, 'Exam not found')
+  response.render('exam.html', { exam, title: exam.name })
+}))
+
+app.get('/:userSlug', ah(async (request, response) => {
+  const user = await getUser(request.params.userSlug)
+  if (!user) throw new HttpError(404, 'User not found')
+  const [ exams, sessions ] = await Promise.all([ getUserExams(user.id), getUserExamSessions(user.id) ])
+  response.render('user.html', { user, exams, sessions, title: user.name })
+}))
+
 app.use((_request, _response, next) => next(new HttpError(404, 'Page not found')))
 
-const getHttpStatus = (error: unknown): number => {
-  if (!error || typeof error !== 'object') return 500
-  const candidate = error as { status?: unknown; statusCode?: unknown }
-  const status = candidate.statusCode ?? candidate.status
-  return typeof status === 'number' && status >= 400 && status <= 599 ? status : 500
-}
-
-app.use((error: unknown, request: Request, response: Response, _next: express.NextFunction) => {
+app.use((error: unknown, request: Request, response: Response) => {
   console.error('Web request failed', error)
-  const statusCode = getHttpStatus(error)
+  const statusCode = ((error: unknown): number => {
+    if (!error || typeof error !== 'object') return 500
+    const candidate = error as { status?: unknown; statusCode?: unknown }
+    const status = candidate.statusCode ?? candidate.status
+    return typeof status === 'number' && status >= 400 && status <= 599 ? status : 500
+  })(error)
   const detail = error instanceof Error ? error.message : 'Internal server error'
   const message = statusCode >= 500 ? 'Internal server error' : detail
   const wantsJson = request.headers.accept?.includes('application/json') || request.xhr
@@ -341,5 +325,6 @@ app.use((error: unknown, request: Request, response: Response, _next: express.Ne
     message: isDevelopmentEnvironment() && statusCode >= 500 ? detail : statusCode < 500 ? message : undefined
   })
 })
+
 export { app }
 export const handler = serverless(app)
