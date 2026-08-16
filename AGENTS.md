@@ -12,6 +12,7 @@
 ## Testing
 
 - Run `make tests` after all functional changes and before handing off the work.
+- `make tests` uses the isolated `docker-compose.test.yml` stack: `api`, `web`, `runner`, and `postgres` services in the `test` Compose project. It does not reuse development containers or the development database. Use `make test-up` and `make test-down` when manually exercising the test web Lambda at port 13000.
 
 ## Shared Lambda code
 

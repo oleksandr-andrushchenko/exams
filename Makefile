@@ -15,6 +15,7 @@ endif
 API_SERVICE = api
 WEB_SERVICE = web
 DB_SERVICE = postgres
+TEST_COMPOSE = $(DC) -p test -f docker-compose.test.yml
 
 .PHONY: help
 help: ## Show this help
@@ -52,9 +53,22 @@ web: ## Open shell in web Docker container
 db: ## Open PostgreSQL client for the local database
 	$(DC) exec $(DB_SERVICE) psql -U postgres -d examme
 
+.PHONY: test-up
+test-up: ## Start isolated test containers
+	$(TEST_COMPOSE) up --build -d postgres api web
+
+.PHONY: test-down
+test-down: ## Stop and remove isolated test containers
+	$(TEST_COMPOSE) down -v
+	find .test-static -mindepth 1 ! -name .gitkeep -delete
+
 .PHONY: tests
 tests: ## Run API functional tests
-	@POSTGRES_PORT=$${POSTGRES_PORT:-5432} $(DC) exec -e NODE_ENV=test -e DATABASE_SCHEMA=test -e NODE_OPTIONS=--no-deprecation $(API_SERVICE) npm run --silent test:functional
+	@set -e; \
+	trap '$(MAKE) test-down' EXIT; \
+	$(MAKE) test-up; \
+	$(TEST_COMPOSE) run --rm runner
+
 .PHONY: seed
 seed: ## Rebuild readable local demo data
 	@$(DC) exec -e NODE_ENV=development -e DATABASE_SCHEMA=public -e NODE_OPTIONS=--no-deprecation $(API_SERVICE) npm run --silent seed:test
