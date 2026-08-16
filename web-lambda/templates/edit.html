@@ -2,7 +2,7 @@
 <div class="alert alert-danger">{{ error }}</div>
 {% endif %}{% if resource == "user" %}
 <h1>Edit {{ user.name or user.id }}</h1>
-<form class="card card-body d-flex gap-3" enctype="multipart/form-data" method="post">
+<form class="card card-body d-flex gap-3" enctype="multipart/form-data" method="post" data-api-form="updateUser" data-resource-id="{{ user.id }}" data-success-url="{{ userUrl(user) }}">
   <label>Name<input class="form-control" name="name" required value="{{ user.name or '' }}"/></label
   ><label>Email<input class="form-control" name="email" required type="email" value="{{ user.email or '' }}"/></label
 ><label>Image<input accept="image/jpeg,image/png,image/gif,image/webp" class="form-control" name="image"
@@ -11,7 +11,7 @@
 </form>
 {% elif resource == "exam" %}
 <h1>Edit {{ exam.name }}</h1>
-<form class="card card-body d-flex gap-3" enctype="multipart/form-data" method="post">
+<form class="card card-body d-flex gap-3" enctype="multipart/form-data" method="post" data-api-form="updateExam" data-resource-id="{{ exam.id }}" data-success-url="{{ examUrl(exam) }}">
   <label>Name<input class="form-control" name="name" required value="{{ exam.name }}"/></label
   ><label
 >Required score<input
@@ -28,7 +28,7 @@
 </form>
 {% elif resource == "question" %}
 <h1>Edit {{ question.title }}</h1>
-<form class="card card-body d-flex gap-3" enctype="multipart/form-data" method="post">
+<form class="card card-body d-flex gap-3" enctype="multipart/form-data" method="post" data-api-form="updateQuestion" data-resource-id="{{ question.id }}" data-success-url="{{ questionUrl(question, question.exam) }}">
   <label>Title<textarea class="form-control" name="title" required>{{ question.title }}</textarea></label
   ><label
 >Difficulty<input class="form-control" name="difficulty" required value="{{ question.difficulty or '' }}"/></label

@@ -1,3 +1,6 @@
+import { randomUUID } from 'node:crypto'
+import path from 'node:path'
+import multer from 'multer'
 import 'reflect-metadata'
 import { ConnectionManager, useContainer as typeormUseContainer } from 'typeorm'
 import { Container } from 'typedi'
@@ -91,7 +94,7 @@ export const buildApolloServer = async (server: Server = undefined): Promise<Apo
     plugins,
     formatError: (formattedError: GraphQLFormattedError, error: GraphQLError) => {
       for (const name in errors) {
-        for (const key of [error.originalError.constructor.name, formattedError.extensions.code as string]) {
+        for (const key of [error.originalError?.constructor?.name, formattedError.extensions.code as string]) {
           if (key && errors[name].types.includes(key)) {
             return { ...formattedError, extensions: { name, code: errors[name].code } }
           }
@@ -102,10 +105,43 @@ export const buildApolloServer = async (server: Server = undefined): Promise<Apo
     }
   })
 }
+const imageExtensions: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/gif': '.gif',
+  'image/webp': '.webp'
+}
+const uploadImage = multer({
+  storage: multer.diskStorage({
+    destination: path.resolve(process.cwd(), 'static'),
+    filename: (_request, file, callback) => callback(null, randomUUID() + imageExtensions[file.mimetype])
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_request, file, callback) =>
+    callback(null, Object.prototype.hasOwnProperty.call(imageExtensions, file.mimetype))
+}).single('image')
 const prepareExpress = async (app: Application, apolloServer: ApolloServer): Promise<Application> => {
   app.use(morgan(loggerFormat, { stream: { write: logger.info.bind(logger) } }))
-  app.use(cors({ origin: config.client_url }))
-  app.use(express.json())
+  app.use(cors({ origin: config.client_url, credentials: true }))
+  app.post('/upload', async (request, response, next) => {
+    const user = await authChecker.getApolloContextUser(request)
+    if (!user) {
+      response.status(401).json({ error: { status: 401, message: 'Authentication required' } })
+      return
+    }
+    uploadImage(request, response, (error) => {
+      if (error) {
+        next(error)
+        return
+      }
+      if (!request.file) {
+        response.status(400).json({ error: { status: 400, message: 'A valid image is required' } })
+        return
+      }
+      response.json({ filename: request.file.filename })
+    })
+  })
+  app.use(express.json({ limit: '10mb' }))
   app.use(compression())
   app.use(
     expressMiddleware(apolloServer, {

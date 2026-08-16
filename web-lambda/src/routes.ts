@@ -3,7 +3,6 @@ export type RouteName =
   | 'exams'
   | 'questions'
   | 'users'
-  | 'questionRating'
   | 'userEdit'
   | 'examEdit'
   | 'questionEdit'
@@ -24,7 +23,6 @@ const definitions: Record<RouteName, string> = {
   exams: '/exams',
   questions: '/questions',
   users: '/users',
-  questionRating: '/questions/:questionId/rating',
   userEdit: '/users/:userId/edit',
   examEdit: '/exams/:examId/edit',
   questionEdit: '/questions/:questionId/edit',

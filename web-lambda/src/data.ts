@@ -360,6 +360,15 @@ export async function getUserExamSessions(userId: string): Promise<WebExamSessio
   }))
 }
 
+export async function getUserCredentials(email: string): Promise<{ id: string; password: string } | undefined> {
+  return (
+    await query<{ id: string; password: string }>(
+      'SELECT "id", "password" FROM "users" WHERE "email" = $1 AND "deletedAt" IS NULL',
+      [email]
+    )
+  )[0]
+}
+
 export async function getUser(userSlug: string) {
   return (
     await query<WebUser>(

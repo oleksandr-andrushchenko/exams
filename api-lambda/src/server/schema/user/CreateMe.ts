@@ -14,6 +14,12 @@ export default class CreateMe {
   @Field({ nullable: true })
   public readonly imageFilename?: string
 
+  @IsOptional()
+  @IsString()
+  @Length(1, 7000000)
+  @Field({ nullable: true })
+  public readonly imageData?: string
+
   @IsEmail()
   @Field()
   public readonly email: string

@@ -35,7 +35,7 @@ services:
       NODE_ENV: ${ENV:-development}
       PORT: 3000
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/examme
-      API_URL: http://api:8080/graphql
+      API_URL: http://localhost:${BE_PORT}/graphql
     ports:
       - '${FE_PORT}:3000'
 

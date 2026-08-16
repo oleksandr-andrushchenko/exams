@@ -40,3 +40,13 @@
 
 - Web routes should propagate HTTP errors with their status codes; the centralized handler covers all 4xx and 5xx responses, returning an HTML error page for browser requests and a JSON error object when the client requests JSON. Unexpected errors are treated as 500 responses.
 - Prefer existing project functions and already-included framework or library primitives for common behavior. Avoid adding dependencies for small isolated needs; introduce a new dependency only when its value justifies the added maintenance and runtime cost.
+
+## Lambda and client boundaries
+
+- The web Lambda owns page endpoints and login/logout endpoints. It may use shared domain functionality directly and may pass the configured API URL to the client scripts, but it must not proxy API requests.
+- The API Lambda owns resource operations, mutations, and GraphQL responses. The browser client communicates with it through AJAX calls only.
+- API responses may contain rendered HTML fragments, such as updated rating markup. The client should replace the corresponding page fragment with that response.
+- Shared HTML fragments used by both Lambdas belong in lambda-shared/templates/fragments.
+- Authentication cookies and their supporting token logic must be compatible between the web and API Lambdas.
+- Keep the web Lambda dependency footprint minimal to reduce bundle size and cold-start time.
+- Do not add API-only, mutation-only, or heavyweight dependencies to the web Lambda unless page rendering or authentication genuinely requires them; keep such dependencies in the API Lambda.

@@ -21,7 +21,7 @@
     {% endif %}
 
     {% if currentUser %}
-    <form class="rating-form mb-4" method="post" action="{{ url("questionRating", { questionId: question.id }) }}">
+    <form class="rating-form mb-4" method="post" data-question-id="{{ question.id }}">
       {% set rating = question.rating %}{% set userMark = question.userMark %}
       {% include "fragments/rating-form.html" %}
     </form>

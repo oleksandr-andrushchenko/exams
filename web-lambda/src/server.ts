@@ -1,8 +1,7 @@
-import { randomUUID } from 'node:crypto'
 import { isDevelopmentEnvironment } from './environment'
 import { examUrl, questionUrl, route, staticUrl, url, userUrl } from './routes'
+import bcrypt from 'bcryptjs'
 import express, { type Request, type Response } from 'express'
-import multer from 'multer'
 import * as jwt from 'jsonwebtoken'
 import path from 'node:path'
 import nunjucks from 'nunjucks'
@@ -15,6 +14,7 @@ import {
   getQuestionList,
   getTag,
   getUser,
+  getUserCredentials,
   getUserExams,
   getUserExamSessions,
   getUserList
@@ -38,22 +38,6 @@ const canViewUnapproved = (user: { permissions?: string[] } | undefined, permiss
 const templateDir = path.resolve(__dirname, '../templates')
 const sharedTemplateDir = path.resolve(__dirname, '../../lambda-shared/templates')
 const staticDir = path.resolve(__dirname, '../../static')
-const imageExtensions: Record<string, string> = {
-  'image/jpeg': '.jpg',
-  'image/png': '.png',
-  'image/gif': '.gif',
-  'image/webp': '.webp'
-}
-const uploadImage = multer({
-  storage: multer.diskStorage({
-    destination: staticDir,
-    filename: (_request, file, callback) => callback(null, randomUUID() + imageExtensions[file.mimetype])
-  }),
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (_request, file, callback) =>
-    callback(null, Object.prototype.hasOwnProperty.call(imageExtensions, file.mimetype))
-}).single('image')
-
 nunjucks.configure([templateDir, sharedTemplateDir], {
   autoescape: true,
   express: app,
@@ -66,6 +50,7 @@ app.use((request, response, next) => {
   response.locals.siteDescription = 'Practice exams and explore questions.'
   response.locals.requestPath = request.path
   response.locals.query = request.query
+  response.locals.apiUrl = process.env.API_URL || 'http://localhost:8080/graphql'
   const origin = request.protocol + '://' + request.get('host')
   response.locals.url = (name: Parameters<typeof url>[0], params = {}, query = {}, absolute = false) =>
     url(name, params, query, absolute, origin)
@@ -168,56 +153,6 @@ app.get('/users', async (request, response, next) => {
   }
 })
 
-async function submitRating(request: Request, response: Response, id: string) {
-  const mark = Number(request.body.mark)
-  const token = request.headers.cookie
-    ?.split(';')
-    .map((cookie) => cookie.trim())
-    .find((cookie) => cookie.startsWith('authenticationToken='))
-    ?.slice('authenticationToken='.length)
-  const target = '/questions/' + id
-
-  const wantsJson = request.headers.accept?.includes('application/json')
-  if (!Number.isInteger(mark) || mark < 0 || mark > 5 || !token) {
-    if (wantsJson) {
-      response.status(400).json({ ok: false, error: 'Invalid rating request' })
-      return
-    }
-    response.redirect(target + '?ratingError=1')
-    return
-  }
-
-  const field = 'questionId'
-  const mutation = 'rateQuestion'
-  const result = await fetch(process.env.API_URL || 'http://localhost:8080/graphql', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
-    body: JSON.stringify({
-      query:
-        'mutation Rate($id: ID!, $mark: Int!) { ' +
-        mutation +
-        '(' +
-        field +
-        ': $id, mark: $mark) { id rating { html averageMark markCount } } }',
-      variables: { id, mark }
-    })
-  })
-  const payload = (await result.json()) as { errors?: unknown[] }
-  if (wantsJson) {
-    if (!result.ok || payload.errors?.length) {
-      response.status(400).json({ ok: false, error: payload.errors?.[0] || 'Unable to save rating' })
-      return
-    }
-    response.json({ ok: true, html: (payload as any).data?.rateQuestion?.rating?.html })
-    return
-  }
-  response.redirect(target + (payload.errors?.length ? '?ratingError=1' : ''))
-}
-
-app.post('/questions/:questionId/rating', (request, response, next) => {
-  submitRating(request, response, request.params.questionId).catch(next)
-})
-
 async function renderEdit(request: Request, response: Response, resource: 'user' | 'exam' | 'question', id: string) {
   const permission = resource === 'user' ? 'updateUser' : resource === 'exam' ? 'updateExam' : 'updateQuestion'
   if (!response.locals.currentUser || !canViewUnapproved(response.locals.currentUser, permission)) {
@@ -236,79 +171,14 @@ async function renderEdit(request: Request, response: Response, resource: 'user'
   if (!entity) throw new HttpError(404, resource[0].toUpperCase() + resource.slice(1) + ' not found')
   response.render('edit.html', { resource, ...data })
 }
-async function updateResource(
-  request: Request,
-  response: Response,
-  resource: 'user' | 'exam' | 'question',
-  id: string
-) {
-  const token = request.headers.cookie
-    ?.split(';')
-    .map((cookie) => cookie.trim())
-    .find((cookie) => cookie.startsWith('authenticationToken='))
-    ?.slice('authenticationToken='.length)
-  if (!token) {
-    throw new HttpError(401, 'Authentication required')
-  }
-  const definitions: Record<string, { query: string; input: Record<string, unknown>; target: string }> = {
-    user: {
-      query: 'mutation Update($id: ID!, $input: UpdateUser!) { updateUser(userId: $id, updateUser: $input) { id } }',
-      input: { name: request.body.name, email: request.body.email, imageFilename: request.file?.filename },
-      target: route('userById', { userId: id })
-    },
-    exam: {
-      query: 'mutation Update($id: ID!, $input: UpdateExam!) { updateExam(examId: $id, updateExam: $input) { id } }',
-      input: {
-        name: request.body.name,
-        requiredScore: Number(request.body.requiredScore),
-        imageFilename: request.file?.filename
-      },
-      target: route('examById', { examId: id })
-    },
-    question: {
-      query:
-        'mutation Update($id: ID!, $input: UpdateQuestion!) { updateQuestion(questionId: $id, updateQuestion: $input) { id } }',
-      input: {
-        title: request.body.title,
-        difficulty: request.body.difficulty,
-        type: request.body.type,
-        imageFilename: request.file?.filename
-      },
-      target: route('questionById', { questionId: id })
-    }
-  }
-  const definition = definitions[resource]
-  const result = await fetch(process.env.API_URL || 'http://localhost:8080/graphql', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
-    body: JSON.stringify({ query: definition.query, variables: { id, input: definition.input } })
-  })
-  const payload = (await result.json()) as { errors?: Array<{ message?: string }> }
-  if (!result.ok || payload.errors?.length) {
-    response
-      .status(400)
-      .render('edit.html', { resource, error: payload.errors?.[0]?.message || 'Unable to update resource' })
-    return
-  }
-  response.redirect(definition.target)
-}
 app.get('/users/:userId/edit', (request, response, next) =>
   renderEdit(request, response, 'user', request.params.userId).catch(next)
-)
-app.post('/users/:userId/edit', uploadImage, (request, response, next) =>
-  updateResource(request, response, 'user', request.params.userId).catch(next)
 )
 app.get('/exams/:examId/edit', (request, response, next) =>
   renderEdit(request, response, 'exam', request.params.examId).catch(next)
 )
-app.post('/exams/:examId/edit', uploadImage, (request, response, next) =>
-  updateResource(request, response, 'exam', request.params.examId).catch(next)
-)
 app.get('/questions/:questionId/edit', (request, response, next) =>
   renderEdit(request, response, 'question', request.params.questionId).catch(next)
-)
-app.post('/questions/:questionId/edit', uploadImage, (request, response, next) =>
-  updateResource(request, response, 'question', request.params.questionId).catch(next)
 )
 app.get('/exams/new', (request, response) => {
   if (!response.locals.currentUser) {
@@ -316,51 +186,6 @@ app.get('/exams/new', (request, response) => {
     return
   }
   response.render('create-exam.html', { title: 'Create exam' })
-})
-
-app.post('/exams/new', uploadImage, async (request, response) => {
-  if (!response.locals.currentUser) {
-    response.redirect(route('login', {}, { redirect: route('newExam') }))
-    return
-  }
-
-  const token = request.headers.cookie
-    ?.split(';')
-    .map((cookie) => cookie.trim())
-    .find((cookie) => cookie.startsWith('authenticationToken='))
-    ?.slice('authenticationToken='.length)
-  try {
-    const result = await fetch(process.env.API_URL || 'http://localhost:8080/graphql', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
-      body: JSON.stringify({
-        query: 'mutation CreateExam($input: CreateExam!) { createExam(createExam: $input) { id slug } }',
-        variables: {
-          input: {
-            name: request.body.name,
-            requiredScore: Number(request.body.requiredScore || 0),
-            imageFilename: request.file?.filename
-          }
-        }
-      })
-    })
-    const payload = (await result.json()) as {
-      data?: { createExam?: { slug?: string } }
-      errors?: Array<{ message?: string }>
-    }
-    if (!result.ok || payload.errors?.length || !payload.data?.createExam?.slug) {
-      throw new Error(payload.errors?.[0]?.message || 'Unable to create exam')
-    }
-    response.redirect(
-      route('examProfile', { userSlug: response.locals.currentUser.slug, examSlug: payload.data.createExam.slug })
-    )
-  } catch (error) {
-    response.status(400).render('create-exam.html', {
-      title: 'Create exam',
-      error: error instanceof Error ? error.message : 'Unable to create exam',
-      exam: { name: request.body.name, requiredScore: request.body.requiredScore }
-    })
-  }
 })
 
 app.get('/exams/:examId', async (request, response, next) => {
@@ -424,28 +249,13 @@ app.get('/login', async (request, response) => {
 })
 app.get('/register', (_request, response) => response.render('register.html', { title: 'Register' }))
 
-async function authenticate(
-  response: Response,
-  credentials: { email: string; password: string; imageFilename?: string },
-  register: boolean
-) {
-  const query = register
-    ? 'mutation Register($createMe: CreateMe!, $credentials: Credentials!) { createMe(createMe: $createMe) { id } createAuthenticationToken(credentials: $credentials) { token } }'
-    : 'mutation Login($email: String!, $password: String!) { createAuthenticationToken(credentials: { email: $email, password: $password }) { token } }'
-  const variables = register ? { createMe: credentials, credentials } : credentials
-  const result = await fetch(process.env.API_URL || 'http://localhost:8080/graphql', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ query, variables })
-  })
-  const payload = (await result.json()) as {
-    data?: { createAuthenticationToken?: { token?: string } }
-    errors?: Array<{ message?: string }>
+async function authenticate(response: Response, credentials: { email: string; password: string }, _register: boolean) {
+  const user = await getUserCredentials(credentials.email)
+  if (!user || !(await bcrypt.compare(credentials.password, user.password))) {
+    throw new Error('Authentication failed')
   }
-  if (!result.ok || payload.errors?.length || !payload.data?.createAuthenticationToken?.token) {
-    throw new Error(payload.errors?.[0]?.message || 'Authentication failed')
-  }
-  response.cookie('authenticationToken', payload.data.createAuthenticationToken.token, {
+  const token = jwt.sign({ userId: user.id, type: 'access' }, 'any', { expiresIn: '100d' })
+  response.cookie('authenticationToken', token, {
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production'
@@ -468,21 +278,6 @@ app.post('/login', async (request, response) => {
 app.post('/logout', (_request, response) => {
   response.clearCookie('authenticationToken')
   response.redirect(route('home'))
-})
-app.post('/register', uploadImage, async (request, response) => {
-  try {
-    await authenticate(
-      response,
-      { email: request.body.email, password: request.body.password, imageFilename: request.file?.filename },
-      true
-    )
-    response.redirect(route('home'))
-  } catch (error) {
-    response.status(400).render('register.html', {
-      title: 'Register',
-      error: error instanceof Error ? error.message : 'Registration failed'
-    })
-  }
 })
 app.get('/:userSlug/:examSlug/:questionSlug', async (request, response, next) => {
   try {

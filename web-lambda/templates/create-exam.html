@@ -1,7 +1,7 @@
 {% extends "layout.html" %}{% block content %}
 <h1>Create exam</h1>
 {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-<form class="card card-body d-flex gap-3" enctype="multipart/form-data" method="post">
+<form class="card card-body d-flex gap-3" enctype="multipart/form-data" method="post" data-api-form="createExam" data-success-url="{{ url("examProfile", { userSlug: currentUser.slug, examSlug: "__SLUG__" }) }}">
   <label>Name<input class="form-control" name="name" required value="{{ exam.name or '' }}"></label>
   <label>Required score<input class="form-control" max="100" min="0" name="requiredScore" type="number" value="{{ exam.requiredScore or 0 }}"></label>
   <label>Image<input accept="image/jpeg,image/png,image/gif,image/webp" class="form-control" name="image" type="file"></label>

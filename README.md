@@ -39,5 +39,4 @@ Use [RealFaviconGenerator](https://realfavicongenerator.net/) to generate favico
 
 ## TODO
 
-- Implement live reload for application code and all local Lambda functions in the development environment.
-- implement client application - which will contain all the browser logic/handlers (scripts.js)
+- redirect to the same source page after the login

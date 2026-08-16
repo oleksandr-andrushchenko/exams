@@ -8,18 +8,20 @@ export default class AccessTokenVerifier {
 
   public async verifyAccessToken(req: Request): Promise<string | null> {
     const header: string | undefined = req.header('Authorization')
+    const bearerToken = header?.startsWith('Bearer ') ? header.slice('Bearer '.length) : undefined
+    const cookieToken = req
+      .header('Cookie')
+      ?.split(';')
+      .map((cookie) => cookie.trim())
+      .find((cookie) => cookie.startsWith('authenticationToken='))
+      ?.slice('authenticationToken='.length)
+    const token = bearerToken || cookieToken
 
-    if (!header) {
+    if (!token) {
       return null
     }
 
-    const parts: string[] = header.split(' ')
-
-    if (parts.length !== 2 || parts[0] !== 'Bearer' || !parts[1]) {
-      return null
-    }
-
-    const payload: TokenPayload | null = await this.tokenService.verifyAccessToken(parts[1])
+    const payload: TokenPayload | null = await this.tokenService.verifyAccessToken(token)
 
     if (!payload || !payload.userId) {
       return null

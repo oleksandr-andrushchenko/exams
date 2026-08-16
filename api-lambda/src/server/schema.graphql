@@ -31,6 +31,7 @@ input CreateExamSessionQuestionAnswer {
 
 input CreateMe {
   email: String!
+  imageData: String
   imageFilename: String
   name: String
   password: String!
@@ -47,6 +48,7 @@ input CreateQuestion {
 
 input CreateUser {
   email: String!
+  imageData: String
   imageFilename: String
   name: String
   password: String!

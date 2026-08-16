@@ -5,7 +5,7 @@
     {% if error %}
     <div class="alert alert-danger">{{ error }}</div>
     {% endif %}
-    <form class="card card-body d-flex gap-3" method="post" action="{{ url("register") }}" enctype="multipart/form-data">
+    <form class="card card-body d-flex gap-3" method="post" enctype="multipart/form-data" data-api-form="createMe" data-success-url="{{ url("login") }}">
       <label>Email<input class="form-control" type="email" name="email" autocomplete="username" required /></label
       ><label
         >Password<input

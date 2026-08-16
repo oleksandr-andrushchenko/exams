@@ -1,3 +1,6 @@
+import { randomUUID } from 'node:crypto'
+import { writeFile } from 'node:fs/promises'
+import path from 'node:path'
 import { Inject, Service } from 'typedi'
 import User from '../../entities/user/User'
 import InjectEntityManager, { EntityManagerInterface } from '../../decorators/InjectEntityManager'
@@ -38,7 +41,20 @@ export default class MeCreator {
       user.name = createMe.name
     }
 
-    user.imageFilename = createMe.imageFilename
+    if (createMe.imageData) {
+      const match = /^data:(image\/(?:jpeg|png|gif|webp));base64,(.+)$/.exec(createMe.imageData)
+      if (!match) throw new Error('Invalid image data')
+      const extension = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/gif': '.gif', 'image/webp': '.webp' }[
+        match[1]
+      ]
+      const filename = randomUUID() + extension
+      const content = Buffer.from(match[2], 'base64')
+      if (content.length > 5 * 1024 * 1024) throw new Error('Image is too large')
+      await writeFile(path.resolve(process.cwd(), 'static', filename), content)
+      user.imageFilename = filename
+    } else {
+      user.imageFilename = createMe.imageFilename
+    }
 
     user.createdAt = new Date()
 
