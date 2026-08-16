@@ -66,4 +66,4 @@ logs: ## Tail Docker containers logs
 
 .PHONY: open
 open: ## Show local site URL
-	@echo "🌐 Visit http://localhost:$(FE_PORT) (web) in your browser manually."
+	@echo "🌐 Visit http://localhost:$(WEB_PORT) (web) in your browser manually."
