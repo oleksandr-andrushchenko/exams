@@ -35,3 +35,8 @@
 ## Templates
 
 - Store layout and page templates in the templates root; store reusable partial HTML templates in the `fragments` directory.
+
+## Web errors
+
+- Web routes should propagate HTTP errors with their status codes; the centralized handler covers all 4xx and 5xx responses, returning an HTML error page for browser requests and a JSON error object when the client requests JSON. Unexpected errors are treated as 500 responses.
+- Prefer existing project functions and already-included framework or library primitives for common behavior. Avoid adding dependencies for small isolated needs; introduce a new dependency only when its value justifies the added maintenance and runtime cost.

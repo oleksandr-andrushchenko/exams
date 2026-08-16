@@ -21,6 +21,16 @@ import {
 } from './data'
 
 const app = express()
+
+class HttpError extends Error {
+  public constructor(
+    public readonly statusCode: number,
+    message: string
+  ) {
+    super(message)
+  }
+}
+
 const canViewUnapproved = (user: { permissions?: string[] } | undefined, permission: string) =>
   user?.permissions?.some(
     (userPermission) => userPermission === permission || userPermission === 'root' || userPermission === '*'
@@ -211,8 +221,10 @@ app.post('/questions/:questionId/rating', (request, response, next) => {
 async function renderEdit(request: Request, response: Response, resource: 'user' | 'exam' | 'question', id: string) {
   const permission = resource === 'user' ? 'updateUser' : resource === 'exam' ? 'updateExam' : 'updateQuestion'
   if (!response.locals.currentUser || !canViewUnapproved(response.locals.currentUser, permission)) {
-    response.status(403).render('edit.html', { resource, error: 'You are not authorized to edit this resource' })
-    return
+    throw new HttpError(
+      response.locals.currentUser ? 403 : 401,
+      response.locals.currentUser ? 'You are not authorized to edit this resource' : 'Authentication required'
+    )
   }
   const data =
     resource === 'user'
@@ -221,7 +233,8 @@ async function renderEdit(request: Request, response: Response, resource: 'user'
         ? { exam: await getExam(id, true) }
         : { question: await getQuestion(id, response.locals.currentUser.id, true) }
   const entity = (data as any)[resource]
-  response.status(entity ? 200 : 404).render('edit.html', { resource, ...data })
+  if (!entity) throw new HttpError(404, resource[0].toUpperCase() + resource.slice(1) + ' not found')
+  response.render('edit.html', { resource, ...data })
 }
 async function updateResource(
   request: Request,
@@ -235,8 +248,7 @@ async function updateResource(
     .find((cookie) => cookie.startsWith('authenticationToken='))
     ?.slice('authenticationToken='.length)
   if (!token) {
-    response.status(401).render('edit.html', { resource, error: 'Authentication required' })
-    return
+    throw new HttpError(401, 'Authentication required')
   }
   const definitions: Record<string, { query: string; input: Record<string, unknown>; target: string }> = {
     user: {
@@ -354,7 +366,8 @@ app.post('/exams/new', uploadImage, async (request, response) => {
 app.get('/exams/:examId', async (request, response, next) => {
   try {
     const exam = await getExam(request.params.examId, canViewUnapproved(response.locals.currentUser, 'getExam'))
-    response.status(exam ? 200 : 404).render('exam.html', { exam, title: exam?.name || 'Exam not found' })
+    if (!exam) throw new HttpError(404, 'Exam not found')
+    response.render('exam.html', { exam, title: exam.name })
   } catch (error) {
     next(error)
   }
@@ -366,10 +379,8 @@ app.get('/questions/:questionId', async (request, response, next) => {
       response.locals.currentUser?.id,
       canViewUnapproved(response.locals.currentUser, 'getQuestion')
     )
-    response.status(question ? 200 : 404).render('question.html', {
-      question,
-      title: question?.title || 'Question not found'
-    })
+    if (!question) throw new HttpError(404, 'Question not found')
+    response.render('question.html', { question, title: question.title })
   } catch (error) {
     next(error)
   }
@@ -377,12 +388,9 @@ app.get('/questions/:questionId', async (request, response, next) => {
 app.get('/users/:userId', async (request, response, next) => {
   try {
     const user = await getUser(request.params.userId)
-    const [exams, sessions] = user
-      ? await Promise.all([getUserExams(user.id), getUserExamSessions(user.id)])
-      : [undefined, []]
-    response
-      .status(user ? 200 : 404)
-      .render('user.html', { user, exams, sessions, title: user?.name || 'User not found' })
+    if (!user) throw new HttpError(404, 'User not found')
+    const [exams, sessions] = await Promise.all([getUserExams(user.id), getUserExamSessions(user.id)])
+    response.render('user.html', { user, exams, sessions, title: user.name })
   } catch (error) {
     next(error)
   }
@@ -390,7 +398,8 @@ app.get('/users/:userId', async (request, response, next) => {
 app.get('/tags/:slug', async (request, response, next) => {
   try {
     const tag = await getTag(request.params.slug)
-    response.status(tag ? 200 : 404).render('tag.html', { tag, title: tag?.name || 'Tag not found' })
+    if (!tag) throw new HttpError(404, 'Tag not found')
+    response.render('tag.html', { tag, title: tag.name })
   } catch (error) {
     next(error)
   }
@@ -486,10 +495,8 @@ app.get('/:userSlug/:examSlug/:questionSlug', async (request, response, next) =>
       !!question &&
       question.exam?.slug === request.params.examSlug &&
       question.exam.userSlug === request.params.userSlug
-    response.status(matches ? 200 : 404).render('question.html', {
-      question: matches ? question : undefined,
-      title: matches ? question.title : 'Question not found'
-    })
+    if (!matches) throw new HttpError(404, 'Question not found')
+    response.render('question.html', { question, title: question.title })
   } catch (error) {
     next(error)
   }
@@ -498,9 +505,8 @@ app.get('/:userSlug/:examSlug', async (request, response, next) => {
   try {
     const exam = await getExam(request.params.examSlug, canViewUnapproved(response.locals.currentUser, 'getExam'))
     const matches = !!exam && exam.slug === request.params.examSlug && exam.userSlug === request.params.userSlug
-    response
-      .status(matches ? 200 : 404)
-      .render('exam.html', { exam: matches ? exam : undefined, title: matches ? exam.name : 'Exam not found' })
+    if (!matches) throw new HttpError(404, 'Exam not found')
+    response.render('exam.html', { exam, title: exam.name })
   } catch (error) {
     next(error)
   }
@@ -508,23 +514,37 @@ app.get('/:userSlug/:examSlug', async (request, response, next) => {
 app.get('/:userSlug', async (request, response, next) => {
   try {
     const user = await getUser(request.params.userSlug)
-    const [exams, sessions] = user
-      ? await Promise.all([getUserExams(user.id), getUserExamSessions(user.id)])
-      : [undefined, []]
-    response
-      .status(user ? 200 : 404)
-      .render('user.html', { user, exams, sessions, title: user?.name || 'User not found' })
+    if (!user) throw new HttpError(404, 'User not found')
+    const [exams, sessions] = await Promise.all([getUserExams(user.id), getUserExamSessions(user.id)])
+    response.render('user.html', { user, exams, sessions, title: user.name })
   } catch (error) {
     next(error)
   }
 })
-app.use((error: Error, _request: Request, response: Response, _next: express.NextFunction) => {
+app.use((_request, _response, next) => next(new HttpError(404, 'Page not found')))
+
+const getHttpStatus = (error: unknown): number => {
+  if (!error || typeof error !== 'object') return 500
+  const candidate = error as { status?: unknown; statusCode?: unknown }
+  const status = candidate.statusCode ?? candidate.status
+  return typeof status === 'number' && status >= 400 && status <= 599 ? status : 500
+}
+
+app.use((error: unknown, request: Request, response: Response, _next: express.NextFunction) => {
   console.error('Web request failed', error)
-  response.status(500).render('error.html', {
-    title: 'Internal Server Error',
-    error: isDevelopmentEnvironment() ? error.message : undefined
+  const statusCode = getHttpStatus(error)
+  const detail = error instanceof Error ? error.message : 'Internal server error'
+  const message = statusCode >= 500 ? 'Internal server error' : detail
+  const wantsJson = request.headers.accept?.includes('application/json') || request.xhr
+  if (wantsJson) {
+    response.status(statusCode).json({ error: { status: statusCode, message } })
+    return
+  }
+  response.status(statusCode).render('error.html', {
+    title: statusCode >= 500 ? 'Internal Server Error' : message,
+    statusCode,
+    message: isDevelopmentEnvironment() && statusCode >= 500 ? detail : statusCode < 500 ? message : undefined
   })
 })
-
 export { app }
 export const handler = serverless(app)

@@ -1,8 +1,6 @@
 {% extends "layout.html" %}{% block content %}
 <div class="alert alert-danger">
-  <h1>Internal Server Error</h1>
-  {% if error %}
-  <pre>{{ error }}</pre>
-  {% endif %}
+  <h1>{{ statusCode or 500 }} {{ title or "Internal Server Error" }}</h1>
+  {% if message %}<p>{{ message }}</p>{% endif %}
 </div>
 {% endblock %}
