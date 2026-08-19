@@ -1,28 +1,32 @@
 import { Inject, Service } from 'typedi'
-import ExamSession from '../entities/examSession/ExamSession'
-import User from '../entities/user/User'
-import CreateExamSession from '../schema/examSession/CreateExamSession'
-import ExamSessionProvider from '../services/examSession/ExamSessionProvider'
-import GetExamSession from '../schema/examSession/GetExamSession'
-import ExamSessionQuestionSchema from '../schema/examSession/ExamSessionQuestionSchema'
-import CreateExamSessionQuestionAnswer from '../schema/examSession/CreateExamSessionQuestionAnswer'
-import GetExamSessionQuestion from '../schema/examSession/GetExamSessionQuestion'
-import ValidatorInterface from '../services/validator/ValidatorInterface'
-import GetExamSessions from '../schema/examSession/GetExamSessions'
-import PaginatedExamSessions from '../schema/examSession/PaginatedExamSessions'
-import Exam from '../entities/exam/Exam'
-import ExamProvider from '../services/exam/ExamProvider'
-import ExamSessionCreator from '../services/examSession/ExamSessionCreator'
-import ExamSessionDeleter from '../services/examSession/ExamSessionDeleter'
-import ExamSessionQuestionAnswerDeleter from '../services/examSession/ExamSessionQuestionAnswerDeleter'
-import ExamSessionQuestionAnswerCreator from '../services/examSession/ExamSessionQuestionAnswerCreator'
-import ExamSessionCompletionCreator from '../services/examSession/ExamSessionCompletionCreator'
-import ExamSessionLastRequestedQuestionNumberSetter from '../services/examSession/ExamSessionLastRequestedQuestionNumberSetter'
-import ExamSessionQuestionProvider from '../services/examSession/ExamSessionQuestionProvider'
-import ExamSessionListProvider from '../services/examSession/ExamSessionListProvider'
-import GetCurrentExamSessions from '../schema/examSession/GetCurrentExamSessions'
-import CurrentExamSessionListProvider from '../services/examSession/CurrentExamSessionListProvider'
-import ExamListProvider from '../services/exam/ExamListProvider'
+import ExamSession from '../../../shared/src/entities/examSession/ExamSession'
+import User from '../../../shared/src/entities/user/User'
+import CreateExamSession from '../../../shared/src/schema/examSession/CreateExamSession'
+import ExamSessionProvider from '../../../shared/src/services/examSession/ExamSessionProvider'
+import GetExamSession from '../../../shared/src/schema/examSession/GetExamSession'
+import ExamSessionQuestionSchema from '../../../shared/src/schema/examSession/ExamSessionQuestionSchema'
+import CreateExamSessionQuestionAnswer from '../../../shared/src/schema/examSession/CreateExamSessionQuestionAnswer'
+import GetExamSessionQuestion from '../../../shared/src/schema/examSession/GetExamSessionQuestion'
+import ValidatorInterface from '../../../shared/src/services/validator/ValidatorInterface'
+import GetExamSessions from '../../../shared/src/schema/examSession/GetExamSessions'
+import PaginatedExamSessions from '../../../shared/src/schema/examSession/PaginatedExamSessions'
+import Exam from '../../../shared/src/entities/exam/Exam'
+import ExamProvider from '../../../shared/src/services/exam/ExamProvider'
+import ExamSessionCreator from '../../../shared/src/services/examSession/ExamSessionCreator'
+import ExamSessionDeleter from '../../../shared/src/services/examSession/ExamSessionDeleter'
+import ExamSessionQuestionAnswerDeleter from '../../../shared/src/services/examSession/ExamSessionQuestionAnswerDeleter'
+import ExamSessionQuestionAnswerCreator from '../../../shared/src/services/examSession/ExamSessionQuestionAnswerCreator'
+import ExamSessionCompletionCreator from '../../../shared/src/services/examSession/ExamSessionCompletionCreator'
+import ExamSessionLastRequestedQuestionNumberSetter from '../../../shared/src/services/examSession/ExamSessionLastRequestedQuestionNumberSetter'
+import ExamSessionQuestionProvider from '../../../shared/src/services/examSession/ExamSessionQuestionProvider'
+import ExamSessionListProvider from '../../../shared/src/services/examSession/ExamSessionListProvider'
+import GetCurrentExamSessions from '../../../shared/src/schema/examSession/GetCurrentExamSessions'
+import CurrentExamSessionListProvider from '../../../shared/src/services/examSession/CurrentExamSessionListProvider'
+import ExamListProvider from '../../../shared/src/services/exam/ExamListProvider'
+import { type Request, type Response } from 'express'
+import { plainToInstance } from 'class-transformer'
+import { queryObject } from '../../../shared/src/http'
+import AuthUserProvider from '../../../shared/src/services/auth/AuthUserProvider'
 
 @Service()
 export class ExamSessionController {
@@ -40,7 +44,8 @@ export class ExamSessionController {
     @Inject() private readonly examProvider: ExamProvider,
     @Inject() private readonly currentExamSessionListProvider: CurrentExamSessionListProvider,
     @Inject('validator') private readonly validator: ValidatorInterface,
-    @Inject() private readonly examListProvider: ExamListProvider
+    @Inject() private readonly examListProvider: ExamListProvider,
+    @Inject() private readonly authUserProvider: AuthUserProvider
   ) {}
 
   public async createExamSession(examSession: CreateExamSession, user: User): Promise<ExamSession> {
@@ -161,5 +166,91 @@ export class ExamSessionController {
     const exams = await this.examListProvider.getExamsByIds(getCurrentExamSessions.examIds)
 
     return await this.currentExamSessionListProvider.getCurrentExamSessions(exams, user)
+  }
+
+  public async createRoute(request: Request, response: Response): Promise<void> {
+    response
+      .status(201)
+      .json(
+        await this.createExamSession(
+          plainToInstance(CreateExamSession, request.body),
+          await this.authUserProvider.getRequiredAuthUser(request)
+        )
+      )
+  }
+  public async listRoute(request: Request, response: Response): Promise<void> {
+    const user = await this.authUserProvider.getRequiredAuthUser(request)
+    const { meta, ...query } = queryObject(request.query)
+    const data = plainToInstance(GetExamSessions, query)
+    response.json(await (meta ? this.getPaginatedExamSessions(data, user) : this.getExamSessions(data, user)))
+  }
+  public async currentRoute(request: Request, response: Response): Promise<void> {
+    const examIds = Array.isArray(request.query.examIds)
+      ? request.query.examIds
+      : String(request.query.examIds ?? '').split(',')
+    response.json(
+      await this.getCurrentExamSessions(
+        plainToInstance(GetCurrentExamSessions, { examIds }),
+        await this.authUserProvider.getRequiredAuthUser(request)
+      )
+    )
+  }
+  public async completionRoute(request: Request, response: Response): Promise<void> {
+    response.json(
+      await this.createExamSessionCompletion(
+        plainToInstance(GetExamSession, { examSessionId: request.params.examSessionId }),
+        await this.authUserProvider.getRequiredAuthUser(request)
+      )
+    )
+  }
+  public async deleteRoute(request: Request, response: Response): Promise<void> {
+    response.json({
+      deleted: await this.deleteExamSession(
+        plainToInstance(GetExamSession, { examSessionId: request.params.examSessionId }),
+        await this.authUserProvider.getRequiredAuthUser(request)
+      )
+    })
+  }
+  public async answerDeleteRoute(request: Request, response: Response): Promise<void> {
+    response.json(
+      await this.deleteExamSessionQuestionAnswer(
+        plainToInstance(GetExamSessionQuestion, {
+          examSessionId: request.params.examSessionId,
+          question: Number(request.params.question)
+        }),
+        await this.authUserProvider.getRequiredAuthUser(request)
+      )
+    )
+  }
+  public async getRoute(request: Request, response: Response): Promise<void> {
+    response.json(
+      await this.getExamSession(
+        plainToInstance(GetExamSession, { examSessionId: request.params.examSessionId }),
+        await this.authUserProvider.getRequiredAuthUser(request)
+      )
+    )
+  }
+  public async questionRoute(request: Request, response: Response): Promise<void> {
+    response.json(
+      await this.getExamSessionQuestion(
+        plainToInstance(GetExamSessionQuestion, {
+          examSessionId: request.params.examSessionId,
+          question: Number(request.params.question)
+        }),
+        await this.authUserProvider.getRequiredAuthUser(request)
+      )
+    )
+  }
+  public async answerRoute(request: Request, response: Response): Promise<void> {
+    response.json(
+      await this.createExamSessionQuestionAnswer(
+        plainToInstance(GetExamSessionQuestion, {
+          examSessionId: request.params.examSessionId,
+          question: Number(request.params.question)
+        }),
+        plainToInstance(CreateExamSessionQuestionAnswer, request.body),
+        await this.authUserProvider.getRequiredAuthUser(request)
+      )
+    )
   }
 }

@@ -1,0 +1,39 @@
+{% set examColumns = columns or { md: 4 } %}
+<article
+  class="col{% if examColumns.xs %}-{{ examColumns.xs }}{% else %}-12{% endif %}{% if examColumns.sm %} col-sm-{{ examColumns.sm }}{% endif %}{% if examColumns.md %} col-md-{{ examColumns.md }}{% endif %}{% if examColumns.lg %} col-lg-{{ examColumns.lg }}{% endif %}{% if examColumns.xl %} col-xl-{{ examColumns.xl }}{% endif %}{% if examColumns.xxl %} col-xxl-{{ examColumns.xxl }}{% endif %}"
+>
+  <div class="card h-100 overflow-hidden shadow-sm">
+    {% if exam.imageFilename %}
+    <a href="{{ examUrl(exam) }}">
+      <img class="card-img-top object-fit-cover" src="{{ staticUrl(exam.imageFilename) }}" alt="" loading="lazy" />
+    </a>
+    {% endif %}
+    <div class="card-body d-flex flex-column gap-2">
+      <h2 class="h5 card-title mb-0 text-break">
+        <a class="link-body-emphasis text-decoration-none" href="{{ examUrl(exam) }}">{{ exam.name }}</a>
+      </h2>
+      {% set rating = exam.rating %}{% set ratingClass = "" %}{% include "fragments/rating.html" %}
+      <div class="small text-secondary">
+        <i class="bi bi-journal-text" aria-hidden="true"></i>
+        {{ exam.questionCount or 0 }} questions {% if exam.requiredScore is not none %}
+        <span aria-hidden="true"> · </span>required score {{ exam.requiredScore or 0 }} {% endif %}
+      </div>
+      <a class="small text-secondary text-decoration-none" href="{{ userUrl(exam.userSlug) }}">
+        <i class="bi bi-person-circle" aria-hidden="true"></i>
+        {{ exam.userSlug }}
+      </a>
+      {% if exam.tags %}
+      <div class="small d-flex flex-wrap align-items-center gap-2">
+        <i class="bi bi-tags text-secondary" aria-hidden="true"></i>
+        {% for tag in exam.tags %}
+        <a
+          class="badge rounded-pill text-bg-light text-decoration-none"
+          href="{{ url('tagBySlug', { slug: tag.slug }) }}"
+          >{{ tag.name }}</a
+        >
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</article>

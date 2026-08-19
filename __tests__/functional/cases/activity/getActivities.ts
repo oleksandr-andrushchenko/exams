@@ -1,11 +1,11 @@
 import { describe, expect, test } from '@jest/globals'
 import request from '../../httpRequest'
-import Exam from '../../../../api-lambda/src/entities/exam/Exam'
+import Exam from '../../../../shared/src/entities/exam/Exam'
 import TestFramework from '../../TestFramework'
 // @ts-ignore
 import { getActivities } from '../../requests/activity/getActivities'
-import Activity from '../../../../api-lambda/src/entities/activity/Activity'
-import ExamEvent from '../../../../api-lambda/src/enums/exam/ExamEvent'
+import Activity from '../../../../shared/src/entities/activity/Activity'
+import ExamEvent from '../../../../shared/src/enums/exam/ExamEvent'
 
 const framework: TestFramework = globalThis.framework
 

@@ -41,5 +41,5 @@ Use [RealFaviconGenerator](https://realfavicongenerator.net/) to generate favico
 
 - redirect to the same source page after the login
 - add cloud formations & deployment scripts
-- move common peaces from api-labmda to lambda-shared and reuse in both lambdas, for example: getQuestion or getExam
+- move common peaces from api-labmda to lambda-shared and reuse in both lambdas, for example: getQuestion or getExam, or ah
 - fix tags urls

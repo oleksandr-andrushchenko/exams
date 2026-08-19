@@ -1,10 +1,10 @@
 import { describe, expect, test } from '@jest/globals'
 import request from '../../httpRequest'
-import User from '../../../../api-lambda/src/entities/user/User'
-import config from '../../../../api-lambda/src/configuration'
+import User from '../../../../shared/src/entities/user/User'
+import config from '../../../../shared/src/config'
 // @ts-ignore
 import { getPermission } from '../../requests/permission/getPermission'
-import Permission from '../../../../api-lambda/src/enums/Permission'
+import Permission from '../../../../shared/src/enums/Permission'
 import TestFramework from '../../TestFramework'
 
 const framework: TestFramework = globalThis.framework

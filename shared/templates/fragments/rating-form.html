@@ -1,0 +1,24 @@
+<input class="rating-mark" type="hidden" name="mark" value="" />
+<div
+  class="rating-widget"
+  data-rating-widget
+  data-average-mark="{{ rating.averageMark or 0 }}"
+  data-user-mark="{{ userMark if userMark is not none else '' }}"
+>
+  <div class="rating-control d-inline-flex align-items-center" role="radiogroup" aria-label="Rate this question">
+    {% for mark in [1, 2, 3, 4, 5] %}<button
+      class="rating-star btn btn-link text-decoration-none p-0 fs-3 lh-1{% if mark <= (rating.averageMark or 0) %} text-warning{% else %} text-secondary{% endif %}"
+      type="submit"
+      name="mark"
+      value="{{ mark }}"
+      aria-label="{{ mark }} stars"
+    >
+      <i
+        class="bi {% if mark <= (rating.averageMark or 0) %}bi-star-fill text-warning{% else %}bi-star text-secondary{% endif %}"
+        aria-hidden="true"
+      ></i></button
+    >{% endfor %}
+  </div>
+  <span class="rating-value">{{ (rating.averageMark or 0) | round(1) }}/5 ({{ rating.markCount or 0 }} votes)</span>
+  {% if userMark is not none %}<span class="rating-user-vote">Your vote: {{ userMark }}/5</span>{% endif %}
+</div>

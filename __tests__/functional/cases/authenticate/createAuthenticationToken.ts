@@ -1,9 +1,9 @@
 import { describe, expect, test } from '@jest/globals'
 import request from '../../httpRequest'
-import User from '../../../../api-lambda/src/entities/user/User'
+import User from '../../../../shared/src/entities/user/User'
 // @ts-ignore
 import { createAuthenticationToken } from '../../requests/authenticate/createAuthenticationToken'
-import { Credentials } from '../../../../api-lambda/src/schema/auth/Credentials'
+import { Credentials } from '../../../../shared/src/schema/auth/Credentials'
 import TestFramework from '../../TestFramework'
 
 const framework: TestFramework = globalThis.framework

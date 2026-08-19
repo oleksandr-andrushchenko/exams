@@ -1,6 +1,6 @@
 import { describe, expect, test } from '@jest/globals'
 import request from '../../httpRequest'
-import ExamTag from '../../../../api-lambda/src/entities/examTag/ExamTag'
+import ExamTag from '../../../../shared/src/entities/examTag/ExamTag'
 import TestFramework from '../../TestFramework'
 import { getExamTags } from '../../requests/examTag/getExamTags'
 

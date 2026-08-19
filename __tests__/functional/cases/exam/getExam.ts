@@ -1,6 +1,6 @@
 import { describe, expect, test } from '@jest/globals'
 import request from '../../httpRequest'
-import Exam from '../../../../api-lambda/src/entities/exam/Exam'
+import Exam from '../../../../shared/src/entities/exam/Exam'
 // @ts-ignore
 import { getExam } from '../../requests/exam/getExam'
 import TestFramework from '../../TestFramework'

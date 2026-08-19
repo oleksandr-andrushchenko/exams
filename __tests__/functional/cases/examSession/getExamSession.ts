@@ -1,8 +1,8 @@
 import { describe, expect, test } from '@jest/globals'
 import request from '../../httpRequest'
-import ExamSession from '../../../../api-lambda/src/entities/examSession/ExamSession'
-import User from '../../../../api-lambda/src/entities/user/User'
-import ExamSessionPermission from '../../../../api-lambda/src/enums/examSession/ExamSessionPermission'
+import ExamSession from '../../../../shared/src/entities/examSession/ExamSession'
+import User from '../../../../shared/src/entities/user/User'
+import ExamSessionPermission from '../../../../shared/src/enums/examSession/ExamSessionPermission'
 // @ts-ignore
 import { getExamSession } from '../../requests/examSession/getExamSession'
 import TestFramework from '../../TestFramework'

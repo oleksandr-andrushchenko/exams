@@ -1,0 +1,35 @@
+import { Inject, Service } from 'typedi'
+import User from '../../entities/user/User'
+import UserRepository from '../../repositories/users/UserRepository'
+import ValidatorInterface from '../validator/ValidatorInterface'
+import Cursor from '../../models/Cursor'
+import GetUsers from '../../schema/user/GetUsers'
+import PaginatedUsers from '../../schema/user/PaginatedUsers'
+
+@Service()
+export default class UserListProvider {
+  public constructor(
+    @Inject() private readonly userRepository: UserRepository,
+    @Inject('validator') private readonly validator: ValidatorInterface
+  ) {}
+
+  /**
+   * @param {GetUsers} getUsers
+   * @param {boolean} meta
+   * @returns {Promise<User[] | PaginatedUsers>}
+   * @throws {ValidatorError}
+   */
+  public async getUsers(getUsers: GetUsers, meta: boolean): Promise<User[] | PaginatedUsers> {
+    await this.validator.validate(getUsers)
+
+    const cursor = new Cursor<User>(getUsers, this.userRepository)
+
+    const where = {}
+
+    if ('search' in getUsers) {
+      where['$or'] = [{ name: { $regex: getUsers.search, $options: 'i' } }]
+    }
+
+    return await cursor.getPaginated({ where, meta })
+  }
+}

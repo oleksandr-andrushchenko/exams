@@ -1,18 +1,18 @@
 import { describe, expect, test } from '@jest/globals'
 import request from '../../httpRequest'
-import Exam from '../../../../api-lambda/src/entities/exam/Exam'
-import User from '../../../../api-lambda/src/entities/user/User'
+import Exam from '../../../../shared/src/entities/exam/Exam'
+import User from '../../../../shared/src/entities/user/User'
 import { ObjectId } from 'bson'
-import Question from '../../../../api-lambda/src/entities/question/Question'
+import Question from '../../../../shared/src/entities/question/Question'
 import { faker } from '@faker-js/faker'
-import QuestionPermission from '../../../../api-lambda/src/enums/question/QuestionPermission'
+import QuestionPermission from '../../../../shared/src/enums/question/QuestionPermission'
 // @ts-ignore
 import { createQuestion } from '../../requests/question/createQuestion'
-import CreateQuestion from '../../../../api-lambda/src/schema/question/CreateQuestion'
+import CreateQuestion from '../../../../shared/src/schema/question/CreateQuestion'
 import TestFramework from '../../TestFramework'
-import QuestionType from '../../../../api-lambda/src/entities/question/QuestionType'
-import QuestionDifficulty from '../../../../api-lambda/src/entities/question/QuestionDifficulty'
-import ExamPermission from '../../../../api-lambda/src/enums/exam/ExamPermission'
+import QuestionType from '../../../../shared/src/entities/question/QuestionType'
+import QuestionDifficulty from '../../../../shared/src/entities/question/QuestionDifficulty'
+import ExamPermission from '../../../../shared/src/enums/exam/ExamPermission'
 
 const framework: TestFramework = globalThis.framework
 

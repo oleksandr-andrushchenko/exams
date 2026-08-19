@@ -1,12 +1,12 @@
 import { describe, expect, test } from '@jest/globals'
 import request from '../../httpRequest'
-import User from '../../../../api-lambda/src/entities/user/User'
-import ExamSession from '../../../../api-lambda/src/entities/examSession/ExamSession'
-import Exam from '../../../../api-lambda/src/entities/exam/Exam'
+import User from '../../../../shared/src/entities/user/User'
+import ExamSession from '../../../../shared/src/entities/examSession/ExamSession'
+import Exam from '../../../../shared/src/entities/exam/Exam'
 // @ts-ignore
 import { getCurrentExamSessions } from '../../requests/examSession/getCurrentExamSessions'
 import TestFramework from '../../TestFramework'
-import GetCurrentExamSessions from '../../../../api-lambda/src/schema/examSession/GetCurrentExamSessions'
+import GetCurrentExamSessions from '../../../../shared/src/schema/examSession/GetCurrentExamSessions'
 
 const framework: TestFramework = globalThis.framework
 

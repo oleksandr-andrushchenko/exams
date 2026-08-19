@@ -1,0 +1,15 @@
+{% set averageMark = rating.averageMark or 0 %} {% set markCount = rating.markCount or 0 %}
+<span
+  class="article-rating {{ ratingClass or '' }}"
+  title="{{ averageMark | round(1) }} out of 5 from {{ markCount }} votes"
+  aria-label="{{ averageMark | round(1) }} out of 5 from {{ markCount }} votes"
+>
+  {% for mark in [1, 2, 3, 4, 5] %} {% if averageMark >= mark %}
+  <i class="bi bi-star-fill text-warning" aria-hidden="true"></i>
+  {% elif averageMark > mark - 1 %}
+  <i class="bi bi-star-half text-warning" aria-hidden="true"></i>
+  {% else %}
+  <i class="bi bi-star text-secondary" aria-hidden="true"></i>
+  {% endif %} {% endfor %}
+  <small class="text-secondary">{{ averageMark | round(1) }}/5 ({{ markCount }})</small>
+</span>

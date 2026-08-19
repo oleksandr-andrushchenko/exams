@@ -1,63 +1,69 @@
-import { isDevelopmentEnvironment } from './environment'
-import { examUrl, questionUrl, route, staticUrl, url, userUrl } from './routes'
-import bcrypt from 'bcryptjs'
-import express, { type Request, type RequestHandler, type Response } from 'express'
-import * as jwt from 'jsonwebtoken'
+import { controllerRoute } from '../../shared/src/http'
+import { createPostgresConnection, initializePostgres } from '../../shared/src/database/PostgresConnection'
+import { entities } from '../../shared/src/entities'
+import { ConnectionManager, useContainer as typeormUseContainer } from 'typeorm'
+import { Container } from 'typedi'
+import 'reflect-metadata'
+import config from '../../shared/src/config'
+import { examUrl, questionUrl, staticUrl, url, userUrl } from './routes'
+import express, { type Request, type Response } from 'express'
 import path from 'node:path'
 import nunjucks from 'nunjucks'
+import JwtTokenStrategyFactory from '../../shared/src/services/token/strategy/JwtTokenStrategyFactory'
+import AuthUserProvider from '../../shared/src/services/auth/AuthUserProvider'
+import AuthorizationVerifier from '../../shared/src/services/auth/AuthorizationVerifier'
+import ClassValidatorValidator from '../../shared/src/services/validator/ClassValidatorValidator'
 import serverless from 'serverless-http'
-import {
-  getExam,
-  getExamList,
-  getHomeData,
-  getQuestion,
-  getQuestionList,
-  getTag,
-  getUser,
-  getUserCredentials,
-  getUserExams,
-  getUserExamSessions,
-  getUserList
-} from './data'
+import { getErrorStatus, namedError } from '../../shared/src/errors'
+import HomeController from './controllers/HomeController'
+import ExamController from './controllers/ExamController'
+import QuestionController from './controllers/QuestionController'
+import UserController from './controllers/UserController'
+import TagController from './controllers/TagController'
+import AuthController from './controllers/AuthController'
+
+typeormUseContainer(Container)
+const { connectionManager, dataSource: db } = createPostgresConnection({
+  type: 'postgres',
+  url: config.db.url,
+  schema: config.db.schema,
+  entities,
+  synchronize: config.db.synchronize
+})
+Container.set(ConnectionManager, connectionManager)
+Container.set('tokenStrategy', Container.get<JwtTokenStrategyFactory>(JwtTokenStrategyFactory).create(config.jwt))
+Container.set('validatorOptions', config.validator)
+Container.set('validator', Container.get<ClassValidatorValidator>(ClassValidatorValidator))
+Container.set('authPermissions', config.auth.permissions)
+const authUserProvider = Container.get<AuthUserProvider>(AuthUserProvider)
+const authorizationVerifier = Container.get<AuthorizationVerifier>(AuthorizationVerifier)
+const homeController = Container.get(HomeController)
+const examPageController = Container.get(ExamController)
+const questionPageController = Container.get(QuestionController)
+const userPageController = Container.get(UserController)
+const tagController = Container.get(TagController)
+const authPageController = Container.get(AuthController)
 
 const app = express()
 
-const ah =
-  (handler: RequestHandler): RequestHandler =>
-  (request, response, next) =>
-    Promise.resolve(handler(request, response, next)).catch(next)
-
-class HttpError extends Error {
-  public constructor(
-    public readonly statusCode: number,
-    message: string
-  ) {
-    super(message)
-  }
-}
-
-const canViewUnapproved = (user: { permissions?: string[] } | undefined, permission: string) =>
-  user?.permissions?.some(
-    (userPermission) => userPermission === permission || userPermission === 'root' || userPermission === '*'
-  ) ?? false
 const templateDir = path.resolve(__dirname, '../templates')
-const sharedTemplateDir = path.resolve(__dirname, '../../lambda-shared/templates')
+const sharedTemplateDir = path.resolve(__dirname, '../../shared/templates')
 const staticDir = path.resolve(__dirname, '../../static')
-nunjucks.configure([templateDir, sharedTemplateDir], {
+nunjucks.configure([ templateDir, sharedTemplateDir ], {
   autoescape: true,
   express: app,
-  noCache: process.env.NODE_ENV !== 'production'
+  noCache: config.env !== 'production'
 })
 app.use(express.urlencoded({ extended: true }))
 
-app.use('/static', express.static(staticDir, { maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0 }))
+app.use('/static', express.static(staticDir, { maxAge: config.env === 'production' ? '1d' : 0 }))
 
 app.use((request, response, next) => {
   response.locals.siteName = 'ExamMe'
   response.locals.siteDescription = 'Practice exams and explore questions.'
   response.locals.requestPath = request.path
   response.locals.query = request.query
-  response.locals.apiUrl = process.env.API_URL || 'http://localhost:8080'
+  response.locals.apiUrl = config.api_url
   const origin = request.protocol + '://' + request.get('host')
   response.locals.url = (name: Parameters<typeof url>[0], params = {}, query = {}, absolute = false) =>
     url(name, params, query, absolute, origin)
@@ -69,288 +75,48 @@ app.use((request, response, next) => {
     absolute = false
   ) => questionUrl(question, exam, absolute, origin)
   response.locals.userUrl = (user: Parameters<typeof userUrl>[0], absolute = false) => userUrl(user, absolute, origin)
-  response.locals.canEdit = (permission: string) => canViewUnapproved(response.locals.currentUser, permission)
   next()
 })
 
 app.use(async (request, response, next) => {
-  const token = request.headers.cookie
-    ?.split(';')
-    .map((cookie) => cookie.trim())
-    .find((cookie) => cookie.startsWith('authenticationToken='))
-    ?.slice('authenticationToken='.length)
-
-  if (token) {
-    try {
-      const payload = jwt.verify(token, 'any') as { userId?: string; type?: string }
-      if (payload.type === 'access' && payload.userId) {
-        response.locals.currentUser = await getUser(payload.userId)
-      }
-    } catch {
-      // Treat an absent, expired, or invalid token as an anonymous session.
-    }
+  const user = await authUserProvider.getAuthUser(request)
+  response.locals.currentUser = user
+  const editablePermissions = new Set<string>()
+  if (user) {
+    await Promise.all(
+      [ 'updateExam', 'updateQuestion', 'updateUser' ].map(async (permission) => {
+        if (await authorizationVerifier.hasAuthorization(user, permission)) editablePermissions.add(permission)
+      })
+    )
   }
-
+  response.locals.canEdit = (permission: string) => editablePermissions.has(permission)
   next()
 })
 
-const redirectPath = (value: unknown, fallback = '/') =>
-  typeof value === 'string' && value.startsWith('/') && !value.startsWith('//') ? value : fallback
-const number = (value: unknown, fallback: number) => {
-  const parsed = Number(value)
-  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback
-}
-const queryFilters = (request: Request) => ({
-  search: typeof request.query.search === 'string' ? request.query.search : undefined,
-  approved: typeof request.query.approved === 'string' ? request.query.approved : undefined,
-  difficulty: typeof request.query.difficulty === 'string' ? request.query.difficulty : undefined,
-  type: typeof request.query.type === 'string' ? request.query.type : undefined,
-  tag: typeof request.query.tag === 'string' ? request.query.tag : undefined,
-  exam: typeof request.query.exam === 'string' ? request.query.exam : undefined,
-  page: number(request.query.page, 1),
-  size: Math.min(50, number(request.query.size, 20)),
-  sort: typeof request.query.sort === 'string' ? request.query.sort : undefined,
-  order: request.query.order === 'asc' ? 'asc' : 'desc'
-})
+app.get('/', controllerRoute(homeController, 'getHome', 'html'))
+app.get('/exams', controllerRoute(examPageController, 'listExams', 'html'))
+app.get('/questions', controllerRoute(questionPageController, 'listQuestions', 'html'))
+app.get('/users', controllerRoute(userPageController, 'listUsers', 'html'))
+app.get('/users/:userId/edit', controllerRoute(userPageController, 'editUser', 'html'))
+app.get('/exams/:examId/edit', controllerRoute(examPageController, 'editExam', 'html'))
+app.get('/questions/:questionId/edit', controllerRoute(questionPageController, 'editQuestion', 'html'))
+app.get('/exams/new', controllerRoute(examPageController, 'createExamPage', 'html'))
+app.get('/exams/:examId', controllerRoute(examPageController, 'getExam', 'html'))
+app.get('/questions/new', controllerRoute(questionPageController, 'createQuestionPage', 'html'))
+app.get('/questions/:questionId', controllerRoute(questionPageController, 'getQuestion', 'html'))
+app.get('/users/:userId', controllerRoute(userPageController, 'getUser', 'html'))
+app.get('/tags/:slug', controllerRoute(tagController, 'getTag', 'html'))
+app.get('/login', controllerRoute(authPageController, 'getLoginPage', 'html'))
+app.get('/register', controllerRoute(authPageController, 'getRegisterPage', 'html'))
+app.get('/:userSlug/:examSlug/:questionSlug', controllerRoute(questionPageController, 'getPublicQuestion', 'html'))
+app.get('/:userSlug/:examSlug', controllerRoute(examPageController, 'getPublicExam', 'html'))
+app.get('/:userSlug', controllerRoute(userPageController, 'getPublicUser', 'html'))
 
-app.get(
-  '/',
-  ah(async (_request, response) => {
-    response.render('home.html', {
-      data: await getHomeData(
-        8,
-        canViewUnapproved(response.locals.currentUser, 'getExam'),
-        canViewUnapproved(response.locals.currentUser, 'getQuestion')
-      ),
-      title: 'Home'
-    })
-  })
-)
-
-app.get(
-  '/exams',
-  ah(async (request, response) => {
-    response.render('exams.html', {
-      page: await getExamList(queryFilters(request), canViewUnapproved(response.locals.currentUser, 'getExam')),
-      filters: queryFilters(request),
-      title: 'Exams'
-    })
-  })
-)
-
-app.get(
-  '/questions',
-  ah(async (request, response) => {
-    response.render('questions.html', {
-      page: await getQuestionList(queryFilters(request), canViewUnapproved(response.locals.currentUser, 'getQuestion')),
-      filters: queryFilters(request),
-      title: 'Questions'
-    })
-  })
-)
-
-app.get(
-  '/users',
-  ah(async (request, response) => {
-    response.render('users.html', {
-      page: await getUserList(queryFilters(request)),
-      filters: queryFilters(request),
-      title: 'Users'
-    })
-  })
-)
-
-app.get(
-  '/users/:userId/edit',
-  ah(async (request, response) => {
-    if (!response.locals.currentUser || !canViewUnapproved(response.locals.currentUser, 'updateUser')) {
-      throw new HttpError(
-        response.locals.currentUser ? 403 : 401,
-        response.locals.currentUser ? 'You are not authorized to edit this resource' : 'Authentication required'
-      )
-    }
-    const user = await getUser(request.params.userId)
-    if (!user) throw new HttpError(404, 'User not found')
-    response.render('edit.html', { resource: 'user', user })
-  })
-)
-
-app.get(
-  '/exams/:examId/edit',
-  ah(async (request, response) => {
-    if (!response.locals.currentUser || !canViewUnapproved(response.locals.currentUser, 'updateExam')) {
-      throw new HttpError(
-        response.locals.currentUser ? 403 : 401,
-        response.locals.currentUser ? 'You are not authorized to edit this resource' : 'Authentication required'
-      )
-    }
-    const exam = await getExam(request.params.examId, true)
-    if (!exam) throw new HttpError(404, 'Exam not found')
-    response.render('edit.html', { resource: 'exam', exam })
-  })
-)
-
-app.get(
-  '/questions/:questionId/edit',
-  ah(async (request, response) => {
-    if (!response.locals.currentUser || !canViewUnapproved(response.locals.currentUser, 'updateQuestion')) {
-      throw new HttpError(
-        response.locals.currentUser ? 403 : 401,
-        response.locals.currentUser ? 'You are not authorized to edit this resource' : 'Authentication required'
-      )
-    }
-    const question = await getQuestion(request.params.questionId, response.locals.currentUser.id, true)
-    if (!question) throw new HttpError(404, 'Question not found')
-    response.render('edit.html', { resource: 'question', question })
-  })
-)
-
-app.get('/exams/new', (request, response) => {
-  if (!response.locals.currentUser) {
-    response.redirect(route('login', {}, { redirect: route('newExam') }))
-    return
-  }
-  response.render('create-exam.html', { title: 'Create exam' })
-})
-
-app.get(
-  '/exams/:examId',
-  ah(async (request, response) => {
-    const exam = await getExam(request.params.examId, canViewUnapproved(response.locals.currentUser, 'getExam'))
-    if (!exam) throw new HttpError(404, 'Exam not found')
-    response.render('exam.html', { exam, title: exam.name })
-  })
-)
-
-app.get(
-  '/questions/new',
-  ah(async (request, response) => {
-    const user = response.locals.currentUser
-    if (!user) throw new HttpError(401, 'Authentication required')
-    const exam = await getExam(String(request.query.exam || ''), true)
-    if (!exam) throw new HttpError(404, 'Exam not found')
-    if (exam.ownerId?.toString() !== user.id?.toString())
-      throw new HttpError(403, 'You are not authorized to add questions')
-    response.render('create-question.html', { exam, title: 'Add question' })
-  })
-)
-
-app.get(
-  '/questions/:questionId',
-  ah(async (request, response) => {
-    const question = await getQuestion(
-      request.params.questionId,
-      response.locals.currentUser?.id,
-      canViewUnapproved(response.locals.currentUser, 'getQuestion')
-    )
-    if (!question) throw new HttpError(404, 'Question not found')
-    response.render('question.html', { question, title: question.title })
-  })
-)
-
-app.get(
-  '/users/:userId',
-  ah(async (request, response) => {
-    const user = await getUser(request.params.userId)
-    if (!user) throw new HttpError(404, 'User not found')
-    const [exams, sessions] = await Promise.all([getUserExams(user.id), getUserExamSessions(user.id)])
-    response.render('user.html', { user, exams, sessions, title: user.name })
-  })
-)
-
-app.get(
-  '/tags/:slug',
-  ah(async (request, response) => {
-    const tag = await getTag(request.params.slug)
-    if (!tag) throw new HttpError(404, 'Tag not found')
-    response.render('tag.html', { tag, title: tag.name })
-  })
-)
-
-app.get(
-  '/login',
-  ah(async (request, response) => {
-    const target = redirectPath(request.query.redirect)
-    if (!isDevelopmentEnvironment()) {
-      response.render('login.html', { title: 'Login', redirect: target })
-      return
-    }
-
-    try {
-      await authenticate(response, { email: 'root@examme.test', password: 'Root123!' })
-      response.redirect(target)
-    } catch (error) {
-      response.status(500).render('login.html', {
-        title: 'Login',
-        redirect: target,
-        error: error instanceof Error ? error.message : 'Development authentication failed'
-      })
-    }
-  })
-)
-
-app.get('/register', (_request, response) => response.render('register.html', { title: 'Register' }))
-
-async function authenticate(response: Response, credentials: { email: string; password: string }) {
-  const user = await getUserCredentials(credentials.email)
-  if (!user || !(await bcrypt.compare(credentials.password, user.password))) {
-    throw new Error('Authentication failed')
-  }
-  const token = jwt.sign({ userId: user.id, type: 'access' }, 'any', { expiresIn: '100d' })
-  response.cookie('authenticationToken', token, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production'
-  })
-}
-
-app.get(
-  '/:userSlug/:examSlug/:questionSlug',
-  ah(async (request, response) => {
-    const question = await getQuestion(
-      request.params.questionSlug,
-      response.locals.currentUser?.id,
-      canViewUnapproved(response.locals.currentUser, 'getQuestion')
-    )
-    const matches =
-      !!question &&
-      question.exam?.slug === request.params.examSlug &&
-      question.exam.userSlug === request.params.userSlug
-    if (!matches) throw new HttpError(404, 'Question not found')
-    response.render('question.html', { question, title: question.title })
-  })
-)
-
-app.get(
-  '/:userSlug/:examSlug',
-  ah(async (request, response) => {
-    const exam = await getExam(request.params.examSlug, canViewUnapproved(response.locals.currentUser, 'getExam'))
-    const matches = !!exam && exam.slug === request.params.examSlug && exam.userSlug === request.params.userSlug
-    if (!matches) throw new HttpError(404, 'Exam not found')
-    response.render('exam.html', { exam, title: exam.name })
-  })
-)
-
-app.get(
-  '/:userSlug',
-  ah(async (request, response) => {
-    const user = await getUser(request.params.userSlug)
-    if (!user) throw new HttpError(404, 'User not found')
-    const [exams, sessions] = await Promise.all([getUserExams(user.id), getUserExamSessions(user.id)])
-    response.render('user.html', { user, exams, sessions, title: user.name })
-  })
-)
-
-app.use((_request, _response, next) => next(new HttpError(404, 'Page not found')))
+app.use((_request, _response, next) => next(namedError('PageNotFoundError', 'Page not found')))
 
 app.use((error: unknown, request: Request, response: Response) => {
-  console.error('Web request failed', error)
-  const statusCode = ((error: unknown): number => {
-    if (!error || typeof error !== 'object') return 500
-    const candidate = error as { status?: unknown; statusCode?: unknown }
-    const status = candidate.statusCode ?? candidate.status
-    return typeof status === 'number' && status >= 400 && status <= 599 ? status : 500
-  })(error)
+  console.error('Web request failed', error instanceof Error ? error.stack : error)
+  const statusCode = getErrorStatus(error)
   const detail = error instanceof Error ? error.message : 'Internal server error'
   const message = statusCode >= 500 ? 'Internal server error' : detail
   const wantsJson = request.headers.accept?.includes('application/json') || request.xhr
@@ -365,5 +131,23 @@ app.use((error: unknown, request: Request, response: Response) => {
   })
 })
 
-export { app }
-export const handler = serverless(app)
+export const isDevelopmentEnvironment = (environment = config.env): boolean => environment === 'development'
+
+export { app, db }
+let lambdaHandler: ReturnType<typeof serverless> | undefined
+export const handler = async (event: unknown, context: unknown): Promise<unknown> => {
+  if (!db.isInitialized) await initializePostgres(db, config.db.url, config.db.schema)
+  lambdaHandler ??= serverless(app)
+  return (lambdaHandler as (event: unknown, context: unknown) => unknown)(event, context)
+}
+
+if (process.argv[1]?.endsWith('web-lambda/src/server.ts')) {
+  initializePostgres(db, config.db.url, config.db.schema)
+    .then(() => {
+      app.listen(config.app.port, '0.0.0.0', () => console.log(`ExamMe web listening on ${ config.app.port }`))
+    })
+    .catch((error) => {
+      console.error(error)
+      process.exit(1)
+    })
+}

@@ -1,15 +1,15 @@
 import { describe, expect, test } from '@jest/globals'
 import request from '../../httpRequest'
-import Exam from '../../../../api-lambda/src/entities/exam/Exam'
-import User from '../../../../api-lambda/src/entities/user/User'
+import Exam from '../../../../shared/src/entities/exam/Exam'
+import User from '../../../../shared/src/entities/user/User'
 import { ObjectId } from 'bson'
-import ExamPermission from '../../../../api-lambda/src/enums/exam/ExamPermission'
+import ExamPermission from '../../../../shared/src/enums/exam/ExamPermission'
 // @ts-ignore
 import { createExam } from '../../requests/exam/createExam'
-import CreateExam from '../../../../api-lambda/src/schema/exam/CreateExam'
+import CreateExam from '../../../../shared/src/schema/exam/CreateExam'
 import TestFramework from '../../TestFramework'
-import Activity from '../../../../api-lambda/src/entities/activity/Activity'
-import ExamEvent from '../../../../api-lambda/src/enums/exam/ExamEvent'
+import Activity from '../../../../shared/src/entities/activity/Activity'
+import ExamEvent from '../../../../shared/src/enums/exam/ExamEvent'
 
 const framework: TestFramework = globalThis.framework
 

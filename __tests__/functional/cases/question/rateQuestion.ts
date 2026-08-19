@@ -1,13 +1,13 @@
 import { describe, expect, test } from '@jest/globals'
 import request from '../../httpRequest'
-import User from '../../../../api-lambda/src/entities/user/User'
-import QuestionPermission from '../../../../api-lambda/src/enums/question/QuestionPermission'
+import User from '../../../../shared/src/entities/user/User'
+import QuestionPermission from '../../../../shared/src/enums/question/QuestionPermission'
 // @ts-ignore
 import { rateQuestion } from '../../requests/question/rateQuestion'
 import TestFramework from '../../TestFramework'
-import QuestionRatingMark from '../../../../api-lambda/src/entities/question/QuestionRatingMark'
-import Question from '../../../../api-lambda/src/entities/question/Question'
-import RateQuestionRequest from '../../../../api-lambda/src/schema/question/RateQuestionRequest'
+import QuestionRatingMark from '../../../../shared/src/entities/question/QuestionRatingMark'
+import Question from '../../../../shared/src/entities/question/Question'
+import RateQuestionRequest from '../../../../shared/src/schema/question/RateQuestionRequest'
 
 const framework: TestFramework = globalThis.framework
 

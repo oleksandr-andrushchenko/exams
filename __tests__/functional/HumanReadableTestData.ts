@@ -1,4 +1,4 @@
-import Permission from '../../api-lambda/src/enums/Permission'
+import Permission from '../../shared/src/enums/Permission'
 
 const values = {
   exams: [

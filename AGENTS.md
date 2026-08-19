@@ -51,5 +51,9 @@
 - API responses may contain rendered HTML fragments, such as updated rating markup. The client should replace the corresponding page fragment with that response.
 - Shared HTML fragments used by both Lambdas belong in lambda-shared/templates/fragments.
 - Authentication cookies and their supporting token logic must be compatible between the web and API Lambdas.
+- Keep access-token extraction from Bearer headers and authentication cookies in `lambda-shared`; each Lambda owns token verification and user lookup.
 - Keep the web Lambda dependency footprint minimal to reduce bundle size and cold-start time.
 - Do not add API-only, mutation-only, or heavyweight dependencies to the web Lambda unless page rendering or authentication genuinely requires them; keep such dependencies in the API Lambda.
+- Keep web Lambda PostgreSQL queries in web-lambda/src/repositories, organized by entity or read model.
+- Shared domain entities, enums, database transformers, and model normalizers belong in `lambda-shared`; API services may depend on them but must not own them.
+- Deploy each Lambda from its complete dist directory: the build emits Lambda code under <lambda>-lambda/dist/<lambda>-lambda/src and compiled shared modules under <lambda>-lambda/dist/lambda-shared; do not deploy only the Lambda source subtree.

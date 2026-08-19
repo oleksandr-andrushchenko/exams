@@ -1,8 +1,11 @@
 import { Inject, Service } from 'typedi'
-import ExamTag from '../entities/examTag/ExamTag'
-import ExamTagRepository from '../repositories/examTag/ExamTagRepository'
-import GetExamTags from '../schema/examTag/GetExamTags'
-import ValidatorInterface from '../services/validator/ValidatorInterface'
+import ExamTag from '../../../shared/src/entities/examTag/ExamTag'
+import ExamTagRepository from '../../../shared/src/repositories/exams/ExamTagRepository'
+import GetExamTags from '../../../shared/src/schema/examTag/GetExamTags'
+import ValidatorInterface from '../../../shared/src/services/validator/ValidatorInterface'
+import { type Request, type Response } from 'express'
+import { plainToInstance } from 'class-transformer'
+import { queryObject } from '../../../shared/src/http'
 
 @Service()
 export class ExamTagController {
@@ -18,5 +21,9 @@ export class ExamTagController {
 
   public getExamsCount(tag: ExamTag): Promise<number> {
     return this.repository.countExams(tag)
+  }
+  public async route(request: Request, response: Response): Promise<void> {
+    const tags = await this.getExamTags(plainToInstance(GetExamTags, queryObject(request.query)))
+    response.json(await Promise.all(tags.map(async (tag) => ({ ...tag, examsCount: await this.getExamsCount(tag) }))))
   }
 }
