@@ -88,7 +88,8 @@ $(document).on('click', '[data-api-form="login"] button', function (event) {
   const $form = $(this).closest('[data-api-form="login"]')
   const email = $form.find('[name="email"]')[0]
   const password = $form.find('[name="password"]')[0]
-  if (!email.checkValidity() || !password.checkValidity()) {
+  const autoLogin = $form.data('auto-login') === true || $form.data('auto-login') === 'true'
+  if (!autoLogin && (!email.checkValidity() || !password.checkValidity())) {
     email.reportValidity()
     password.reportValidity()
     return
@@ -98,8 +99,12 @@ $(document).on('click', '[data-api-form="login"] button', function (event) {
     method: 'POST',
     contentType: 'application/json',
     data: JSON.stringify({
-      email: $form.find('[name="email"]').val(),
-      password: $form.find('[name="password"]').val(),
+      ...(autoLogin
+        ? { autoLogin: true }
+        : {
+            email: $form.find('[name="email"]').val(),
+            password: $form.find('[name="password"]').val()
+          }),
       redirect: $form.find('[name="redirect"]').val()
     }),
     dataType: 'json',
@@ -109,6 +114,13 @@ $(document).on('click', '[data-api-form="login"] button', function (event) {
       window.location.href = result.redirect || '/'
     })
     .fail(showApiError)
+})
+
+$(function () {
+  const $form = $('[data-api-form="login"]')
+  if ($form.data('auto-login') === true || $form.data('auto-login') === 'true') {
+    $form.find('button').trigger('click')
+  }
 })
 
 $(document).on('click', '[data-api-form="logout"]', function (event) {

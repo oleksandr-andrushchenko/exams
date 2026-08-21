@@ -6,11 +6,16 @@ import { ObjectId } from 'bson'
 import Exam from '../../entities/exam/Exam'
 import ExamSession from '../../entities/examSession/ExamSession'
 import isObjectId from '../../database/isObjectId'
+import { ArrayContains } from 'typeorm'
 
 @Repository(User)
 export default class UserRepository extends EntityRepository<User> {
   public async findOneByEmail(email: string): Promise<User | null> {
     return await this.findOneBy({ email })
+  }
+
+  public async findRootUser(): Promise<User | null> {
+    return await this.findOneBy({ permissions: ArrayContains([ 'root' ]) })
   }
 
   public async updateRatingMarks(

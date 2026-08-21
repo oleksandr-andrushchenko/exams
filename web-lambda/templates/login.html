@@ -5,7 +5,7 @@
     {% if error %}
     <div class="alert alert-danger">{{ error }}</div>
     {% endif %}
-    <div class="card card-body d-flex gap-3" data-api-form="login">
+    <div class="card card-body d-flex gap-3" data-api-form="login" data-auto-login="{{ autoLogin }}">
       {% if redirect %}<input type="hidden" name="redirect" value="{{ redirect }}">{% endif %}
       <label>Email<input autocomplete="username" class="form-control" name="email" required type="email"/></label
       ><label

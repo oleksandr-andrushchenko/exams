@@ -34,9 +34,12 @@ export class AuthenticateController {
         ? request.body.redirect
         : '/'
     try {
-      const user = await this.userProvider.getUserByCredentials(
-        plainToInstance(Credentials, { email: request.body.email, password: request.body.password })
-      )
+      const user =
+        config.env === 'development' && request.body.autoLogin === true
+          ? await this.userProvider.getRootUser()
+          : await this.userProvider.getUserByCredentials(
+              plainToInstance(Credentials, { email: request.body.email, password: request.body.password })
+            )
       const { token } = await this.tokenService.generateAccessToken(user, 100 * 24 * 60 * 60 * 1000)
       response.cookie('authenticationToken', token, {
         httpOnly: true,

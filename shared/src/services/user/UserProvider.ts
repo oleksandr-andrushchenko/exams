@@ -52,6 +52,16 @@ export default class UserProvider {
     return user
   }
 
+  public async getRootUser(): Promise<User> {
+    const user = await this.userRepository.findRootUser()
+
+    if (!user) {
+      throw new UserNotFoundError('root')
+    }
+
+    return user
+  }
+
   /**
    * @param {ObjectId | string} id
    * @returns {Promise<User>}
