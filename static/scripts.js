@@ -33,7 +33,14 @@ $(document)
       window.alert('Please select a rating.')
       return
     }
-    apiRequest('/questions/' + $form.data('question-id') + '/rating', { mark })
+    $.ajax({
+      url: apiEndpoint('/questions/' + $form.data('question-id') + '/rating'),
+      method: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify({ mark }),
+      dataType: 'json',
+      xhrFields: { withCredentials: true }
+    })
       .done((result) => {
         const html = result.html
         if (!html) {
@@ -51,16 +58,6 @@ $(document)
   })
 
 const apiEndpoint = (path) => document.body.dataset.apiUrl.replace(/\/$/, '') + path
-
-const apiRequest = (path, data, method = 'POST') =>
-  $.ajax({
-    url: apiEndpoint(path),
-    method,
-    contentType: 'application/json',
-    data: data === undefined ? undefined : JSON.stringify(data),
-    dataType: 'json',
-    xhrFields: { withCredentials: true }
-  })
 
 const uploadImage = ($form) => {
   const file = $form.find('[name="image"]')[0]?.files?.[0]
@@ -151,10 +148,17 @@ $(document).on('submit', '[data-api-form="createMe"]', function (event) {
     : Promise.resolve(undefined)
   imageData
     .then((encodedImage) =>
-      apiRequest('/me', {
-        email: $form.find('[name="email"]').val(),
-        password: $form.find('[name="password"]').val(),
-        imageData: encodedImage
+      $.ajax({
+        url: apiEndpoint('/me'),
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          email: $form.find('[name="email"]').val(),
+          password: $form.find('[name="password"]').val(),
+          imageData: encodedImage
+        }),
+        dataType: 'json',
+        xhrFields: { withCredentials: true }
       })
     )
     .done((result) => {
@@ -168,10 +172,17 @@ $(document).on('submit', '[data-api-form="createExam"]', function (event) {
   const $form = $(this)
   uploadImage($form)
     .then((imageFilename) =>
-      apiRequest('/exams', {
-        name: $form.find('[name="name"]').val(),
-        requiredScore: Number($form.find('[name="requiredScore"]').val() || 0),
-        imageFilename
+      $.ajax({
+        url: apiEndpoint('/exams'),
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          name: $form.find('[name="name"]').val(),
+          requiredScore: Number($form.find('[name="requiredScore"]').val() || 0),
+          imageFilename
+        }),
+        dataType: 'json',
+        xhrFields: { withCredentials: true }
       })
     )
     .done((result) => {
@@ -194,12 +205,19 @@ $(document).on('submit', '[data-api-form="createQuestion"]', function (event) {
       }
     })
     .get()
-  apiRequest('/questions', {
-    examId: $form.find('[name="examId"]').val(),
-    title: $form.find('[name="title"]').val(),
-    difficulty: $form.find('[name="difficulty"]').val(),
-    type: $form.find('[name="type"]').val(),
-    choices
+  $.ajax({
+    url: apiEndpoint('/questions'),
+    method: 'POST',
+    contentType: 'application/json',
+    data: JSON.stringify({
+      examId: $form.find('[name="examId"]').val(),
+      title: $form.find('[name="title"]').val(),
+      difficulty: $form.find('[name="difficulty"]').val(),
+      type: $form.find('[name="type"]').val(),
+      choices
+    }),
+    dataType: 'json',
+    xhrFields: { withCredentials: true }
   })
     .done((result) => {
       const slug = result.slug
@@ -220,7 +238,14 @@ $(document).on('submit', '[data-api-form^="update"]', function (event) {
     .then((imageFilename) => {
       if (imageFilename) input.imageFilename = imageFilename
       const endpoint = resource === 'User' ? 'users' : resource === 'Exam' ? 'exams' : 'questions'
-      return apiRequest('/' + endpoint + '/' + $form.data('resource-id'), input, 'PATCH')
+      return $.ajax({
+        url: apiEndpoint('/' + endpoint + '/' + $form.data('resource-id')),
+        method: 'PATCH',
+        contentType: 'application/json',
+        data: JSON.stringify(input),
+        dataType: 'json',
+        xhrFields: { withCredentials: true }
+      })
     })
     .done((result) => {
       window.location.href = $form.data('success-url')

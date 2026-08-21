@@ -8,6 +8,11 @@
   syntax, format that file manually and verify the result.
 - Before handing off work, run the relevant formatter or formatting check and
   confirm that the updated files have no formatting issues.
+- The repository's IntelliJ-specific `ij_*` formatting rules are not fully
+  supported by Prettier. Do not run the repository-wide Prettier write command
+  on existing TypeScript files; it changes spaced array literals and expands
+  empty constructors. Format affected files manually when needed and verify
+  them with `git diff --check` and the relevant type checks.
 
 ## Testing
 
