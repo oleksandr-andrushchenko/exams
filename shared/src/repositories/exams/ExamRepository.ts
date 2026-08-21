@@ -3,6 +3,7 @@ import Exam from '../../entities/exam/Exam'
 import Repository from '../../database/Repository'
 import EntityRepository from '../../database/EntityRepository'
 import User from '../../entities/user/User'
+import isObjectId from '../../database/isObjectId'
 
 @Repository(Exam)
 export default class ExamRepository extends EntityRepository<Exam> {
@@ -29,7 +30,7 @@ export default class ExamRepository extends EntityRepository<Exam> {
   }
 
   public async getExam(value: string): Promise<Exam | null> {
-    const id = ObjectId.isValid(value) ? new ObjectId(value) : undefined
+    const id = isObjectId(value) ? value : undefined
     const exam = (id ? await this.findOneBy({ id }) : null) ?? (await this.findOneBy({ slug: value }))
     if (!exam) return null
     return exam

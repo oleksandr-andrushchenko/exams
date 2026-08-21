@@ -8,6 +8,7 @@ import User from '../../entities/user/User'
 import AuthorizationVerifier from '../auth/AuthorizationVerifier'
 import ExamPermission from '../../enums/exam/ExamPermission'
 import UserRepository from '../../repositories/users/UserRepository'
+import isObjectId from '../../database/isObjectId'
 
 @Service()
 export default class ExamProvider {
@@ -33,7 +34,7 @@ export default class ExamProvider {
 
   public async getExam(id: ObjectId | string, user?: User): Promise<Exam> {
     const value = id.toString()
-    if (typeof id === 'string' && ObjectId.isValid(id)) this.validator.validateId(id)
+    if (typeof id === 'string' && isObjectId(id)) this.validator.validateId(id)
 
     const exam = await this.examRepository.getExam(value)
     if (!exam || (exam.ownerId && !(await this.canViewUnapproved(user)))) {

@@ -115,6 +115,8 @@ const demoImageFilename = (prefix: string): string | undefined => {
 export default class TestFramework {
   public app = process.env.API_URL || 'http://api:8080'
 
+  public web = process.env.WEB_URL || 'http://web:3000'
+
   private readonly container: ContainerInstance
 
   public constructor() {

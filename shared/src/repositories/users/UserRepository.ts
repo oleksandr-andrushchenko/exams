@@ -5,6 +5,7 @@ import { RatingMarkTargetConstructorType } from '../../types/rating/RatingMarkTa
 import { ObjectId } from 'bson'
 import Exam from '../../entities/exam/Exam'
 import ExamSession from '../../entities/examSession/ExamSession'
+import isObjectId from '../../database/isObjectId'
 
 @Repository(User)
 export default class UserRepository extends EntityRepository<User> {
@@ -22,7 +23,7 @@ export default class UserRepository extends EntityRepository<User> {
   }
 
   public async getUser(value: string): Promise<User | null> {
-    const id = ObjectId.isValid(value) ? new ObjectId(value) : undefined
+    const id = isObjectId(value) ? value : undefined
     return (id ? await this.findOneBy({ id }) : null) ?? (await this.findOneBy({ slug: value }))
   }
 

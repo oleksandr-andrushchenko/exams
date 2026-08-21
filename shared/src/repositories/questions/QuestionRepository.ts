@@ -5,6 +5,8 @@ import EntityRepository from '../../database/EntityRepository'
 import Exam from '../../entities/exam/Exam'
 import { Container } from 'typedi'
 import ExamRepository from '../exams/ExamRepository'
+import UserRepository from '../users/UserRepository'
+import isObjectId from '../../database/isObjectId'
 
 @Repository(Question)
 export default class QuestionRepository extends EntityRepository<Question> {
@@ -26,12 +28,17 @@ export default class QuestionRepository extends EntityRepository<Question> {
 
   private async addExams(rows: Question[]): Promise<Question[]> {
     const exams = Container.get(ExamRepository)
+    const users = Container.get(UserRepository)
     return Promise.all(
-      rows.map(async (question) =>
-        Object.assign(question, {
-          exam: question.examId ? await exams.getExam(question.examId.toString()) : undefined
+      rows.map(async (question) => {
+        const exam = question.examId ? await exams.getExam(question.examId.toString()) : undefined
+        const examCreator = exam?.creatorId ? await users.getUser(exam.creatorId.toString()) : undefined
+        const questionCreator = question.creatorId ? await users.getUser(question.creatorId.toString()) : undefined
+        return Object.assign(question, {
+          creator: questionCreator ?? undefined,
+          exam: exam ? Object.assign(exam, { userSlug: examCreator?.slug || exam.creatorId?.toString() }) : undefined
         })
-      )
+      })
     )
   }
 
@@ -45,7 +52,8 @@ export default class QuestionRepository extends EntityRepository<Question> {
   }
 
   public async getQuestion(value: string): Promise<Question | null> {
-    const id = ObjectId.isValid(value) ? new ObjectId(value) : undefined
-    return (id ? await this.findOneBy({ id }) : null) ?? (await this.findOneBy({ slug: value }))
+    const id = isObjectId(value) ? value : undefined
+    const question = (id ? await this.findOneBy({ id }) : null) ?? (await this.findOneBy({ slug: value }))
+    return question ? (await this.addExams([question]))[0] : null
   }
 }

@@ -8,6 +8,7 @@ import ValidatorInterface from '../validator/ValidatorInterface'
 import { ObjectId } from 'bson'
 import UserEmailNotFoundError from '../../errors/user/UserEmailNotFoundError'
 import UserPasswordManager from './UserPasswordManager'
+import isObjectId from '../../database/isObjectId'
 
 @Service()
 export default class UserProvider {
@@ -58,7 +59,7 @@ export default class UserProvider {
    */
   public async getUser(id: ObjectId | string): Promise<User> {
     const value = id.toString()
-    if (typeof id === 'string' && ObjectId.isValid(id)) this.validator.validateId(id)
+    if (typeof id === 'string' && isObjectId(id)) this.validator.validateId(id)
 
     const user: User = await this.userRepository.getUser(value)
 

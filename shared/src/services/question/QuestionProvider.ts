@@ -7,6 +7,7 @@ import QuestionNotFoundError from '../../errors/question/QuestionNotFoundError'
 import User from '../../entities/user/User'
 import AuthorizationVerifier from '../auth/AuthorizationVerifier'
 import QuestionPermission from '../../enums/question/QuestionPermission'
+import isObjectId from '../../database/isObjectId'
 
 @Service()
 export default class QuestionProvider {
@@ -22,7 +23,7 @@ export default class QuestionProvider {
 
   public async getQuestion(id: ObjectId | string, user?: User): Promise<Question> {
     const value = id.toString()
-    if (typeof id === 'string' && ObjectId.isValid(id)) this.validator.validateId(id)
+    if (typeof id === 'string' && isObjectId(id)) this.validator.validateId(id)
 
     const question = await this.questionRepository.getQuestion(value)
     if (!question || (question.ownerId && !(await this.canViewUnapproved(user)))) {

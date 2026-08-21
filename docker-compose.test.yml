@@ -43,7 +43,9 @@ services:
     environment:
       NODE_ENV: test
       PORT: 3000
+      DATABASE_TYPE: postgres
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/examme_test
+      DATABASE_SCHEMA: public
       API_URL: http://api:8080
     command: >-
       sh -c 'cp -n /usr/app/test-static-source/* /usr/app/static/ 2>/dev/null || true;
