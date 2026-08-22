@@ -1,6 +1,6 @@
 import { Inject, Service } from 'typedi'
 import { type Request, type Response } from 'express'
-import { namedError } from '../../../shared/src/errors'
+import ExamNotFoundError from '../../../shared/src/errors/exam/ExamNotFoundError'
 import { queryObject } from '../../../shared/src/http'
 import Exam from '../../../shared/src/entities/exam/Exam'
 import ExamPermission from '../../../shared/src/enums/exam/ExamPermission'
@@ -9,7 +9,7 @@ import AuthUserProvider from '../../../shared/src/services/auth/AuthUserProvider
 import ExamProvider from '../../../shared/src/services/exam/ExamProvider'
 import ExamQuestionListProvider from '../../../shared/src/services/question/ExamQuestionListProvider'
 import Question from '../../../shared/src/entities/question/Question'
-import { route } from '../routes'
+import { route } from '../../../shared/src/routes'
 
 @Service()
 export default class ExamController {
@@ -63,7 +63,7 @@ export default class ExamController {
     const user = await this.authUserProvider.getAuthUser(request)
     const exam = (await this.examProvider.getExam(request.params.examSlug, user)) as Exam & { userSlug?: string }
     if (exam.slug !== request.params.examSlug || exam.userSlug !== request.params.userSlug) {
-      throw namedError('ExamNotFoundError', 'Exam not found')
+      throw new ExamNotFoundError(request.params.examSlug)
     }
     const questions = (await this.examQuestionListProvider.getExamQuestions(exam, undefined, false, user)) as Question[]
     response.render('exam.html', {

@@ -1,3 +1,30 @@
+const initializeValidation = ($form) => {
+  if (!$.fn.validate || $form.data('validation-initialized')) return
+  $form.validate({
+    errorClass: 'invalid-feedback',
+    errorElement: 'div',
+    highlight: (element) => $(element).addClass('is-invalid'),
+    unhighlight: (element) => $(element).removeClass('is-invalid'),
+    errorPlacement: (error, element) => {
+      if (element.parent().hasClass('form-check') || element.is(':radio'))
+        error.insertAfter(element.closest('fieldset'))
+      else error.insertAfter(element)
+    }
+  })
+  $form.data('validation-initialized', true)
+}
+
+const isValidForm = ($form) => {
+  initializeValidation($form)
+  return !$form[0] || $form.valid()
+}
+
+$(function () {
+  $('form').each(function () {
+    initializeValidation($(this))
+  })
+})
+
 const setRatingPreview = ($widget, mark, preview) => {
   const average = Number($widget.attr('data-average-mark') || 0)
   $widget.find('.rating-star').each(function () {
@@ -27,7 +54,8 @@ $(document)
   })
   .on('submit', '.rating-form', function (event) {
     event.preventDefault()
-    const $form = $(this)
+    const $form = $(this).closest('[data-api-form="login"]')
+    if (!isValidForm($form)) return
     const mark = Number($form.find('.rating-mark').val())
     if (!mark) {
       window.alert('Please select a rating.')
@@ -83,14 +111,11 @@ const showApiError = (response) => {
 $(document).on('click', '[data-api-form="login"] button', function (event) {
   event.preventDefault()
   const $form = $(this).closest('[data-api-form="login"]')
+  if (!isValidForm($form.closest('[data-api-form="login"]'))) return
   const email = $form.find('[name="email"]')[0]
   const password = $form.find('[name="password"]')[0]
   const autoLogin = $form.data('auto-login') === true || $form.data('auto-login') === 'true'
-  if (!autoLogin && (!email.checkValidity() || !password.checkValidity())) {
-    email.reportValidity()
-    password.reportValidity()
-    return
-  }
+  if (!autoLogin && !isValidForm($form)) return
   $.ajax({
     url: apiEndpoint('/login'),
     method: 'POST',
@@ -136,7 +161,8 @@ $(document).on('click', '[data-api-form="logout"]', function (event) {
 
 $(document).on('submit', '[data-api-form="createMe"]', function (event) {
   event.preventDefault()
-  const $form = $(this)
+  const $form = $(this).closest('[data-api-form="login"]')
+  if (!isValidForm($form)) return
   const file = $form.find('[name="image"]')[0]?.files?.[0]
   const imageData = file
     ? new Promise((resolve, reject) => {
@@ -169,7 +195,8 @@ $(document).on('submit', '[data-api-form="createMe"]', function (event) {
 
 $(document).on('submit', '[data-api-form="createExam"]', function (event) {
   event.preventDefault()
-  const $form = $(this)
+  const $form = $(this).closest('[data-api-form="login"]')
+  if (!isValidForm($form)) return
   uploadImage($form)
     .then((imageFilename) =>
       $.ajax({
@@ -217,7 +244,8 @@ $(document).on('click', '.remove-choice', function () {
 
 $(document).on('submit', '[data-api-form="createQuestion"]', function (event) {
   event.preventDefault()
-  const $form = $(this)
+  const $form = $(this).closest('[data-api-form="login"]')
+  if (!isValidForm($form)) return
   const submitAction = event.originalEvent?.submitter?.dataset.submitAction || 'finish'
   const choices = $form
     .find('.choice')
@@ -259,7 +287,8 @@ $(document).on('submit', '[data-api-form="createQuestion"]', function (event) {
 
 $(document).on('submit', '[data-api-form^="update"]', function (event) {
   event.preventDefault()
-  const $form = $(this)
+  const $form = $(this).closest('[data-api-form="login"]')
+  if (!isValidForm($form)) return
   const resource = String($form.data('api-form')).replace('update', '')
   const input = {}
   $form.serializeArray().forEach(({ name, value }) => {

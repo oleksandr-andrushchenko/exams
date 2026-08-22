@@ -1,7 +1,7 @@
 import { Inject, Service } from 'typedi'
 import { type Request, type Response } from 'express'
 import { queryObject } from '../../../shared/src/http'
-import { namedError } from '../../../shared/src/errors'
+import QuestionNotFoundError from '../../../shared/src/errors/question/QuestionNotFoundError'
 import Question from '../../../shared/src/entities/question/Question'
 import Exam from '../../../shared/src/entities/exam/Exam'
 import ExamPermission from '../../../shared/src/enums/exam/ExamPermission'
@@ -63,7 +63,7 @@ export default class QuestionController {
       exam?: Exam & { userSlug?: string }
     }
     if (question.exam?.slug !== request.params.examSlug || question.exam.userSlug !== request.params.userSlug) {
-      throw namedError('QuestionNotFoundError', 'Question not found')
+      throw new QuestionNotFoundError(request.params.questionSlug)
     }
     response.render('question.html', { question, title: question.title })
   }

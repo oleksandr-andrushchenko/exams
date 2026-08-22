@@ -15,15 +15,6 @@ export const queryObject = (query: Request['query']): Record<string, unknown> =>
   return result
 }
 
-export const getRequestAccessToken = (request: Request): string | undefined => {
-  const authorization = request.headers.authorization
-  if (authorization?.startsWith('Bearer ')) return authorization.slice(7)
-
-  const cookies = request.headers.cookie?.split(';').map((cookie) => cookie.trim()) ?? []
-  const token = cookies.find((cookie) => cookie.startsWith('authenticationToken='))
-  return token ? decodeURIComponent(token.slice('authenticationToken='.length)) : undefined
-}
-
 export type ControllerHandler = (request: Request, response: Response, next: NextFunction) => unknown
 
 export const controllerRoute = (controller: object, method: string, format: 'json' | 'html' = 'json'): RequestHandler =>

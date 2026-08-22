@@ -45,9 +45,3 @@ export const getErrorStatus = (error: unknown): number => {
   }
   return 500
 }
-
-export const namedError = (type: string, message: string): Error => {
-  const error = new Error(message)
-  Object.defineProperty(error, 'name', { value: type })
-  return error
-}
