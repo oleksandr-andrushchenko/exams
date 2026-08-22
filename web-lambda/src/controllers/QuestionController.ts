@@ -40,7 +40,13 @@ export default class QuestionController {
 
   public async createQuestionPage(request: Request, response: Response): Promise<void> {
     const user = await this.authUserProvider.getRequiredAuthUser(request)
-    const exam = await this.examProvider.getExam(String(request.query.exam || ''))
+    const examId =
+      typeof request.query.examId === 'string'
+        ? request.query.examId
+        : typeof request.query.exam === 'string'
+          ? request.query.exam
+          : ''
+    const exam = await this.examProvider.getExam(examId)
     await this.authorizationVerifier.verifyAuthorization(user, ExamPermission.AddQuestion, exam)
     response.render('create-question.html', { exam, title: 'Add question' })
   }

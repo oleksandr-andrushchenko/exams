@@ -192,9 +192,33 @@ $(document).on('submit', '[data-api-form="createExam"]', function (event) {
     .fail(showApiError)
 })
 
+$(document).on('click', '.add-choice', function () {
+  const $choices = $(this).siblings('.choices')
+  const number = $choices.find('.choice').length + 1
+  $choices.append(`
+    <div class="choice border rounded p-2">
+      <div class="d-flex gap-2">
+        <label class="flex-grow-1">Choice ${number}<textarea class="form-control" maxlength="3000" minlength="10" name="choiceTitle" required></textarea></label>
+        <button class="btn btn-outline-danger align-self-start remove-choice" type="button">Remove</button>
+      </div>
+      <label class="form-check"><input class="form-check-input" name="choiceCorrect" type="checkbox" value="true"> Correct answer</label>
+    </div>
+  `)
+})
+
+$(document).on('click', '.remove-choice', function () {
+  const $choices = $(this).closest('.choices')
+  if ($choices.find('.choice').length <= 2) return
+  $(this).closest('.choice').remove()
+  $choices.find('.choice').each(function (index) {
+    $(this).find('label').first().contents().first()[0].textContent = 'Choice ' + (index + 1)
+  })
+})
+
 $(document).on('submit', '[data-api-form="createQuestion"]', function (event) {
   event.preventDefault()
   const $form = $(this)
+  const submitAction = event.originalEvent?.submitter?.dataset.submitAction || 'finish'
   const choices = $form
     .find('.choice')
     .map(function () {
@@ -212,7 +236,7 @@ $(document).on('submit', '[data-api-form="createQuestion"]', function (event) {
     data: JSON.stringify({
       examId: $form.find('[name="examId"]').val(),
       title: $form.find('[name="title"]').val(),
-      difficulty: $form.find('[name="difficulty"]').val(),
+      difficulty: $form.find('[name="difficulty"]:checked').val(),
       type: $form.find('[name="type"]').val(),
       choices
     }),
@@ -220,6 +244,13 @@ $(document).on('submit', '[data-api-form="createQuestion"]', function (event) {
     xhrFields: { withCredentials: true }
   })
     .done((result) => {
+      if (submitAction === 'next') {
+        $form[0].reset()
+        $form.find('.choice').slice(2).remove()
+        $form.find('[name="difficulty"][value="moderate"]').prop('checked', true)
+        $form.find('[name="title"]').trigger('focus')
+        return
+      }
       const slug = result.slug
       if (slug) window.location.href = $form.data('success-url').replace('__SLUG__', encodeURIComponent(slug))
     })

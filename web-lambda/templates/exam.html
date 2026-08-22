@@ -17,7 +17,7 @@
     <a class="btn btn-outline-primary mb-3" href="{{ url("examEdit", { examId: exam.id }) }}">Edit exam</a>
     {% endif %}
 
-    {% if currentUser and exam.ownerId and currentUser.id == exam.ownerId %}
+    {% if canAddQuestion %}
     <a class="btn btn-primary mb-3" href="{{ url("newQuestion", {}, { examId: exam.id }) }}">Add question</a>
     {% endif %}
 

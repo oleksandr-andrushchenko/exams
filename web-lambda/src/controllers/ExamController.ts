@@ -7,12 +7,15 @@ import ExamPermission from '../../../shared/src/enums/exam/ExamPermission'
 import AuthorizationVerifier from '../../../shared/src/services/auth/AuthorizationVerifier'
 import AuthUserProvider from '../../../shared/src/services/auth/AuthUserProvider'
 import ExamProvider from '../../../shared/src/services/exam/ExamProvider'
+import ExamQuestionListProvider from '../../../shared/src/services/question/ExamQuestionListProvider'
+import Question from '../../../shared/src/entities/question/Question'
 import { route } from '../routes'
 
 @Service()
 export default class ExamController {
   public constructor(
     @Inject() private readonly examProvider: ExamProvider,
+    @Inject() private readonly examQuestionListProvider: ExamQuestionListProvider,
     @Inject() private readonly authUserProvider: AuthUserProvider,
     @Inject() private readonly authorizationVerifier: AuthorizationVerifier
   ) {
@@ -46,7 +49,14 @@ export default class ExamController {
   public async getExam(request: Request, response: Response): Promise<void> {
     const user = await this.authUserProvider.getAuthUser(request)
     const exam = await this.examProvider.getExam(request.params.examId, user)
-    response.render('exam.html', { exam, title: exam.name })
+    const questions = (await this.examQuestionListProvider.getExamQuestions(exam, undefined, false, user)) as Question[]
+    response.render('exam.html', {
+      exam: Object.assign(exam, { questions }),
+      canAddQuestion: user
+        ? await this.authorizationVerifier.hasAuthorization(user, ExamPermission.AddQuestion, exam)
+        : false,
+      title: exam.name
+    })
   }
 
   public async getPublicExam(request: Request, response: Response): Promise<void> {
@@ -55,7 +65,14 @@ export default class ExamController {
     if (exam.slug !== request.params.examSlug || exam.userSlug !== request.params.userSlug) {
       throw namedError('ExamNotFoundError', 'Exam not found')
     }
-    response.render('exam.html', { exam, title: exam.name })
+    const questions = (await this.examQuestionListProvider.getExamQuestions(exam, undefined, false, user)) as Question[]
+    response.render('exam.html', {
+      exam: Object.assign(exam, { questions }),
+      canAddQuestion: user
+        ? await this.authorizationVerifier.hasAuthorization(user, ExamPermission.AddQuestion, exam)
+        : false,
+      title: exam.name
+    })
   }
 
   private filters(request: Request): Record<string, unknown> {

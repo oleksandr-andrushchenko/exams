@@ -1,24 +1,42 @@
-{% extends "layout.html" %}{% block content %}
+{% extends "layout.html" %}
+{% block content %}
+{% set breadcrumbs = [["Home", url("home")], ["Exams", url("exams")], [exam.name, examUrl(exam)], ["Add question", none]] %}
+{% include "fragments/breadcrumbs.html" %}
 <h1>Add question to {{ exam.name }}</h1>
 <form class="card card-body d-flex gap-3" data-api-form="createQuestion" data-success-url="{{ url("questionProfile", { userSlug: currentUser.slug, examSlug: exam.slug, questionSlug: "__SLUG__" }) }}">
   <input name="examId" type="hidden" value="{{ exam.id }}">
-  <label>Title<textarea class="form-control" name="title" minlength="10" maxlength="3000" required></textarea></label>
-  <label>Difficulty<select class="form-select" name="difficulty" required>
-    <option value="easy">Easy</option>
-    <option selected value="moderate">Moderate</option>
-    <option value="difficult">Difficult</option>
-    <option value="expert">Expert</option>
-  </select></label>
+  <label>Title<textarea class="form-control" maxlength="3000" minlength="10" name="title" required></textarea></label>
+  <fieldset>
+    <legend class="fs-6">Difficulty</legend>
+    <div class="btn-group" role="group">
+      <input checked class="btn-check" id="difficulty-moderate" name="difficulty" type="radio" value="moderate">
+      <label class="btn btn-outline-warning" for="difficulty-moderate">Moderate</label>
+      <input class="btn-check" id="difficulty-easy" name="difficulty" type="radio" value="easy">
+      <label class="btn btn-outline-success" for="difficulty-easy">Easy</label>
+      <input class="btn-check" id="difficulty-difficult" name="difficulty" type="radio" value="difficult">
+      <label class="btn btn-outline-danger" for="difficulty-difficult">Difficult</label>
+      <input class="btn-check" id="difficulty-expert" name="difficulty" type="radio" value="expert">
+      <label class="btn btn-outline-dark" for="difficulty-expert">Expert</label>
+    </div>
+  </fieldset>
   <input name="type" type="hidden" value="choice">
   <fieldset class="d-flex flex-column gap-2">
     <legend class="fs-6">Choices</legend>
-    {% for number in [1, 2, 3, 4] %}
-    <div class="choice border rounded p-2">
-      <label>Choice {{ number }}<input class="form-control" name="choiceTitle" minlength="10" maxlength="3000" required></label>
-      <label class="form-check"><input class="form-check-input" name="choiceCorrect" type="checkbox" value="true"> Correct answer</label>
+    <div class="choices d-flex flex-column gap-2">
+      {% for number in [1, 2] %}
+      <div class="choice border rounded p-2">
+        <div class="d-flex gap-2">
+          <label class="flex-grow-1">Choice {{ number }}<textarea class="form-control" maxlength="3000" minlength="10" name="choiceTitle" required></textarea></label>
+        </div>
+        <label class="form-check"><input class="form-check-input" name="choiceCorrect" type="checkbox" value="true"> Correct answer</label>
+      </div>
+      {% endfor %}
     </div>
-    {% endfor %}
+    <button class="btn btn-outline-secondary align-self-start add-choice" type="button">Add choice</button>
   </fieldset>
-  <button class="btn btn-primary">Add question</button>
+  <div class="d-flex flex-wrap gap-2">
+    <button class="btn btn-primary" data-submit-action="finish" type="submit">Add question</button>
+    <button class="btn btn-outline-primary" data-submit-action="next" type="submit">Add and create next question</button>
+  </div>
 </form>
 {% endblock %}
