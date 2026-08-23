@@ -1,36 +1,22 @@
 {% extends "layout.html" %}
+
 {% block content %}
 {% set breadcrumbs = [["Home", "/"], ["Users", none]] %}
 {% include "fragments/breadcrumbs.html" %}
+
 <h1>Recently Joined Users</h1>
 <p class="small text-secondary">Recently Joined Users</p>
-<section class="d-flex flex-column gap-3 mb-4">
-  <h2 class="h5 mb-0 text-decoration-underline bi bi-filter">Filter users</h2>
-  <form method="get" action="{{ url("users") }}" class="filter-form d-flex flex-wrap align-items-center gap-2">
-    <input class="form-control w-auto" name="search" value="{{ filters.search or "" }}" placeholder="Search by name">
-    <select class="form-select w-auto" name="sort">
-      <option value="">Newest</option>
-      <option value="name" {% if filters.sort == "name" %}selected{% endif %}>Name</option>
-    </select>
-    <select class="form-select w-auto" name="order">
-      <option value="desc">Descending</option>
-      <option value="asc" {% if filters.order == "asc" %}selected{% endif %}>Ascending</option>
-    </select>
-    <input class="form-control w-auto" name="page" type="number" min="1" value="{{ filters.page }}">
-    <button class="btn btn-primary align-self-start">Apply filters</button>
-  </form>
-</section>
+
 <section class="d-flex flex-column gap-4">
-  <div class="row g-3">
-    {% set columns = { md: 4 } %}
-    {% for user in page.data %}
-    {% include "fragments/user.html" %}
-    {% else %}
-    <div class="col-12">
-      <div class="card p-3">No users found.</div>
+    <div class="row g-3">
+        {% set columns = { md: 4 } %}
+        {% for user in users %}
+        {% include "fragments/user.html" %}
+        {% else %}
+        <div class="col-12">
+            <div class="card p-3">No users found.</div>
+        </div>
+        {% endfor %}
     </div>
-    {% endfor %}
-  </div>
-  <p class="text-secondary mt-3">Page {{ page.page }}{% if page.hasNext %} · more available{% endif %}</p>
 </section>
 {% endblock %}

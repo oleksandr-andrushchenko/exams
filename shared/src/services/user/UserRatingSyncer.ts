@@ -15,7 +15,7 @@ export default class UserRatingSyncer {
   ) {}
 
   public async syncUserRating(user: User): Promise<User> {
-    const exams = await this.examRepository.findByCreator(user)
+    const exams = await this.examRepository.findByCreatorId(user.id)
     const ratedExams = exams.filter((exam) => exam.rating && exam.rating.markCount > 0)
     const rating = new Rating()
     rating.markCount = ratedExams.reduce((sum, exam) => sum + (exam.rating?.markCount || 0), 0)

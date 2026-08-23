@@ -23,6 +23,8 @@ export const controllerRoute = (controller: object, method: string, format: 'jso
       const handler = (controller as Record<string, ControllerHandler>)[method]
       await handler.call(controller, request, response, () => undefined)
     } catch (error) {
+      // console.log(error)
+      // throw error
       const status = getErrorStatus(error)
       const message = error instanceof Error ? error.message : 'Internal server error'
       if (format === 'html' && !request.headers.accept?.includes('application/json')) {

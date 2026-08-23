@@ -12,7 +12,7 @@
   <div>
     <h1>{{ user.name or user.id }}</h1>
 
-    {% if canEdit("updateUser") %}
+    {% if curUser and checkAuth(curUser, Permission.UpdateUser, user) %}
     <a class="btn btn-outline-primary mb-3" href="{{ url("userEdit", { userId: user.id }) }}">Edit user</a>
     {% endif %}
 

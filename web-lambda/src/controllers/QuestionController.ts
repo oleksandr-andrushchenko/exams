@@ -1,9 +1,6 @@
 import { Inject, Service } from 'typedi'
 import { type Request, type Response } from 'express'
-import { queryObject } from '../../../shared/src/http'
-import QuestionNotFoundError from '../../../shared/src/errors/question/QuestionNotFoundError'
 import Question from '../../../shared/src/entities/question/Question'
-import Exam from '../../../shared/src/entities/exam/Exam'
 import ExamPermission from '../../../shared/src/enums/exam/ExamPermission'
 import QuestionPermission from '../../../shared/src/enums/question/QuestionPermission'
 import AuthorizationVerifier from '../../../shared/src/services/auth/AuthorizationVerifier'
@@ -21,12 +18,10 @@ export default class QuestionController {
   ) {
   }
 
-  public async listQuestions(request: Request, response: Response): Promise<void> {
-    const filters = this.filters(request)
-    const user = await this.authUserProvider.getAuthUser(request)
+  public async indexQuestions(request: Request, response: Response): Promise<void> {
     response.render('questions.html', {
-      page: await this.questionProvider.getQuestionList(filters, user),
-      filters,
+      curUser: await this.authUserProvider.getAuthUser(request),
+      questions: await this.questionProvider.getLastQuestions(),
       title: 'Questions'
     })
   }
@@ -35,56 +30,37 @@ export default class QuestionController {
     const user = await this.authUserProvider.getRequiredAuthUser(request)
     const question = await this.questionProvider.getQuestion(request.params.questionId)
     await this.authorizationVerifier.verifyAuthorization(user, QuestionPermission.Update, question)
-    response.render('edit.html', { resource: 'question', question })
+    response.render('edit-question.html', {
+      question
+    })
   }
 
-  public async createQuestionPage(request: Request, response: Response): Promise<void> {
-    const user = await this.authUserProvider.getRequiredAuthUser(request)
-    const examId =
-      typeof request.query.examId === 'string'
-        ? request.query.examId
-        : typeof request.query.exam === 'string'
-          ? request.query.exam
-          : ''
-    const exam = await this.examProvider.getExam(examId)
-    await this.authorizationVerifier.verifyAuthorization(user, ExamPermission.AddQuestion, exam)
-    response.render('create-question.html', { exam, title: 'Add question' })
+  public async newQuestion(request: Request, response: Response): Promise<void> {
+    const curUser = await this.authUserProvider.getRequiredAuthUser(request)
+    const exam = await this.examProvider.getExam(request.params.examId)
+    await this.authorizationVerifier.verifyAuthorization(curUser, ExamPermission.AddQuestion, exam)
+    response.render('new-question.html', {
+      exam,
+      title: 'Add question'
+    })
   }
 
-  public async getQuestion(request: Request, response: Response): Promise<void> {
-    const user = await this.authUserProvider.getAuthUser(request)
-    const question = await this.questionProvider.getQuestion(request.params.questionId, user)
-    response.render('question.html', { question, title: question.title })
+  public async _showQuestion(question: Question, request: Request, response: Response): Promise<void> {
+    response.render('question.html', {
+      curUser: await this.authUserProvider.getAuthUser(request),
+      question,
+      title: question.title
+    })
   }
 
-  public async getPublicQuestion(request: Request, response: Response): Promise<void> {
-    const user = await this.authUserProvider.getAuthUser(request)
-    const question = (await this.questionProvider.getQuestion(request.params.questionSlug, user)) as Question & {
-      exam?: Exam & { userSlug?: string }
-    }
-    if (question.exam?.slug !== request.params.examSlug || question.exam.userSlug !== request.params.userSlug) {
-      throw new QuestionNotFoundError(request.params.questionSlug)
-    }
-    response.render('question.html', { question, title: question.title })
+  public async showQuestion(request: Request, response: Response): Promise<void> {
+    const question = await this.questionProvider.getQuestion(request.params.questionId)
+    await this._showQuestion(question, request, response)
   }
 
-  private filters(request: Request): Record<string, unknown> {
-    const query = queryObject(request.query)
-    const number = (value: unknown, fallback: number) => {
-      const parsed = Number(value)
-      return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback
-    }
-    return {
-      search: typeof query.search === 'string' ? query.search : undefined,
-      approved: typeof query.approved === 'string' ? query.approved : undefined,
-      difficulty: typeof query.difficulty === 'string' ? query.difficulty : undefined,
-      type: typeof query.type === 'string' ? query.type : undefined,
-      tag: typeof query.tag === 'string' ? query.tag : undefined,
-      exam: typeof query.exam === 'string' ? query.exam : undefined,
-      page: number(query.page, 1),
-      size: Math.min(50, number(query.size, 20)),
-      sort: typeof query.sort === 'string' ? query.sort : undefined,
-      order: query.order === 'asc' ? 'asc' : 'desc'
-    }
+  public async showQuestionBySlugs(request: Request, response: Response): Promise<void> {
+    const { userSlug, examSlug, questionSlug } = request.params
+    const question = await this.questionProvider.getQuestionBySlugs(userSlug, examSlug, questionSlug)
+    await this._showQuestion(question, request, response)
   }
 }

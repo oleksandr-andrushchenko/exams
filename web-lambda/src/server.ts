@@ -9,7 +9,7 @@ import HomeController from './controllers/HomeController'
 import ExamController from './controllers/ExamController'
 import QuestionController from './controllers/QuestionController'
 import UserController from './controllers/UserController'
-import TagController from './controllers/TagController'
+import ExamTagController from './controllers/ExamTagController'
 import AuthController from './controllers/AuthController'
 
 const context = createApp(__dirname, ({ app }) => {
@@ -17,7 +17,7 @@ const context = createApp(__dirname, ({ app }) => {
   const examController = Container.get(ExamController)
   const questionController = Container.get(QuestionController)
   const userController = Container.get(UserController)
-  const tagController = Container.get(TagController)
+  const examTagController = Container.get(ExamTagController)
   const authController = Container.get(AuthController)
 
   app.use(express.urlencoded({ extended: true }))
@@ -25,30 +25,30 @@ const context = createApp(__dirname, ({ app }) => {
     maxAge: config.env === 'production' ? '1d' : 0
   }))
 
-  app.get('/', controllerRoute(homeController, 'getHome', 'html'))
+  app.get('/', controllerRoute(homeController, 'showHome', 'html'))
 
-  app.get('/exams', controllerRoute(examController, 'listExams', 'html'))
-  app.get('/exams/new', controllerRoute(examController, 'createExamPage', 'html'))
+  app.get('/exams', controllerRoute(examController, 'indexExams', 'html'))
+  app.get('/exams/new', controllerRoute(examController, 'newExam', 'html'))
   app.get('/exams/:examId/edit', controllerRoute(examController, 'editExam', 'html'))
-  app.get('/exams/:examId', controllerRoute(examController, 'getExam', 'html'))
+  app.get('/exams/:examId', controllerRoute(examController, 'showExam', 'html'))
 
-  app.get('/questions', controllerRoute(questionController, 'listQuestions', 'html'))
-  app.get('/questions/new', controllerRoute(questionController, 'createQuestionPage', 'html'))
+  app.get('/questions', controllerRoute(questionController, 'indexQuestions', 'html'))
+  app.get('/exams/:examId/questions/new', controllerRoute(questionController, 'newQuestion', 'html'))
   app.get('/questions/:questionId/edit', controllerRoute(questionController, 'editQuestion', 'html'))
-  app.get('/questions/:questionId', controllerRoute(questionController, 'getQuestion', 'html'))
+  app.get('/questions/:questionId', controllerRoute(questionController, 'showQuestion', 'html'))
 
-  app.get('/users', controllerRoute(userController, 'listUsers', 'html'))
+  app.get('/users', controllerRoute(userController, 'indexUsers', 'html'))
   app.get('/users/:userId/edit', controllerRoute(userController, 'editUser', 'html'))
-  app.get('/users/:userId', controllerRoute(userController, 'getUser', 'html'))
+  app.get('/users/:userId', controllerRoute(userController, 'showUser', 'html'))
 
-  app.get('/tags/:slug', controllerRoute(tagController, 'getTag', 'html'))
+  app.get('/tags/:slug', controllerRoute(examTagController, 'showExamTag', 'html'))
 
-  app.get('/login', controllerRoute(authController, 'getLoginPage', 'html'))
-  app.get('/register', controllerRoute(authController, 'getRegisterPage', 'html'))
+  app.get('/login', controllerRoute(authController, 'login', 'html'))
+  app.get('/register', controllerRoute(authController, 'register', 'html'))
 
-  app.get('/:userSlug/:examSlug/:questionSlug', controllerRoute(questionController, 'getPublicQuestion', 'html'))
-  app.get('/:userSlug/:examSlug', controllerRoute(examController, 'getPublicExam', 'html'))
-  app.get('/:userSlug', controllerRoute(userController, 'getPublicUser', 'html'))
+  app.get('/:userSlug/:examSlug/:questionSlug', controllerRoute(questionController, 'showQuestionBySlugs', 'html'))
+  app.get('/:userSlug/:examSlug', controllerRoute(examController, 'showExamBySlugs', 'html'))
+  app.get('/:userSlug', controllerRoute(userController, 'showUserBySlug', 'html'))
 
   app.use((_request, _response, next) => next(new PageNotFoundError()))
 })

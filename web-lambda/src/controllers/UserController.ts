@@ -1,58 +1,70 @@
 import { Inject, Service } from 'typedi'
 import { type Request, type Response } from 'express'
-import { queryObject } from '../../../shared/src/http'
 import UserProvider from '../../../shared/src/services/user/UserProvider'
 import AuthUserProvider from '../../../shared/src/services/auth/AuthUserProvider'
 import AuthorizationVerifier from '../../../shared/src/services/auth/AuthorizationVerifier'
-import UserPermission from '../../../shared/src/enums/user/UserPermission'
 import UserRepository from '../../../shared/src/repositories/users/UserRepository'
-import ExamProvider from '../../../shared/src/services/exam/ExamProvider'
+import User from "../../../shared/src/entities/user/User"
+import Permission from "../../../shared/src/enums/Permission"
+import ExamRepository from "../../../shared/src/repositories/exams/ExamRepository";
+import ExamSessionRepository from "../../../shared/src/repositories/exams/ExamSessionRepository";
 
 @Service()
 export default class UserController {
   public constructor(
     @Inject() private readonly userRepository: UserRepository,
+    @Inject() private readonly examRepository: ExamRepository,
+    @Inject() private readonly examSessionRepository: ExamSessionRepository,
     @Inject() private readonly userProvider: UserProvider,
-    @Inject() private readonly examProvider: ExamProvider,
     @Inject() private readonly authUserProvider: AuthUserProvider,
     @Inject() private readonly authorizationVerifier: AuthorizationVerifier
-  ) {}
+  ) {
+  }
 
-  public async listUsers(request: Request, response: Response): Promise<void> {
-    const filters = this.filters(request)
-    response.render('users.html', { page: await this.userRepository.getUserList(filters), filters, title: 'Users' })
+  public async indexUsers(_request: Request, response: Response): Promise<void> {
+    response.render('users.html', {
+      users: await this.userRepository.findLastUsers(),
+      title: 'Users'
+    })
   }
 
   public async editUser(request: Request, response: Response): Promise<void> {
-    const currentUser = await this.authUserProvider.getRequiredAuthUser(request)
-    const user = await this.userProvider.getUser(request.params.userId ?? request.params.userSlug)
-    await this.authorizationVerifier.verifyAuthorization(currentUser, UserPermission.Update, user)
-    response.render('edit.html', { resource: 'user', user })
+    const curUser = await this.authUserProvider.getRequiredAuthUser(request)
+    const user = await this.userProvider.getUser(request.params.userId)
+    await this.authorizationVerifier.verifyAuthorization(curUser, Permission.UpdateUser, user)
+    response.render('edit-user.html', {
+      curUser,
+      user,
+      title: `Edit ${ user.name } User`,
+    })
   }
 
-  public async getUser(request: Request, response: Response): Promise<void> {
-    const user = await this.userProvider.getUser(request.params.userId ?? request.params.userSlug)
-    const [rawExams, sessions] = await Promise.all([
-      this.userRepository.getUserExams(String(user.id)),
-      this.userRepository.getUserExamSessions(String(user.id))
+  private async _showUser(user: User, request: Request, response: Response): Promise<void> {
+    const [ rawExams, sessions ] = await Promise.all([
+      this.examRepository.findByCreatorId(user.id),
+      this.examSessionRepository.findByCreatorId(user.id)
     ])
     const exams = {
       data: rawExams.map((exam) => Object.assign(exam, { userSlug: user.slug }))
     }
-    response.render('user.html', { user, exams, sessions, title: user.name })
+    const curUser = await this.authUserProvider.getAuthUser(request)
+
+    response.render('user.html', {
+      curUser,
+      user,
+      exams,
+      sessions,
+      title: user.name
+    })
   }
 
-  public async getPublicUser(request: Request, response: Response): Promise<void> {
-    await this.getUser(request, response)
+  public async showUser(request: Request, response: Response): Promise<void> {
+    const user = await this.userProvider.getUser(request.params.userId)
+    await this._showUser(user, request, response)
   }
 
-  private filters(request: Request): Record<string, unknown> {
-    const query = queryObject(request.query)
-    const page = Number(query.page)
-    const size = Number(query.size)
-    return {
-      page: Number.isFinite(page) && page > 0 ? Math.floor(page) : 1,
-      size: Math.min(50, Number.isFinite(size) && size > 0 ? Math.floor(size) : 20)
-    }
+  public async showUserBySlug(request: Request, response: Response): Promise<void> {
+    const user = await this.userProvider.getUserBySlug(request.params.userSlug)
+    await this._showUser(user, request, response)
   }
 }

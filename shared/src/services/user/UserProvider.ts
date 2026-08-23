@@ -8,7 +8,6 @@ import ValidatorInterface from '../validator/ValidatorInterface'
 import { ObjectId } from 'bson'
 import UserEmailNotFoundError from '../../errors/user/UserEmailNotFoundError'
 import UserPasswordManager from './UserPasswordManager'
-import isObjectId from '../../database/isObjectId'
 
 @Service()
 export default class UserProvider {
@@ -16,7 +15,8 @@ export default class UserProvider {
     @Inject() private readonly userRepository: UserRepository,
     @Inject() private readonly userPasswordManager: UserPasswordManager,
     @Inject('validator') private readonly validator: ValidatorInterface
-  ) {}
+  ) {
+  }
 
   /**
    * @param {Credentials} credentials
@@ -62,19 +62,21 @@ export default class UserProvider {
     return user
   }
 
-  /**
-   * @param {ObjectId | string} id
-   * @returns {Promise<User>}
-   * @throws {UserNotFoundError}
-   */
   public async getUser(id: ObjectId | string): Promise<User> {
-    const value = id.toString()
-    if (typeof id === 'string' && isObjectId(id)) this.validator.validateId(id)
-
-    const user: User = await this.userRepository.getUser(value)
+    const user: User = await this.userRepository.findOneById(id)
 
     if (!user) {
       throw new UserNotFoundError(id)
+    }
+
+    return user
+  }
+
+  public async getUserBySlug(slug: string): Promise<User> {
+    const user: User = await this.userRepository.findOneBySlug(slug)
+
+    if (!user) {
+      throw new UserNotFoundError(slug)
     }
 
     return user

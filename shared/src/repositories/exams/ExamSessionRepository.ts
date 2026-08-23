@@ -3,6 +3,7 @@ import ExamSession from '../../entities/examSession/ExamSession'
 import EntityRepository from '../../database/EntityRepository'
 import User from '../../entities/user/User'
 import Exam from '../../entities/exam/Exam'
+import { ObjectId } from "bson";
 
 @Repository(ExamSession)
 export default class ExamSessionRepository extends EntityRepository<ExamSession> {
@@ -27,5 +28,9 @@ export default class ExamSessionRepository extends EntityRepository<ExamSession>
       creatorId: creator.id,
       completedAt: { $exists: false }
     })
+  }
+
+  public async findByCreatorId(creatorId: ObjectId | string): Promise<ExamSession[]> {
+    return await this.findBy({ creatorId })
   }
 }

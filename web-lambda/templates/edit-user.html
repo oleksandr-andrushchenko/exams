@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h1>Edit {{ user.name }}</h1>
+<form class="card card-body d-flex gap-3" enctype="multipart/form-data" method="post" data-api-form="updateUser"
+      data-resource-id="{{ user.id }}" data-success-url="{{ userUrl(user) }}">
+    <label>
+        Name
+        <input class="form-control" name="name" required value="{{ user.name or '' }}"/>
+    </label>
+
+    <label>
+        Email
+        <input class="form-control" name="email" required type="email" value="{{ user.email or '' }}"/>
+    </label>
+
+    <label>
+        Image
+        <input accept="image/jpeg,image/png,image/gif,image/webp" class="form-control" name="image"
+               type="file"/>
+    </label>
+
+    <button class="btn btn-primary">Save</button>
+</form>
+{% endblock %}

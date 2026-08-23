@@ -3,8 +3,6 @@ import Repository from '../../database/Repository'
 import EntityRepository from '../../database/EntityRepository'
 import { RatingMarkTargetConstructorType } from '../../types/rating/RatingMarkTargetConstructorType'
 import { ObjectId } from 'bson'
-import Exam from '../../entities/exam/Exam'
-import ExamSession from '../../entities/examSession/ExamSession'
 import isObjectId from '../../database/isObjectId'
 import { ArrayContains } from 'typeorm'
 
@@ -24,7 +22,7 @@ export default class UserRepository extends EntityRepository<User> {
     value: ObjectId[][],
     set: Partial<User> = {}
   ): Promise<User> {
-    return await this.updateOneByEntity(user, { [`${targetConstructor.name.toLowerCase()}RatingMarks`]: value, ...set })
+    return await this.updateOneByEntity(user, { [`${ targetConstructor.name.toLowerCase() }RatingMarks`]: value, ...set })
   }
 
   public async getUser(value: string): Promise<User | null> {
@@ -32,26 +30,19 @@ export default class UserRepository extends EntityRepository<User> {
     return (id ? await this.findOneBy({ id }) : null) ?? (await this.findOneBy({ slug: value }))
   }
 
+  public async findOneBySlug(slug: string): Promise<User | null> {
+    return await this.findOneBy({ slug })
+  }
+
   public async getUserCredentials(email: string): Promise<User | null> {
     return this.findOneByEmail(email)
   }
 
-  public async getUserList(filters: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
-    const page = typeof filters.page === 'number' ? Math.max(1, filters.page) : 1
-    const size = typeof filters.size === 'number' ? Math.min(50, Math.max(1, filters.size)) : 20
-    const rows = await this.find({ take: page * size + 1, order: { id: 'DESC' } })
-    return { data: rows.slice((page - 1) * size, page * size), page, size, hasNext: rows.length > page * size }
+  public async findLastUsers(size: number = 20, page: number = 1): Promise<User[]> {
+    return this.findLast(size, page)
   }
 
-  public async getPopularUsers(size = 50): Promise<User[]> {
-    return this.find({ take: size, order: { id: 'DESC' } })
-  }
-
-  public async getUserExams(userId: string): Promise<Exam[]> {
-    return this.manager.find(Exam, { where: { creatorId: new ObjectId(userId) } })
-  }
-
-  public async getUserExamSessions(userId: string): Promise<ExamSession[]> {
-    return this.manager.find(ExamSession, { where: { creatorId: new ObjectId(userId) } })
+  public async findPopularUsers(size: number = 20, page: number = 1): Promise<User[]> {
+    return this.findFirst(size, page)
   }
 }

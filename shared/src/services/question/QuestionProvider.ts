@@ -1,55 +1,59 @@
 import { Inject, Service } from 'typedi'
 import { ObjectId } from 'bson'
-import ValidatorInterface from '../validator/ValidatorInterface'
 import Question from '../../entities/question/Question'
 import QuestionRepository from '../../repositories/questions/QuestionRepository'
 import QuestionNotFoundError from '../../errors/question/QuestionNotFoundError'
-import User from '../../entities/user/User'
-import AuthorizationVerifier from '../auth/AuthorizationVerifier'
-import QuestionPermission from '../../enums/question/QuestionPermission'
-import isObjectId from '../../database/isObjectId'
+import UserRepository from "../../repositories/users/UserRepository";
+import ExamRepository from "../../repositories/exams/ExamRepository";
 
 @Service()
 export default class QuestionProvider {
   public constructor(
     @Inject() private readonly questionRepository: QuestionRepository,
-    @Inject('validator') private readonly validator: ValidatorInterface,
-    @Inject() private readonly authorizationVerifier: AuthorizationVerifier
-  ) {}
-
-  private async canViewUnapproved(user?: User): Promise<boolean> {
-    return !user || this.authorizationVerifier.hasAuthorization(user, QuestionPermission.Get)
+    @Inject() private readonly userRepository: UserRepository,
+    @Inject() private readonly examRepository: ExamRepository,
+  ) {
   }
 
-  public async getQuestion(id: ObjectId | string, user?: User): Promise<Question> {
-    const value = id.toString()
-    if (typeof id === 'string' && isObjectId(id)) this.validator.validateId(id)
-
-    const question = await this.questionRepository.getQuestion(value)
-    if (!question || (question.ownerId && !(await this.canViewUnapproved(user)))) {
+  public async getQuestion(id: ObjectId | string): Promise<Question> {
+    const question = await this.questionRepository.findOneById(id)
+    if (!question) {
       throw new QuestionNotFoundError(id)
     }
     return question
   }
 
-  public async getQuestions(size = 50, user?: User): Promise<Question[]> {
-    const questions = await this.questionRepository.getQuestions(size)
-    return (await this.canViewUnapproved(user)) ? questions : questions.filter((question) => !question.ownerId)
-  }
-
-  public async getPopularQuestions(size = 50, user?: User): Promise<Question[]> {
-    return this.getQuestions(size, user)
-  }
-
-  public async getQuestionList(filters: Record<string, unknown> = {}, user?: User): Promise<Record<string, unknown>> {
-    const page = typeof filters.page === 'number' ? Math.max(1, filters.page) : 1
-    const size = typeof filters.size === 'number' ? Math.min(50, Math.max(1, filters.size)) : 20
-    const questions = await this.getQuestions(page * size + 1, user)
-    return {
-      data: questions.slice((page - 1) * size, page * size),
-      page,
-      size,
-      hasNext: questions.length > page * size
+  public async getQuestionBySlugs(_userSlug: string, _examSlug: string, slug: string): Promise<Question> {
+    const question = await this.questionRepository.findOneBySlug(slug)
+    if (!question) {
+      throw new QuestionNotFoundError(slug)
     }
+    return question
+  }
+
+  private async decorateQuestion(question: Question): Promise<Question> {
+    const creator = await this.userRepository.findOne(question.creatorId)
+    const exam = await this.examRepository.findOne(question.examId)
+    return Object.assign(question, {
+      creator,
+      userSlug: creator?.slug,
+      exam: Object.assign(exam, {
+        userSlug: creator?.slug,
+      }),
+    })
+  }
+
+  private async decorateQuestions(questions: Question[]): Promise<Question[]> {
+    return Promise.all(questions.map((question) => this.decorateQuestion(question)))
+  }
+
+  public async getLastQuestions(): Promise<Question[]> {
+    const questions = await this.questionRepository.findLastQuestions()
+    return await this.decorateQuestions(questions)
+  }
+
+  public async getPopularQuestions(): Promise<Question[]> {
+    const questions = await this.questionRepository.findPopularQuestions()
+    return await this.decorateQuestions(questions)
   }
 }

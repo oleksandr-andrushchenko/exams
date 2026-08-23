@@ -17,6 +17,8 @@ import WinstonLogger from './services/logger/WinstonLogger'
 import { examUrl, questionUrl, staticUrl, url, userUrl } from './routes'
 import { getErrorStatus } from "./errors";
 import path from "node:path";
+import AuthorizationVerifier from "./services/auth/AuthorizationVerifier";
+import Permission from "./enums/Permission";
 
 export interface ApplicationContext {
   app: Express
@@ -71,6 +73,8 @@ export const createApp = (dirname: string, configure: (context: ApplicationConte
     response.locals.examUrl = (exam: Parameters<typeof examUrl>[0], absolute = false) => examUrl(exam, absolute, origin)
     response.locals.questionUrl = (question: Parameters<typeof questionUrl>[0], exam: Parameters<typeof questionUrl>[1] = undefined, absolute = false) => questionUrl(question, exam, absolute, origin)
     response.locals.userUrl = (user: Parameters<typeof userUrl>[0], absolute = false) => userUrl(user, absolute, origin)
+    response.locals.Permission = Permission
+    response.locals.checkAuth = Container.get(AuthorizationVerifier).checkAuthorization
     next()
   })
 

@@ -3,7 +3,6 @@ import Exam from '../../entities/exam/Exam'
 import Repository from '../../database/Repository'
 import EntityRepository from '../../database/EntityRepository'
 import User from '../../entities/user/User'
-import isObjectId from '../../database/isObjectId'
 
 @Repository(Exam)
 export default class ExamRepository extends EntityRepository<Exam> {
@@ -11,8 +10,16 @@ export default class ExamRepository extends EntityRepository<Exam> {
     return await this.findOneBy({ name })
   }
 
-  public async findByCreator(creator: User): Promise<Exam[]> {
-    return await this.findBy({ creatorId: creator.id })
+  public async findByCreatorId(creatorId: ObjectId | string): Promise<Exam[]> {
+    return await this.findBy({ creatorId })
+  }
+
+  public async findLastExams(size: number = 20, page: number = 1): Promise<Exam[]> {
+    return this.findLast(size, page)
+  }
+
+  public async findPopularExams(size: number = 20, page: number = 1): Promise<Exam[]> {
+    return this.findFirst(size, page)
   }
 
   public async findByOwner(owner: User): Promise<Exam[]> {
@@ -27,12 +34,5 @@ export default class ExamRepository extends EntityRepository<Exam> {
 
   public async getPopularExams(size = 50): Promise<Exam[]> {
     return this.getExams(size)
-  }
-
-  public async getExam(value: string): Promise<Exam | null> {
-    const id = isObjectId(value) ? value : undefined
-    const exam = (id ? await this.findOneBy({ id }) : null) ?? (await this.findOneBy({ slug: value }))
-    if (!exam) return null
-    return exam
   }
 }

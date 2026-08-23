@@ -13,11 +13,11 @@
   <div>
     <h1>{{ exam.name }}</h1>
 
-    {% if canEdit("updateExam") %}
+    {% if curUser and checkAuth(curUser, Permission.UpdateExam, exam) %}
     <a class="btn btn-outline-primary mb-3" href="{{ url("examEdit", { examId: exam.id }) }}">Edit exam</a>
     {% endif %}
 
-    {% if canAddQuestion %}
+    {% if curUser and checkAuth(curUser, Permission.AddQuestion, exam) %}
     <a class="btn btn-primary mb-3" href="{{ url("newQuestion", {}, { examId: exam.id }) }}">Add question</a>
     {% endif %}
 
@@ -49,7 +49,7 @@
 
 <h2 class="h5 mb-0 text-decoration-underline">Questions</h2>
 <div class="d-flex flex-column gap-3">
-  {% for question in exam.questions %}
+  {% for question in questions %}
   {% include "fragments/question.html" %}
   {% else %}
   <div class="card p-3">No questions found.</div>

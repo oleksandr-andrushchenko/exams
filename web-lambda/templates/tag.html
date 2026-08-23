@@ -1,8 +1,0 @@
-{% extends "layout.html" %}{% block content %}{% if tag %}
-{% set breadcrumbs = [['Home', '/'], [tag.name, none]] %}
-{% include "fragments/breadcrumbs.html" %}
-<h1>{{ tag.name }}</h1>
-<p class="lead">Browse exams and questions for this topic.</p>
-<a class="btn btn-primary" href="{{ url("exams", {}, { tag: tag.slug }) }}">View exams</a>{% else %}
-<h1>Topic not found</h1>
-{% endif %}{% endblock %}

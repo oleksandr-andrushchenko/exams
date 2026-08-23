@@ -1,10 +1,11 @@
-import { ILike, Repository as TypeOrmRepository } from 'typeorm'
+import { ILike } from 'typeorm'
 import ExamTag from '../../entities/examTag/ExamTag'
 import Repository from '../../database/Repository'
 import Exam from '../../entities/exam/Exam'
+import EntityRepository from "../../database/EntityRepository";
 
 @Repository(ExamTag)
-export default class ExamTagRepository extends TypeOrmRepository<ExamTag> {
+export default class ExamTagRepository extends EntityRepository<ExamTag> {
   public findForExam(exam: Exam): Promise<ExamTag[]> {
     return this.createQueryBuilder('tag')
       .innerJoin('tag.exams', 'exam', 'exam.id = :examId', { examId: exam.id.toString() })
@@ -23,7 +24,7 @@ export default class ExamTagRepository extends TypeOrmRepository<ExamTag> {
 
   public findMatching(search: string = '', size: number = 20): Promise<ExamTag[]> {
     return this.find({
-      where: search ? [{ name: ILike(`%${search}%`) }, { slug: ILike(`%${search}%`) }] : {},
+      where: search ? [ { name: ILike(`%${ search }%`) }, { slug: ILike(`%${ search }%`) } ] : {},
       order: { rating: 'DESC', name: 'ASC' },
       take: size
     })
@@ -36,5 +37,16 @@ export default class ExamTagRepository extends TypeOrmRepository<ExamTag> {
       .where('tag.id = :tagId', { tagId: tag.id.toString() })
       .getRawOne()
     return Number(result.count)
+  }
+
+  public async findPopularExamTags(size = 100): Promise<ExamTag[]> {
+    return this.findLast(size)
+  }
+
+  public async getExamsCount(tag: ExamTag): Promise<number> {
+    return this.createQueryBuilder('tag')
+      .innerJoin('tag.exams', 'exam')
+      .where('tag.id = :id', { id: tag.id })
+      .getCount()
   }
 }

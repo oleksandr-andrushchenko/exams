@@ -55,7 +55,7 @@ export default class AuthorizationVerifier {
     throw new AuthorizationFailedError(permission)
   }
 
-  public async hasAuthorization(
+  public async checkAuthorization(
     user: User,
     permission: string,
     resource: { ownerId?: ObjectId } = undefined,

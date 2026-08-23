@@ -17,7 +17,8 @@ export default class ExamRatingMarkCreator {
     @Inject() private readonly examRatingMarkRepository: ExamRatingMarkRepository,
     @Inject() private readonly authorizationVerifier: AuthorizationVerifier,
     @InjectEntityManager() private readonly entityManager: EntityManagerInterface
-  ) {}
+  ) {
+  }
 
   /**
    * @param {Exam} exam

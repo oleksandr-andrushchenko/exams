@@ -1,15 +1,13 @@
 import { Inject, Service } from 'typedi'
 import { type Request, type Response } from 'express'
-import ExamNotFoundError from '../../../shared/src/errors/exam/ExamNotFoundError'
-import { queryObject } from '../../../shared/src/http'
 import Exam from '../../../shared/src/entities/exam/Exam'
-import ExamPermission from '../../../shared/src/enums/exam/ExamPermission'
 import AuthorizationVerifier from '../../../shared/src/services/auth/AuthorizationVerifier'
 import AuthUserProvider from '../../../shared/src/services/auth/AuthUserProvider'
 import ExamProvider from '../../../shared/src/services/exam/ExamProvider'
 import ExamQuestionListProvider from '../../../shared/src/services/question/ExamQuestionListProvider'
 import Question from '../../../shared/src/entities/question/Question'
 import { route } from '../../../shared/src/routes'
+import Permission from "../../../shared/src/enums/Permission";
 
 @Service()
 export default class ExamController {
@@ -21,77 +19,53 @@ export default class ExamController {
   ) {
   }
 
-  public async listExams(request: Request, response: Response): Promise<void> {
-    const filters = this.filters(request)
-    const user = await this.authUserProvider.getAuthUser(request)
+  public async indexExams(request: Request, response: Response): Promise<void> {
     response.render('exams.html', {
-      page: await this.examProvider.getExamList(filters, user),
-      filters,
+      curUser: await this.authUserProvider.getAuthUser(request),
+      exams: await this.examProvider.getLastExams(),
       title: 'Exams'
     })
   }
 
   public async editExam(request: Request, response: Response): Promise<void> {
-    const user = await this.authUserProvider.getRequiredAuthUser(request)
+    const curUser = await this.authUserProvider.getRequiredAuthUser(request)
     const exam = await this.examProvider.getExam(request.params.examId)
-    await this.authorizationVerifier.verifyAuthorization(user, ExamPermission.Update, exam)
-    response.render('edit.html', { resource: 'exam', exam })
+    await this.authorizationVerifier.verifyAuthorization(curUser, Permission.UpdateExam, exam)
+    response.render('edit-exam.html', {
+      curUser,
+      exam,
+      title: `Edit ${ exam.name } Exam`,
+    })
   }
 
-  public async createExamPage(request: Request, response: Response): Promise<void> {
+  public async newExam(request: Request, response: Response): Promise<void> {
     if (!(await this.authUserProvider.getAuthUser(request))) {
       response.redirect(route('login', {}, { redirect: route('newExam') }))
       return
     }
-    response.render('create-exam.html', { title: 'Create exam' })
+    response.render('new-exam.html', {
+      title: 'New exam'
+    })
   }
 
-  public async getExam(request: Request, response: Response): Promise<void> {
-    const user = await this.authUserProvider.getAuthUser(request)
-    const exam = await this.examProvider.getExam(request.params.examId, user)
-    const questions = (await this.examQuestionListProvider.getExamQuestions(exam, undefined, false, user)) as Question[]
+  private async _showExam(exam: Exam, request: Request, response: Response): Promise<void> {
+    const curUser = await this.authUserProvider.getAuthUser(request)
+    const questions = (await this.examQuestionListProvider.getExamQuestions(exam, undefined, false, curUser)) as Question[]
     response.render('exam.html', {
-      exam: Object.assign(exam, { questions }),
-      canAddQuestion: user
-        ? await this.authorizationVerifier.hasAuthorization(user, ExamPermission.AddQuestion, exam)
-        : false,
+      curUser,
+      exam,
+      questions,
       title: exam.name
     })
   }
 
-  public async getPublicExam(request: Request, response: Response): Promise<void> {
-    const user = await this.authUserProvider.getAuthUser(request)
-    const exam = (await this.examProvider.getExam(request.params.examSlug, user)) as Exam & { userSlug?: string }
-    if (exam.slug !== request.params.examSlug || exam.userSlug !== request.params.userSlug) {
-      throw new ExamNotFoundError(request.params.examSlug)
-    }
-    const questions = (await this.examQuestionListProvider.getExamQuestions(exam, undefined, false, user)) as Question[]
-    response.render('exam.html', {
-      exam: Object.assign(exam, { questions }),
-      canAddQuestion: user
-        ? await this.authorizationVerifier.hasAuthorization(user, ExamPermission.AddQuestion, exam)
-        : false,
-      title: exam.name
-    })
+  public async showExam(request: Request, response: Response): Promise<void> {
+    const exam = await this.examProvider.getExam(request.params.examId)
+    await this._showExam(exam, request, response)
   }
 
-  private filters(request: Request): Record<string, unknown> {
-    const query = queryObject(request.query)
-    const number = (value: unknown, fallback: number) => {
-      const parsed = Number(value)
-      return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback
-    }
-    return {
-      search: typeof query.search === 'string' ? query.search : undefined,
-      approved: typeof query.approved === 'string' ? query.approved : undefined,
-      difficulty: typeof query.difficulty === 'string' ? query.difficulty : undefined,
-      type: typeof query.type === 'string' ? query.type : undefined,
-      tag: typeof query.tag === 'string' ? query.tag : undefined,
-      exam: typeof query.exam === 'string' ? query.exam : undefined,
-      page: number(query.page, 1),
-      size: Math.min(50, number(query.size, 20)),
-      sort: typeof query.sort === 'string' ? query.sort : undefined,
-      order: query.order === 'asc' ? 'asc' : 'desc'
-    }
+  public async showExamBySlugs(request: Request, response: Response): Promise<void> {
+    const exam = await this.examProvider.getExamBySlugs(request.params.userSlug, request.params.examSlug)
+    await this._showExam(exam, request, response)
   }
 }

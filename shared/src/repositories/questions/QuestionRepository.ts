@@ -1,4 +1,3 @@
-import { ObjectId } from 'bson'
 import Repository from '../../database/Repository'
 import Question from '../../entities/question/Question'
 import EntityRepository from '../../database/EntityRepository'
@@ -26,13 +25,21 @@ export default class QuestionRepository extends EntityRepository<Question> {
     return await this.countBy({ examId: exam.id, ownerId: { $exists: false } })
   }
 
+  public async findLastQuestions(size: number = 20, page: number = 1): Promise<Question[]> {
+    return this.findLast(size, page)
+  }
+
+  public async findPopularQuestions(size: number = 20, page: number = 1): Promise<Question[]> {
+    return this.findFirst(size, page)
+  }
+
   private async addExams(rows: Question[]): Promise<Question[]> {
     const exams = Container.get(ExamRepository)
     const users = Container.get(UserRepository)
     return Promise.all(
       rows.map(async (question) => {
-        const exam = question.examId ? await exams.getExam(question.examId.toString()) : undefined
-        const examCreator = exam?.creatorId ? await users.getUser(exam.creatorId.toString()) : undefined
+        const exam = question.examId ? await exams.findOneById(question.examId) : undefined
+        const examCreator = exam?.creatorId ? await users.findOneById(exam.creatorId) : undefined
         const questionCreator = question.creatorId ? await users.getUser(question.creatorId.toString()) : undefined
         return Object.assign(question, {
           creator: questionCreator ?? undefined,
@@ -54,6 +61,6 @@ export default class QuestionRepository extends EntityRepository<Question> {
   public async getQuestion(value: string): Promise<Question | null> {
     const id = isObjectId(value) ? value : undefined
     const question = (id ? await this.findOneBy({ id }) : null) ?? (await this.findOneBy({ slug: value }))
-    return question ? (await this.addExams([question]))[0] : null
+    return question ? (await this.addExams([ question ]))[0] : null
   }
 }

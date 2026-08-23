@@ -16,7 +16,7 @@
   <div>
     <h1>{{ question.title }}</h1>
 
-    {% if canEdit("updateQuestion") %}
+    {% if curUser and checkAuth(curUser, Permission.UpdateQuestion, question) %}
     <a class="btn btn-outline-primary mb-3" href="{{ url("questionEdit", { questionId: question.id }) }}">Edit question</a>
     {% endif %}
 
