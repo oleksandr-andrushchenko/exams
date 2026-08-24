@@ -40,6 +40,7 @@ export default class QuestionController {
     const exam = await this.examProvider.getExam(request.params.examId)
     await this.authorizationVerifier.verifyAuthorization(curUser, ExamPermission.AddQuestion, exam)
     response.render('new-question.html', {
+      curUser,
       exam,
       title: 'Add question'
     })

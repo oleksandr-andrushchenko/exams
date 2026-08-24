@@ -20,7 +20,7 @@ export default class QuestionProvider {
     if (!question) {
       throw new QuestionNotFoundError(id)
     }
-    return question
+    return await this.decorateQuestion(question)
   }
 
   public async getQuestionBySlugs(_userSlug: string, _examSlug: string, slug: string): Promise<Question> {
@@ -28,17 +28,18 @@ export default class QuestionProvider {
     if (!question) {
       throw new QuestionNotFoundError(slug)
     }
-    return question
+    return await this.decorateQuestion(question)
   }
 
   private async decorateQuestion(question: Question): Promise<Question> {
-    const creator = await this.userRepository.findOne(question.creatorId)
-    const exam = await this.examRepository.findOne(question.examId)
+    const creator = await this.userRepository.findOneById(question.creatorId)
+    const exam = await this.examRepository.findOneById(question.examId)
+    const examCreator = exam ? await this.userRepository.findOneById(exam.creatorId) : undefined
     return Object.assign(question, {
       creator,
       userSlug: creator?.slug,
       exam: Object.assign(exam, {
-        userSlug: creator?.slug,
+        userSlug: examCreator?.slug,
       }),
     })
   }

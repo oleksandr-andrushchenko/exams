@@ -17,7 +17,7 @@ describe('Web pages', () => {
 
   beforeAll(async () => {
     user = await framework.fixture<User>(User, {
-      name: 'Demo Learner',
+      name: 'Web Page Test User',
       permissions: [Permission.All]
     })
     exam = await framework.fixture<Exam>(Exam, {
@@ -68,7 +68,7 @@ describe('Web pages', () => {
 
   test.each([
     ['new exam page', () => '/exams/new'],
-    ['new question page', () => `/questions/new?exam=${exam.id}`],
+    ['new question page', () => `/exams/${exam.id}/questions/new`],
     ['edit exam page', () => `/exams/${exam.id}/edit`],
     ['edit question page', () => `/questions/${question.id}/edit`],
     ['edit user page', () => `/users/${user.id}/edit`]
@@ -89,7 +89,7 @@ describe('Web pages', () => {
   })
 
   test('new question page requires authentication', async () => {
-    const response = await fetch(new URL(`/questions/new?exam=${exam.id}`, framework.web), { redirect: 'manual' })
+    const response = await fetch(new URL(`/exams/${exam.id}/questions/new`, framework.web), { redirect: 'manual' })
 
     expect(response.status).toBe(401)
   })

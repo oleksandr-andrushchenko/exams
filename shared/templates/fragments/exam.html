@@ -1,4 +1,5 @@
 {% set examColumns = columns or { md: 4 } %}
+{% set examUser = exam.creator or { id: exam.creatorId } %}
 <article
   class="col{% if examColumns.xs %}-{{ examColumns.xs }}{% else %}-12{% endif %}{% if examColumns.sm %} col-sm-{{ examColumns.sm }}{% endif %}{% if examColumns.md %} col-md-{{ examColumns.md }}{% endif %}{% if examColumns.lg %} col-lg-{{ examColumns.lg }}{% endif %}{% if examColumns.xl %} col-xl-{{ examColumns.xl }}{% endif %}{% if examColumns.xxl %} col-xxl-{{ examColumns.xxl }}{% endif %}"
 >
@@ -18,9 +19,9 @@
         {{ exam.questionCount or 0 }} questions {% if exam.requiredScore is not none %}
         <span aria-hidden="true"> · </span>required score {{ exam.requiredScore or 0 }} {% endif %}
       </div>
-      <a class="small text-secondary text-decoration-none" href="{{ userUrl(exam.userSlug) }}">
+      <a class="small text-secondary text-decoration-none" href="{{ userUrl(examUser) }}">
         <i class="bi bi-person-circle" aria-hidden="true"></i>
-        {{ exam.userSlug }}
+        {{ examUser.slug or examUser.name or examUser.id }}
       </a>
       {% if exam.tags %}
       <div class="small d-flex flex-wrap align-items-center gap-2">

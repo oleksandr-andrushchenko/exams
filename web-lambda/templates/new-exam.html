@@ -4,7 +4,7 @@
 <h1>Create exam</h1>
 
 <form class="card card-body d-flex gap-3" enctype="multipart/form-data" method="post" data-api-form="createExam"
-      data-success-url="{{ url('examProfile', { userSlug: currentUser.slug, examSlug: '__SLUG__' }) }}">
+      data-success-url="{{ examUrl({ userSlug: curUser.slug, slug: '__SLUG__' }) }}">
 
     <label>
         Name

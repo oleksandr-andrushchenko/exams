@@ -39,11 +39,13 @@ export default class ExamController {
   }
 
   public async newExam(request: Request, response: Response): Promise<void> {
-    if (!(await this.authUserProvider.getAuthUser(request))) {
+    const curUser = await this.authUserProvider.getAuthUser(request)
+    if (!curUser) {
       response.redirect(route('login', {}, { redirect: route('newExam') }))
       return
     }
     response.render('new-exam.html', {
+      curUser,
       title: 'New exam'
     })
   }

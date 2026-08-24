@@ -1,4 +1,5 @@
 {% set questionExam = question.exam or exam %}
+{% set questionUser = question.creator or { id: question.creatorId } %}
 <article class="question-item border rounded p-3">
   <div class="d-flex align-items-start gap-3">
     {% if question.imageFilename %}
@@ -19,9 +20,9 @@
           {{ questionExam.name }}
         </a>
         <span aria-hidden="true">·</span>
-        <a class="text-secondary text-decoration-none" href="{{ userUrl(questionExam.userSlug) }}">
+        <a class="text-secondary text-decoration-none" href="{{ userUrl(questionUser) }}">
           <i class="bi bi-person-circle" aria-hidden="true"></i>
-          {{ questionExam.userSlug }}
+          {{ questionUser.slug or questionUser.name or questionUser.id }}
         </a>
         {% if question.difficulty or question.type %}
         <span aria-hidden="true">·</span>

@@ -18,7 +18,7 @@
     {% endif %}
 
     {% if curUser and checkAuth(curUser, Permission.AddQuestion, exam) %}
-    <a class="btn btn-primary mb-3" href="{{ url("newQuestion", {}, { examId: exam.id }) }}">Add question</a>
+    <a class="btn btn-primary mb-3" href="{{ url("newQuestion", { examId: exam.id }) }}">Add question</a>
     {% endif %}
 
     {% set rating = exam.rating %}

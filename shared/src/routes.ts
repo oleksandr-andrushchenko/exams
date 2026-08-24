@@ -28,7 +28,7 @@ const definitions: Record<RouteName, string> = {
   examEdit: '/exams/:examId/edit',
   questionEdit: '/questions/:questionId/edit',
   newExam: '/exams/new',
-  newQuestion: '/questions/new',
+  newQuestion: '/exams/:examId/questions/new',
   examById: '/exams/:examId',
   questionById: '/questions/:questionId',
   userById: '/users/:userId',
@@ -72,20 +72,36 @@ export const url = (
 export const staticUrl = (asset: string, absolute = false, origin = ''): string =>
   withOrigin('/static/' + asset.replace(/^\//, ''), absolute, origin)
 
-export const examUrl = (exam: { userSlug?: string; slug?: string }, absolute = false, origin = ''): string =>
-  withOrigin(route('examProfile', { userSlug: exam.userSlug, examSlug: exam.slug }), absolute, origin)
-
-export const questionUrl = (
-  question: { slug?: string },
-  exam: { userSlug?: string; slug?: string } | undefined = undefined,
+export const examUrl = (
+  exam: { id?: string | number; userSlug?: string; slug?: string },
   absolute = false,
   origin = ''
-): string =>
-  withOrigin(
-    route('questionProfile', { userSlug: exam?.userSlug, examSlug: exam?.slug, questionSlug: question.slug }),
-    absolute,
-    origin
-  )
+): string => {
+  const path = exam.userSlug && exam.slug
+    ? route('examProfile', { userSlug: exam.userSlug, examSlug: exam.slug })
+    : route('examById', { examId: exam.id?.toString() })
+  return withOrigin(path, absolute, origin)
+}
 
-export const userUrl = (user: { slug?: string } | string, absolute = false, origin = ''): string =>
-  withOrigin(route('userProfile', { userSlug: typeof user === 'string' ? user : user.slug }), absolute, origin)
+export const questionUrl = (
+  question: { id?: string | number; slug?: string },
+  exam: { id?: string | number; userSlug?: string; slug?: string } | undefined = undefined,
+  absolute = false,
+  origin = ''
+): string => {
+  const path = question.slug && exam?.userSlug && exam.slug
+    ? route('questionProfile', { userSlug: exam.userSlug, examSlug: exam.slug, questionSlug: question.slug })
+    : route('questionById', { questionId: question.id?.toString() })
+  return withOrigin(path, absolute, origin)
+}
+
+export const userUrl = (
+  user: { id?: string | number; slug?: string },
+  absolute = false,
+  origin = ''
+): string => {
+  const path = user.slug
+    ? route('userProfile', { userSlug: user.slug })
+    : route('userById', { userId: user.id?.toString() })
+  return withOrigin(path, absolute, origin)
+}

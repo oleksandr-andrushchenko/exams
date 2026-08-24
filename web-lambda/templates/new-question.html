@@ -6,7 +6,7 @@
 
 <h1>Add question to {{ exam.name }}</h1>
 <form class="card card-body d-flex gap-3" data-api-form="createQuestion"
-      data-success-url="{{ url('questionProfile', { userSlug: curUser.slug, examSlug: exam.slug, questionSlug: '__SLUG__' }) }}">
+      data-success-url="{{ questionUrl({ slug: '__SLUG__' }, exam) }}">
     <input name="examId" type="hidden" value="{{ exam.id }}">
     <input name="type" type="hidden" value="choice">
 

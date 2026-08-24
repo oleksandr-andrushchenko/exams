@@ -43,7 +43,7 @@ export default class QuestionRepository extends EntityRepository<Question> {
         const questionCreator = question.creatorId ? await users.getUser(question.creatorId.toString()) : undefined
         return Object.assign(question, {
           creator: questionCreator ?? undefined,
-          exam: exam ? Object.assign(exam, { userSlug: examCreator?.slug || exam.creatorId?.toString() }) : undefined
+          exam: exam ? Object.assign(exam, { userSlug: examCreator?.slug }) : undefined
         })
       })
     )

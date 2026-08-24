@@ -33,7 +33,7 @@ export default class EntityRepository<Entity extends ObjectLiteral> extends Repo
     const wrapped = options && ('where' in options || 'take' in options || 'order' in options)
     return super.find({
       ...(wrapped ? options : {}),
-      where: this.normalize({ ...(wrapped ? options.where : options) })
+      where: this.normalize(wrapped ? (options.where ?? {}) : options)
     })
   }
 
@@ -76,6 +76,7 @@ export default class EntityRepository<Entity extends ObjectLiteral> extends Repo
   }
 
   private normalize(where: any): FindOptionsWhere<Entity> | FindOptionsWhere<Entity>[] {
+    if (Array.isArray(where)) return where.map((part) => this.normalize(part)) as FindOptionsWhere<Entity>[]
     if (where.$or) return where.$or.map((part: any) => this.normalize({ ...where, $or: undefined, ...part })) as any
     const result: any = {}
     for (const [ rawKey, value ] of Object.entries(where)) {
@@ -90,6 +91,7 @@ export default class EntityRepository<Entity extends ObjectLiteral> extends Repo
         else result[key] = value
       } else result[key] = value
     }
+    if (this.metadata.findColumnWithPropertyName('deletedAt') && !('deletedAt' in result)) result.deletedAt = IsNull()
     return result
   }
 }
