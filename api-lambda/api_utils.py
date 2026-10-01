@@ -2,25 +2,25 @@ from dataclasses import replace
 from html.parser import HTMLParser
 from urllib.parse import unquote, urlparse
 
+from basic_dtos import ContactMessageDTO, FileDTO, ImageFileDTO
+from certification_utils import get_certification_by_id
 from exam_dtos import (
     ExamCommentDTO, ExamDTO, UpdateCategoryDTO, UpdateExamCommentDTO, UpdateExamDTO, UpdateExamImpressionDTO,
     UpdateExamStatusDTO, UpdateTagDTO,
 )
-from basic_dtos import ContactMessageDTO, FileDTO, ImageFileDTO
+from question_dtos import QuestionDTO
+from question_utils import create_question
 from shared_utils import *
 from shared_utils import (
     Category, User, find_exam, find_exam_by_slug_follow_redirects, find_user_by_username_follow_redirects,
-    get_categories, get_dynamodb_item, get_exams, get_static_base_url, get_tags, get_web_base_url, logger,
+    get_dynamodb_item, get_exams, get_static_base_url, get_tags, get_web_base_url, logger,
 )
-from validation import validate_category_slug
 from tag_subscription_dtos import TagSubscriptionDTO
-from certification_utils import get_certification, get_certification_by_id
-from question_dtos import QuestionDTO
-from question_utils import create_question
 from user_dtos import (
     UpdateUserDTO, UpdateUserImpressionDTO, UpdateUserStatusDTO,
     UserImpressionAction,
 )
+from validation import validate_category_slug
 from web import RequestValidationError
 
 
@@ -269,6 +269,8 @@ def generate_sitemap(user: User, req) -> tuple[int, str]:
 
     urls.extend([
         (url("index"), today),
+        (url("certifications"), today),
+        (url("categories"), today),
         (url("tags"), today),
         (url("contacts"), today),
         (url("rules"), today),
@@ -378,8 +380,7 @@ def delete_tag_subscription(tag_subscription_id: str, user: User) -> TagSubscrip
     return subscription
 
 
-def update_tag(tag: Tag, update_tag_dto: UpdateTagDTO, cur_user: User,
-               req) -> None:
+def update_tag(tag: Tag, update_tag_dto: UpdateTagDTO, cur_user: User) -> None:
     verify_authorization(cur_user, Permission.UPDATE_TAG, tag)
 
     if cur_user.status == UserStatus.BANNED:
@@ -501,7 +502,6 @@ def resize_public_image(file_dto: ImageFileDTO, max_width: int = 1200) -> ImageF
         return file_dto
 
     from io import BytesIO
-
     from PIL import Image
 
     target_height = max(1, round(height * max_width / width))
@@ -657,7 +657,8 @@ def create_exam(exam_dto: ExamDTO, cur_user: User) -> Exam:
         title="What is the main goal of this exam?",
         description="Choose the best answer.",
         choices=[
-            {"title": "Understand the subject", "description": "Build understanding through practice.", "is_correct": True},
+            {"title": "Understand the subject", "description": "Build understanding through practice.",
+             "is_correct": True},
             {"title": "Skip the subject", "description": "Avoid learning the material.", "is_correct": False},
             {"title": "Avoid practice", "description": "Do not review the material.", "is_correct": False},
         ],
@@ -666,7 +667,7 @@ def create_exam(exam_dto: ExamDTO, cur_user: User) -> Exam:
     return exam
 
 
-def update_exam(exam: Exam, update_exam_dto: UpdateExamDTO, cur_user: User, req) -> None:
+def update_exam(exam: Exam, update_exam_dto: UpdateExamDTO, cur_user: User) -> None:
     verify_authorization(cur_user, Permission.UPDATE_EXAM, exam)
 
     if cur_user.status == UserStatus.BANNED:
@@ -788,8 +789,7 @@ def update_exam(exam: Exam, update_exam_dto: UpdateExamDTO, cur_user: User, req)
             setattr(exam, k, v)
 
 
-def create_exam_comment(exam: Exam, exam_comment_dto: ExamCommentDTO, cur_user: User,
-                           req) -> ExamComment:
+def create_exam_comment(exam: Exam, exam_comment_dto: ExamCommentDTO, cur_user: User) -> ExamComment:
     verify_authorization(cur_user, Permission.CREATE_EXAM_COMMENT)
 
     if cur_user.status == UserStatus.BANNED:
@@ -842,8 +842,8 @@ def create_exam_comment(exam: Exam, exam_comment_dto: ExamCommentDTO, cur_user: 
 
 
 def update_exam_comment(exam: Exam, exam_comment: ExamComment,
-                           update_exam_comment_dto: UpdateExamCommentDTO,
-                           cur_user: User, req) -> None:
+                        update_exam_comment_dto: UpdateExamCommentDTO,
+                        cur_user: User, req) -> None:
     verify_authorization(cur_user, Permission.UPDATE_EXAM_COMMENT, exam_comment)
 
     if cur_user.status == UserStatus.BANNED:
@@ -884,7 +884,7 @@ def update_dynamodb_item(
     get_dynamodb_table().update_item(**update_item_params["Update"])
 
 
-def update_user(user: User, update_user_dto: UpdateUserDTO, cur_user: User, req) -> None:
+def update_user(user: User, update_user_dto: UpdateUserDTO, cur_user: User) -> None:
     verify_authorization(cur_user, Permission.UPDATE_USER, user)
 
     if cur_user.status == UserStatus.BANNED:
@@ -973,7 +973,7 @@ def update_user(user: User, update_user_dto: UpdateUserDTO, cur_user: User, req)
         drop_public_file(old_avatar)
 
 
-def update_user_status(user: User, update_user_status_dto: UpdateUserStatusDTO, cur_user: User, req) -> None:
+def update_user_status(user: User, update_user_status_dto: UpdateUserStatusDTO, cur_user: User) -> None:
     # logger.debug(f"update_user_status: user: {user}, cur_user: {cur_user}")
     verify_authorization(cur_user, Permission.UPDATE_USER_STATUS)
 
@@ -1001,8 +1001,7 @@ def update_user_status(user: User, update_user_status_dto: UpdateUserStatusDTO, 
     dynamodb_transact_write(transacts)
 
 
-def update_exam_status(exam: Exam, update_exam_status_dto: UpdateExamStatusDTO, cur_user: User,
-                          req) -> None:
+def update_exam_status(exam: Exam, update_exam_status_dto: UpdateExamStatusDTO, cur_user: User) -> None:
     # logger.debug(f"update_exam_status: post: {post}, cur_user: {cur_user}")
     verify_authorization(cur_user, Permission.UPDATE_EXAM_STATUS)
 
@@ -1116,9 +1115,7 @@ def create_contact_message(message_dto: ContactMessageDTO, user: User = None) ->
     )
 
 
-def update_exam_impression(exam: Exam, update_exam_impression_dto: UpdateExamImpressionDTO,
-                              cur_user: User,
-                              req) -> None:
+def update_exam_impression(exam: Exam, update_exam_impression_dto: UpdateExamImpressionDTO, cur_user: User) -> None:
     verify_authorization(cur_user, Permission.UPDATE_EXAM_IMPRESSION, exam)
 
     if cur_user.status == UserStatus.BANNED:
@@ -1183,7 +1180,7 @@ def update_exam_impression(exam: Exam, update_exam_impression_dto: UpdateExamImp
     dynamodb_transact_write(transacts)
 
 
-def update_user_impression(user: User, update_relation_dto: UpdateUserImpressionDTO, cur_user: User, req) -> None:
+def update_user_impression(user: User, update_relation_dto: UpdateUserImpressionDTO, cur_user: User) -> None:
     verify_authorization(cur_user, Permission.UPDATE_USER_IMPRESSION, user)
 
     if user.status == UserStatus.BANNED:

@@ -1,6 +1,4 @@
-<form class="d-flex flex-column gap-2" id="tag-form" novalidate data-form-handler="tag"
-      data-submit-url="{{ url('update-tag', slug=tag.slug, absolute=True) if tag else '' }}"
-      data-method="{{ 'PATCH' if tag else 'POST' }}">
+<form class="d-flex flex-column gap-2" id="tag-form" novalidate>
     <div class="form-group row align-items-center">
         <div class="{{ {"def": 2} | col_classes }}">
             {% if tag and tag.image_filename %}
@@ -54,6 +52,8 @@
         <div class="{{ {"def": 10} | col_classes }}">
             <input type="text" class="form-control" id="name" name="name" placeholder="Name"
                    value="{{ tag.name if tag and tag.name else "" }}">
+            {% if tag %}
+                <div class="form-text">Slug: <code>{{ tag.slug }}</code></div>{% endif %}
         </div>
     </div>
 
@@ -66,3 +66,55 @@
         </div>
     </div>
 </form>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const uploadDiv = document.getElementById("upload-image")
+    const imageRadios = document.querySelectorAll("input[name=\"image_action\"]")
+
+    // Initially hide the upload div
+    uploadDiv.style.display = "none"
+
+    imageRadios.forEach(radio => {
+      radio.addEventListener("change", () => {
+        if (radio.value === "replace" && radio.checked) {
+          uploadDiv.style.display = "block"
+        } else if (radio.checked) {
+          uploadDiv.style.display = "none"
+        }
+      })
+    })
+
+    handleFormSubmit("#tag-form", {{ (url('update-tag', slug=tag.slug, absolute=True) if tag else '') | tojson }}, {
+      method: "{{ 'PATCH' if tag else 'POST' }}",
+      rules: {
+        image_file: [
+          {
+            rule: "required",
+            errorMessage: "Cover image is required"
+          },
+          {
+            rule: "files",
+            value: {
+              files: {
+                extensions: ["jpeg", "jpg", "png"],
+                maxSize: 10000000,
+                minSize: 1000,
+                types: ["image/jpeg", "image/jpg", "image/png"]
+              }
+            }
+          }
+        ],
+        name: [
+          {rule: "required"},
+          {rule: "minLength", value: 2},
+          {rule: "maxLength", value: 40}
+        ],
+      },
+      onSuccess: (res) => {
+        if (res) window.location.href = res
+      },
+      successMessage: "Tag updated!"
+    })
+  })
+</script>

@@ -1,4 +1,3 @@
-import asyncio
 from datetime import timedelta
 from urllib.parse import quote, urlparse
 
@@ -7,7 +6,7 @@ from shared_utils import (
     Exam, ExamStatus, ExamQueryType, ExamNotFoundError,
     ExamByOldSlugRequestedError, User, UserStatus, UserNotFoundError,
     UserByOldSlugRequestedError, NotAuthenticatedError, Permission,
-    find_exam, find_exam_by_slug_follow_redirects, find_user_by_username_follow_redirects,
+    find_exam_by_slug_follow_redirects, find_user_by_username_follow_redirects,
     verify_authorization, get_web_base_url, is_prod, get_auth_token_max_age,
     get_dynamodb_table, exam_from_dynamodb, query_dynamodb_table, Key, to_thread,
 )
@@ -325,7 +324,6 @@ def parse_exams_url_slugs_path(slugs_path: str) -> dict:
     return data
 
 
-
 def get_exam_by_slugs(user_slug: str, exam_slug: str, cur_user: User = None) -> Exam:
     exam = find_exam_by_slug_follow_redirects(exam_slug)
     if exam is None:
@@ -341,7 +339,6 @@ def get_exam_by_slugs(user_slug: str, exam_slug: str, cur_user: User = None) -> 
     return exam
 
 
-
 def get_user_by_slug(username: str, cur_user: User = None) -> User:
     user = find_user_by_username_follow_redirects(username)
     if user is None:
@@ -355,33 +352,11 @@ def get_user_by_slug(username: str, cur_user: User = None) -> User:
     return user
 
 
-def get_legacy_user_redirect_url(req, slug: str) -> str | None:
-    user = find_user_by_username_follow_redirects(slug)
-    return get_user_url(req, user) if user else None
-
-
-def get_legacy_exam_redirect_url(req, user_slug: str, exam_slug: str) -> str | None:
-    user = find_user_by_username_follow_redirects(user_slug)
-    exam = find_exam_by_slug_follow_redirects(exam_slug)
-    if not user or not exam or exam.user_slug != user.username:
-        return None
-    return get_exam_url(req, exam)
-
-
-def get_legacy_exam_id_redirect_url(req, user_slug: str, exam_id: str) -> str | None:
-    user = find_user_by_username_follow_redirects(user_slug)
-    exam = find_exam(exam_id)
-    if not user or not exam or exam.user_slug != user.username:
-        return None
-    return get_exam_url(req, exam)
-
-
 def _auth_cookie_domain() -> str | None:
     hostname = urlparse(get_web_base_url()).hostname
     if not hostname or hostname in {"localhost", "127.0.0.1"} or "." not in hostname:
         return None
     return f".{hostname}"
-
 
 
 def set_token_cookie(token, response):
@@ -395,7 +370,6 @@ def set_token_cookie(token, response):
         samesite="lax",
         max_age=get_auth_token_max_age(),
     )
-
 
 
 def drop_token_cookie(response):

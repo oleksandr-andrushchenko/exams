@@ -1,4 +1,4 @@
-<form class="d-flex flex-column gap-2" id="user-form" novalidate data-form-handler="user" data-submit-url="{{ url("update-user", user_id=user.id, absolute=True) if user else "" }}" data-method="{{ "PATCH" if user else "POST" }}">
+<form class="d-flex flex-column gap-2" id="user-form" novalidate>
     <div class="form-group row align-items-center">
         <div class="{{ {"def": 2} | col_classes }} px-lg-5">
             {% include "fragments/user-avatar.html" %}
@@ -144,3 +144,144 @@
         </div>
     </div>
 </form>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const uploadDiv = document.getElementById("upload-avatar")
+    const avatarRadios = document.querySelectorAll("input[name=\"avatar_action\"]")
+
+    // Initially hide the upload div
+    uploadDiv.style.display = "none"
+
+    avatarRadios.forEach(radio => {
+      radio.addEventListener("change", () => {
+        if (radio.value === "replace" && radio.checked) {
+          uploadDiv.style.display = "block"
+        } else if (radio.checked) {
+          uploadDiv.style.display = "none"
+        }
+      })
+    })
+
+    handleFormSubmit("#user-form", {{ (url('update-user', user_id=user.id, absolute=True) if user else '') | tojson }}, {
+      method: "{{ 'PATCH' if user else 'POST' }}",
+      rules: {
+        avatar_file: [
+          {
+            rule: "required",
+            errorMessage: "Avatar is required"
+          },
+          {
+            rule: "files",
+            value: {
+              files: {
+                extensions: ["jpeg", "jpg", "png"],
+                maxSize: 10000000,
+                minSize: 1000,
+                types: ["image/jpeg", "image/jpg", "image/png"]
+              }
+            }
+          }
+        ],
+        name: [
+          {rule: "required"},
+          {rule: "minLength", value: 1},
+          {rule: "maxLength", value: 100}
+        ],
+        username: [
+          {rule: "minLength", value: 3},
+          {rule: "maxLength", value: 30},
+          {
+            rule: "customRegexp",
+            value: /^[a-z0-9-]+$/,
+            errorMessage: "Username must contain only lowercase letters, numbers, and hyphens"
+          },
+          {
+            rule: "custom",
+            validator: (value) => !value.startsWith("-") && !value.endsWith("-"),
+            errorMessage: "Username cannot start or end with a hyphen"
+          },
+          {
+            rule: "custom",
+            validator: (value) => !value.includes("--"),
+            errorMessage: "Username cannot contain consecutive hyphens"
+          },
+          {
+            rule: "custom",
+            validator: (value) => {
+              const _username_blacklist = [
+                "api", "exams", "exams-fragment", "contacts", "categories", "tags", "users", "users-fragment", "login",
+                "login-callback", "logout", "logout-callback", "me", "privacy-policy", "rules",
+                "terms-of-service", "earn-with-us", "popular", "utils"
+              ]
+              return !_username_blacklist.includes(value)
+            },
+            errorMessage: "This word can't be a username"
+          }
+        ],
+        github_username: [
+          {rule: "minLength", value: 1},
+          {rule: "maxLength", value: 39},
+          {
+            rule: "customRegexp",
+            value: /^[a-zA-Z0-9-]+$/,
+            errorMessage: "GitHub must contain only letters, numbers, and hyphens"
+          },
+          {
+            rule: "custom",
+            validator: (value) => !value.startsWith("-") && !value.endsWith("-"),
+            errorMessage: "GitHub username cannot start or end with a hyphen"
+          },
+          {
+            rule: "custom",
+            validator: (value) => !value.includes("--"),
+            errorMessage: "GitHub username cannot contain consecutive hyphens"
+          }
+        ],
+        bmc_username: [
+          {rule: "minLength", value: 1},
+          {rule: "maxLength", value: 50},
+          {
+            rule: "customRegexp",
+            value: /^[a-zA-Z0-9.]+$/,
+            errorMessage: "BMC username must contain only letters, numbers, and dots"
+          },
+          {
+            rule: "custom",
+            validator: (value) => !value.startsWith(".") && !value.endsWith("."),
+            errorMessage: "BMC username cannot start or end with a dot"
+          },
+          {
+            rule: "custom",
+            validator: (value) => !value.includes(".."),
+            errorMessage: "BMC username cannot contain consecutive dots"
+          }
+        ],
+        headline: [
+          {rule: "minLength", value: 1},
+          {rule: "maxLength", value: 150}
+        ],
+        about: [
+          {rule: "minLength", value: 1},
+          {rule: "maxLength", value: 2000}
+        ],
+        website: [
+          {
+            rule: "customRegexp",
+            value: /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/,
+            errorMessage: "Website must be a valid URL"
+          }
+        ],
+        address: [
+          {rule: "minLength", value: 1},
+          {rule: "maxLength", value: 255}
+        ]
+      },
+      onSuccess: (res) => {
+        if (res) window.location.href = res
+      },
+      successMessage: "Profile updated!"
+    })
+
+  })
+</script>

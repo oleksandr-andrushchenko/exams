@@ -227,7 +227,7 @@ def check_user(doc, followers_count: int, following_count: int, follow_control: 
 
 
 def check_exams(doc, exams_count: int, unpublished_control: bool, rejected_control: bool, tags_control: bool,
-                   popular_control: bool, exam_aliases: list[str], css_id="exams"):
+                popular_control: bool, exam_aliases: list[str], css_id="exams"):
     main_el = doc("main")
     exams_el = main_el("#" + css_id)
     if exams_count:
@@ -304,9 +304,9 @@ def check_latest_exam_comments(doc, comments_count: int, comment_texts: list[str
 
 def check_index(doc):
     check_exams(doc, exams_count=0, unpublished_control=False, rejected_control=False, tags_control=False,
-                   popular_control=False, exam_aliases=list(exam_ids.keys()), css_id="exams")
+                popular_control=False, exam_aliases=list(exam_ids.keys()), css_id="exams")
     check_exams(doc, exams_count=0, unpublished_control=False, rejected_control=False, tags_control=False,
-                   popular_control=False, exam_aliases=list(exam_ids.keys()), css_id="popular-exams")
+                popular_control=False, exam_aliases=list(exam_ids.keys()), css_id="popular-exams")
     check_latest_exam_comments(doc, comments_count=0, comment_texts=[])
     check_users(doc, users_count=0, banned_control=False, popular_control=False, user_aliases=[], css_id="users")
     check_users(doc, users_count=3, banned_control=False, popular_control=False, user_aliases=list(user_ids.keys()),
@@ -375,7 +375,7 @@ def test_guest_user_get_user(guest_client, user_alias):
     check_user(doc, followers_count=0, following_count=0, follow_control=False, block_control=False, user_alias=None,
                activate_control=False, ban_control=False)
     check_exams(doc, exams_count=0, unpublished_control=False, rejected_control=False, tags_control=False,
-                   popular_control=False, exam_aliases=list(exam_ids.keys()), css_id="exams")
+                popular_control=False, exam_aliases=list(exam_ids.keys()), css_id="exams")
 
 
 @pytest.mark.parametrize("user_alias", ["regular_2", "root"])
@@ -385,7 +385,7 @@ def test_regular_user_get_other_user(regular_user_client, user_alias):
     check_user(doc, followers_count=0, following_count=0, follow_control=True, block_control=True, user_alias=None,
                activate_control=False, ban_control=False)
     check_exams(doc, exams_count=0, unpublished_control=False, rejected_control=False, tags_control=False,
-                   popular_control=False, exam_aliases=list(exam_ids.keys()), css_id="exams")
+                popular_control=False, exam_aliases=list(exam_ids.keys()), css_id="exams")
 
 
 def test_regular_user_get_self_user(regular_user_client):
@@ -395,7 +395,7 @@ def test_regular_user_get_self_user(regular_user_client):
     check_user(doc, followers_count=0, following_count=0, follow_control=False, block_control=False,
                user_alias=user_alias, activate_control=False, ban_control=False)
     check_exams(doc, exams_count=0, unpublished_control=True, rejected_control=True, popular_control=False,
-                   tags_control=False, exam_aliases=list(exam_ids.keys()), css_id="exams")
+                tags_control=False, exam_aliases=list(exam_ids.keys()), css_id="exams")
 
 
 def test_root_user_get_user(root_user_client):
@@ -405,7 +405,7 @@ def test_root_user_get_user(root_user_client):
     check_user(doc, followers_count=0, following_count=0, follow_control=True, block_control=True,
                user_alias=user_alias, activate_control=False, ban_control=True)
     check_exams(doc, exams_count=0, unpublished_control=True, rejected_control=True, popular_control=False,
-                   tags_control=False, exam_aliases=list(exam_ids.keys()), css_id="exams")
+                tags_control=False, exam_aliases=list(exam_ids.keys()), css_id="exams")
 
 
 def test_guest_user_get_users(guest_client):
@@ -429,19 +429,19 @@ def test_root_user_get_users(root_user_client):
 def test_guest_user_get_exams(guest_client):
     doc = get_exams(guest_client)
     check_exams(doc, exams_count=0, unpublished_control=False, rejected_control=False, tags_control=True,
-                   popular_control=True, exam_aliases=list(exam_ids.keys()), css_id="exams")
+                popular_control=True, exam_aliases=list(exam_ids.keys()), css_id="exams")
 
 
 def test_regular_user_get_exams(regular_user_client):
     doc = get_exams(regular_user_client)
     check_exams(doc, exams_count=0, unpublished_control=False, rejected_control=False, tags_control=True,
-                   popular_control=True, exam_aliases=list(exam_ids.keys()), css_id="exams")
+                popular_control=True, exam_aliases=list(exam_ids.keys()), css_id="exams")
 
 
 def test_root_user_get_exams(root_user_client):
     doc = get_exams(root_user_client)
     check_exams(doc, exams_count=0, unpublished_control=True, rejected_control=True, tags_control=True,
-                   popular_control=True, exam_aliases=list(exam_ids.keys()), css_id="exams")
+                popular_control=True, exam_aliases=list(exam_ids.keys()), css_id="exams")
 
 
 @pytest.mark.parametrize("user_alias", ["regular", "root"])
@@ -554,48 +554,6 @@ def test_index_shows_latest_exam_comments(guest_client):
     assert comment_texts[3] in comments[-1]
     assert comment_texts[0] not in doc("#latest-exam-comments").text()
     assert exam_title in doc("#latest-exam-comments").text()
-
-
-@pytest.mark.parametrize(("legacy_path", "exam_path"), [
-    ("/posts", "/exams"),
-    ("/post", "/exams"),
-    ("/posts/new", "/exams/new"),
-    ("/post/new", "/exams/new"),
-    ("/posts/example-id", "/exams/example-id"),
-    ("/post/example-id", "/exams/example-id"),
-    ("/posts/example-id/edit", "/exams/example-id/edit"),
-    ("/post/example-id/edit", "/exams/example-id/edit"),
-    ("/latest/python/posts", "/latest/python/exams"),
-])
-def test_legacy_exam_page_urls_redirect_to_exams(guest_client, legacy_path, exam_path):
-    response = get(guest_client, f"{legacy_path}?limit=5", allow_redirects=False)
-    assert response.status_code == 308
-    assert response.headers["location"] == f"{exam_path}?limit=5"
-
-
-@pytest.mark.parametrize(("method", "legacy_path", "exam_path"), [
-    ("get", "/posts-fragment", "/exams-fragment"),
-    ("get", "/users/example-id/posts-fragment", "/users/example-id/exams-fragment"),
-    ("post", "/posts", "/exams"),
-    ("patch", "/posts/example-id", "/exams/example-id"),
-    ("post", "/posts/example-id/status", "/exams/example-id/status"),
-    ("post", "/posts/example-id/impression", "/exams/example-id/impression"),
-    ("post", "/posts/example-id/comment", "/exams/example-id/comment"),
-    ("patch", "/posts/example-id/comments/example-comment-id",
-     "/exams/example-id/comments/example-comment-id"),
-    ("get", "/post-tags/example-tag/edit", "/tags/example-tag/edit"),
-    ("get", "/post-tags", "/tags"),
-    ("patch", "/post-tags/example-tag", "/tags/example-tag"),
-])
-def test_legacy_exam_endpoint_urls_preserve_method_and_redirect(
-        guest_client, method, legacy_path, exam_path):
-    request = {"get": get, "post": post, "patch": patch}[method]
-    kwargs = {"allow_redirects": False}
-    if method != "get":
-        kwargs["json"] = {}
-    response = request(guest_client, f"{legacy_path}?limit=5", **kwargs)
-    assert response.status_code == 308
-    assert response.headers["location"] == f"{exam_path}?limit=5"
 
 
 @pytest.mark.parametrize("path", [
@@ -1259,33 +1217,6 @@ def test_exam_published_dispatch_matches_combinations_excludes_author_and_render
 def test_logout_endpoint_wrong_method_failure(guest_client):
     failure = post(guest_client, "/logout", json={})
     assert failure.status_code == 405
-
-
-def test_legacy_slug_urls_redirect_only_for_existing_entities(guest_client):
-    exam_id = functional_state["exam_id"]
-    exam_slug = functional_state["exam_slug"]
-    for legacy_path, canonical_path in [
-        ("/root-functional", "/@root-functional"),
-        (f"/root-functional/{exam_slug}", f"/@root-functional/{exam_slug}"),
-        (f"/root-functional/posts/{exam_id}", f"/@root-functional/{exam_slug}"),
-        (f"/root-functional/root-functional/{exam_slug}",
-         f"/@root-functional/{exam_slug}"),
-    ]:
-        response = get(guest_client, f"{legacy_path}?limit=5&offset=2", allow_redirects=False)
-        assert response.status_code == 308
-        assert response.headers["Location"].endswith(f"{canonical_path}?limit=5&offset=2")
-
-    for path in [
-        "/missing-functional-user",
-        "/root-functional/missing-functional-exam",
-        f"/missing-functional-user/{exam_slug}",
-        "/root-functional/posts/missing-functional-exam",
-        f"/missing-functional-user/posts/{exam_id}",
-        f"/root-functional/different-user/{exam_slug}",
-    ]:
-        response = get(guest_client, path, allow_redirects=False)
-        assert response.status_code == 404
-        assert "Location" not in response.headers
 
 
 @pytest.mark.parametrize("path", [

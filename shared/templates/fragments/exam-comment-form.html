@@ -1,6 +1,4 @@
-<form id="exam-comment-form" novalidate data-form-handler="exam-comment"
-      data-submit-url="{{ url('update-exam-comment', exam_id=exam.id, exam_comment_id=exam_comment.id, absolute=True) if exam_comment else url('create-exam-comment', exam_id=exam.id, absolute=True) }}"
-      data-method="{{ 'PATCH' if exam_comment else 'POST' }}">
+<form id="exam-comment-form" novalidate>
     <div class="form-group">
         <label class="w-100">
             <textarea class="form-control" id="text" name="text" placeholder="Write a comment" required
@@ -13,3 +11,24 @@
         {% if exam_comment %}Update{% else %}Add{% endif %} exam comment
     </button>
 </form>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    {% set form_url = url('update-exam-comment', exam_id=exam.id, exam_comment_id=exam_comment.id, absolute=True) if exam_comment
+    else url('create-exam-comment', exam_id=exam.id, absolute=True) %}
+    handleFormSubmit("#exam-comment-form", {{ form_url | tojson }}, {
+      method: "{{ 'PATCH' if exam_comment else 'POST' }}",
+      rules: {
+        text: [
+          {rule: "required"},
+          {rule: "minLength", value: 1},
+          {rule: "maxLength", value: 5_000}
+        ],
+      },
+      onSuccess: (res) => {
+        if (res) window.location.href = res
+      },
+      successMessage: "Comment added!"
+    })
+  })
+</script>

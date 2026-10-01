@@ -4,10 +4,13 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import PlainTextResponse
 from starlette.routing import Match
 
+from certification_utils import get_certification, get_certifications
 from notifications import get_access_log
 from query_dtos import (
     TagQueryDTO,
 )
+from question_utils import get_all_questions, get_question_by_id, get_questions
+from session_utils import get_session, get_sessions
 from shared_deps import (
     OptCurUserDep,
     CurUserDep,
@@ -19,6 +22,7 @@ from shared_deps import (
     TagQueryDep,
     CategoryDep,
 )
+from shared_utils import ExamNotFoundError, get_exam
 from shared_utils import (find_category, find_exam_by_slug_follow_redirects, find_user_by_username_follow_redirects,
                           get_categories, get_category, get_static_base_url, get_tags, get_web_base_url)
 from web import (
@@ -88,15 +92,7 @@ from web_utils import (
     get_user_activities,
     get_user_tag_subscription_for_tags,
     get_user_tag_subscriptions,
-    get_legacy_user_redirect_url,
-    get_legacy_exam_redirect_url,
-    get_legacy_exam_id_redirect_url,
 )
-
-from shared_utils import ExamNotFoundError, get_exam
-from question_utils import get_all_questions, get_question, get_question_by_id, get_questions
-from certification_utils import get_certification, get_certifications
-from session_utils import get_session, get_sessions
 
 app = Application()
 app.add_middleware(TrailingSlashMiddleware)
@@ -144,24 +140,6 @@ if not is_prod():
                 return FileResponse(file_path)
         return await call_next(request)
 
-
-@app.middleware("http")
-async def redirect_legacy_static_files(request: Request, call_next):
-    path = request.url.path
-    static_base_url = get_static_base_url()
-    if (
-            static_base_url
-            and request.method in {"GET", "HEAD"}
-            and "." in path
-            and path != "/robots.txt"
-    ):
-        url = f"{static_base_url.rstrip('/')}{path}"
-        if request.url.query:
-            url += f"?{request.url.query}"
-        return RedirectResponse(url, status_code=308)
-    return await call_next(request)
-
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=get_allowed_origins(),
@@ -177,38 +155,6 @@ async def add_no_robots_to_auth_endpoints(request: Request, call_next):
     if request.url.path.rstrip("/") in WEB_AUTH_URL_ROUTES.values():
         response.headers["X-Robots-Tag"] = "noindex, nofollow"
     return response
-
-
-@app.middleware("http")
-async def redirect_legacy_web_endpoints(request: Request, call_next):
-    path = request.url.path
-    replacements = (
-        ("/post-tags", "/tags"),
-        ("/posts-fragment", "/exams-fragment"),
-    )
-    for old, new in replacements:
-        if old in path:
-            path = path.replace(old, new, 1)
-            url = path + (f"?{request.url.query}" if request.url.query else "")
-            return RedirectResponse(url=url, status_code=308)
-
-    if request.method in {"GET", "HEAD"} and not any(
-            route.matches(request.scope)[0] == Match.FULL for route in app.routes):
-        slugs = [part for part in path.split("/") if part]
-        url = None
-        if len(slugs) == 1:
-            url = get_legacy_user_redirect_url(request, slugs[0])
-        elif len(slugs) == 2:
-            url = get_legacy_exam_redirect_url(request, slugs[0], slugs[1])
-        elif len(slugs) == 3 and slugs[1] == "posts":
-            url = get_legacy_exam_id_redirect_url(request, slugs[0], slugs[2])
-        elif len(slugs) == 3 and slugs[0] == slugs[1]:
-            url = get_legacy_exam_redirect_url(request, slugs[0], slugs[2])
-        if url:
-            if request.url.query:
-                url += f"?{request.url.query}"
-            return RedirectResponse(url=url, status_code=308)
-    return await call_next(request)
 
 
 @app.middleware("http")
@@ -478,31 +424,6 @@ async def exam_page_by_slugs(exam: ExamBySlugsDep, cur_user: OptCurUserDep) -> H
 @route("get", "exams-by-slugs", response_class=HTMLResponse)
 async def exams_page_by_slugs(query_dto: ExamQueryBySlugsDep, cur_user: OptCurUserDep) -> HTMLResponse:
     return await _exams_page(query_dto, cur_user)
-
-
-def _legacy_exams_redirect(request: Request) -> RedirectResponse:
-    path = request.url.path
-    if path == "/posts" or path.startswith("/posts/"):
-        path = "/exams" + path[len("/posts"):]
-    elif path == "/post" or path.startswith("/post/"):
-        path = "/exams" + path[len("/post"):]
-    elif path.endswith("/posts"):
-        path = path[:-len("/posts")] + "/exams"
-    url = path + (f"?{request.url.query}" if request.url.query else "")
-    return RedirectResponse(url=url, status_code=308)
-
-
-@route("get", "legacy-posts")
-@route("get", "legacy-singular-exams")
-@route("get", "legacy-new-exam")
-@route("get", "legacy-singular-new-exam")
-@route("get", "legacy-exam")
-@route("get", "legacy-singular-exam")
-@route("get", "legacy-edit-exam")
-@route("get", "legacy-singular-edit-exam")
-@route("get", "legacy-posts-by-slugs")
-async def legacy_exams_redirect(request: Request) -> RedirectResponse:
-    return _legacy_exams_redirect(request)
 
 
 @route("get", "contacts", response_class=HTMLResponse)

@@ -26,11 +26,18 @@
                         Use this after publishing or updating content to improve indexing speed.
                     </p>
 
-                    <form id="generate-sitemap-form" novalidate data-form-handler="generate-sitemap"
-                          data-submit-url="{{ url('generate-sitemap', absolute=True) }}" data-method="POST">
+                    <form id="generate-sitemap-form" novalidate>
                         <button class="btn btn-primary" type="submit">Generate & Notify</button>
                     </form>
 
+                    <script>
+                        document.addEventListener("DOMContentLoaded", () => {
+                            handleFormSubmit("#generate-sitemap-form", {{ url("generate-sitemap", absolute=True) | tojson }}, {
+                                method: "POST",
+                                onSuccess: (res) => `Sitemap generated!<br>URLs count: ${res.urls_count}, Sitemap URL: <a href="${res.sitemap_url}" target="_blank">${res.sitemap_url}</a>`,
+                            })
+                        })
+                    </script>
                 </section>
             </div>
         {% endif %}
@@ -44,8 +51,7 @@
                         Invalidate files cached by static asset CloudFront.
                     </p>
 
-                    <form id="drop-cdn-cache-form" novalidate data-form-handler="drop-cdn-cache"
-                          data-submit-url="{{ url('drop-cdn-cache', absolute=True) }}" data-method="POST">
+                    <form id="drop-cdn-cache-form" novalidate>
                         <label class="form-label" for="cdn-cache-paths">Paths</label>
                         <input id="cdn-cache-paths" class="form-control mb-3" name="paths" type="text"
                                value="/robots.txt,/sitemap.xml,/scripts.js,/styles.css"
@@ -53,6 +59,33 @@
                         <button class="btn btn-primary" type="submit">Drop</button>
                     </form>
 
+                    <script>
+                        document.addEventListener("DOMContentLoaded", () => {
+                            const pathInput = document.querySelector("#cdn-cache-paths")
+                            const pathTagify = new Tagify(pathInput, {
+                                duplicates: false,
+                                dropdown: {enabled: 0},
+                                transformTag(tagData) {
+                                    tagData.value = tagData.value.trim()
+                                    tagData.name = tagData.value
+                                }
+                            })
+
+                            pathTagify.on("remove", () => {
+                                setTimeout(() => {
+                                    if (!pathTagify.value.length) pathTagify.addTags(["/robots.txt"])
+                                }, 0)
+                            })
+
+                            handleFormSubmit("#drop-cdn-cache-form", {{ url("drop-cdn-cache", absolute=True) | tojson }}, {
+                                method: "POST",
+                                prepareData: () => ({
+                                    paths: pathTagify.value.map(path => path.value)
+                                }),
+                                onSuccess: (res) => `CDN cache dropped!<br>Items count: ${res.items_count}`,
+                            })
+                        })
+                    </script>
                 </section>
             </div>
         {% endif %}

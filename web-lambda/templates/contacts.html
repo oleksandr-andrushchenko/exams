@@ -38,8 +38,7 @@
 
     <div class="row g-5">
         <div class="{{ ({"def": 12, "lg": 6, "xl": 8} if show_details else {"def": 12}) | col_classes }} d-flex flex-column gap-4">
-            <form class="row g-3" id="contact-form" novalidate data-form-handler="contact"
-                  data-submit-url="{{ url('create-contact-message', absolute=True) }}">
+            <form class="row g-3" id="contact-form" novalidate>
                 <label class="{{ {"def": 12} | col_classes }}">
                     <input type="text" class="form-control" id="name" name="name" placeholder="Your Name"
                            value="{{ cur_user.name if cur_user else '' }}" required>
@@ -107,4 +106,28 @@
         {% endif %}
     </div>
 
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        handleFormSubmit("#contact-form", {{ url('create-contact-message', absolute=True) | tojson }}, {
+          rules: {
+            name: [
+              {rule: "required"},
+              {rule: "minLength", value: 2},
+              {rule: "maxLength", value: 100}
+            ],
+            email: [
+              {rule: "required"},
+              {rule: "email"}
+            ],
+            message: [
+              {rule: "required"},
+              {rule: "minLength", value: 5},
+              {rule: "maxLength", value: 1000}
+            ]
+          },
+          successMessage: "Message sent!",
+          authRequired: false
+        })
+      })
+    </script>
 {% endblock %}

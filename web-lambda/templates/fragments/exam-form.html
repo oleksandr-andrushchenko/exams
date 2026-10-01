@@ -1,6 +1,4 @@
-<form id="exam-form" novalidate data-form-handler="exam"
-      data-submit-url="{{ url('update-exam', exam_id=exam.id, absolute=True) if exam else url('create-exam', absolute=True) }}"
-      data-method="{{ 'PATCH' if exam else 'POST' }}">
+<form class="row" id="exam-form" novalidate>
     <div>
         <label class="w-100">
             <textarea class="form-control h1 border-0" id="title" name="title" placeholder="Title"
@@ -71,3 +69,20 @@
         </button>
     </div>
 </form>
+
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    handleFormSubmit("#exam-form", {{ (url('update-exam', exam_id=exam.id, absolute=True) if exam else url('create-exam', absolute=True)) | tojson }}, {
+      method: "{{ 'PATCH' if exam else 'POST' }}",
+      rules: {
+        title: [{rule: "required"}, {rule: "minLength", value: 2}, {rule: "maxLength", value: 500}],
+        description: [{rule: "required"}, {rule: "minLength", value: 10}, {rule: "maxLength", value: 500}],
+        tags: [{rule: "required"}, {rule: "tags", minCnt: 1, maxCnt: 3, minLen: 2, maxLen: 40}],
+        category: [{rule: "required"}]
+      },
+      onSuccess: (res) => res && (window.location.href = res),
+      successMessage: "Exam created!"
+    })
+  })
+</script>

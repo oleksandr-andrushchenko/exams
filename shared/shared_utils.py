@@ -25,8 +25,8 @@ from zoneinfo import ZoneInfo
 from jinja2 import Environment, FileSystemLoader, pass_context, select_autoescape
 
 from api_route_metadata import API_URL_ROUTES
-from exam_dtos import (ExamCommentImpressionAction, ExamImpressionAction)
 from basic_dtos import UserTokenDTO
+from exam_dtos import (ExamCommentImpressionAction, ExamImpressionAction)
 from notifications import configure_telegram_logging
 from query_dtos import (BaseQueryDTO, ExamCommentQueryDTO, ExamQueryDTO, ExamQueryType, ExamStatus,
                         TagQueryDTO, TagQueryType, UserQueryDTO, UserQueryType, UserStatus)
@@ -1845,7 +1845,7 @@ def add_dynamodb_user_update_transact(transacts: list, user: User, changes: dict
 
 
 def add_dynamodb_exam_update_transact(transacts: list, exam: Exam, changes: dict[str, Any] | None = None,
-                                         deltas: dict[str, Any] | None = None) -> None:
+                                      deltas: dict[str, Any] | None = None) -> None:
     return add_dynamodb_obj_update_transact(transacts, exam, (f"EXAM#{exam.id}", "META"), changes=changes,
                                             deltas=deltas)
 

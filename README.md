@@ -18,38 +18,37 @@
   delete-code-infra    Delete code CF stack
   delete-infra         Delete CF stack
   deploy               Deploy certificates, code bucket, Lambdas, application, and static files
+  deploy-api-lambda    Build, upload, and deploy only the API Lambda
   deploy-cert-infra    Deploy ACM certificate for the domain
   deploy-code-files    Zip and upload Lambda code to S3
-  deploy-web-lambda    Build, upload, and deploy only the Web Lambda
-  deploy-api-lambda    Build, upload, and deploy only the API Lambda
-  deploy-img-lambda    Build, upload, and deploy only the Image Lambda
   deploy-code-infra    Deploy S3 bucket for Lambda / CloudFront code
+  deploy-img-lambda    Build, upload, and deploy only the Image Lambda
   deploy-infra         Deploy CF stack for the site
   deploy-site-files    Sync local site files to S3
+  deploy-web-lambda    Build, upload, and deploy only the Web Lambda
   down                 Stop local Docker containers
+  drop-cdn-cache       Invalidate CloudFront cache for the site
   drop-local-dynamodb  Drop DynamoDB table in local DynamoDB
   fetch-local-dynamodb Fetch 100 records from local DynamoDB
-  generate-code-files  Build all Lambda zips
-  generate-web-lambda-code-files  Build the Web Lambda zip
-  generate-api-lambda-code-files  Build the API Lambda zip
-  generate-img-lambda-code-files  Build the Image Lambda zip
-  # Individual deploy-* targets also upload the selected artifact and update only that Lambda
+  generate-api-lambda-code-files Build the API Lambda ZIP
+  generate-code-files  Build all Lambda ZIPs
+  generate-img-lambda-code-files Build the Image Lambda ZIP
   generate-site-files  Run content generator inside Docker container
-  get-cert-arn         Show the CloudFront ACM certificate ARN
+  generate-web-lambda-code-files Build the Web Lambda ZIP
   get-cert-infra       Show cert CF stack events
   get-code-infra       Show code CF stack events
   get-infra            Show CF stack events
   help                 Show this help
-  invalidate           Invalidate CloudFront cache for the site
   login                Open shell in Docker container
   login-scripts        Open shell in scripts Docker container
-  logs                 Show logs of Docker container
+  logs                 Show logs of Docker containers
   open                 Show local site URL
   rebuild              Rebuild and start Docker containers
   recreate-local-dynamodb Recreate DynamoDB table in local DynamoDB & populate dummy data
   restart              Restart local Docker containers
+  scripts-up           Start the scripts container and local DynamoDB
   tail-scripts-logs    Tail scripts logs
-  tests                Run the test suite in the isolated test Docker Compose stack
+  tests                Run the full test suite in the isolated Docker Compose stack
   up                   Start local Docker containers
 ```
 
@@ -117,7 +116,6 @@ custom domain, with no `/api` path prefix.
 - add aria attributes (+allow them in tinymce)
 - add footer tag for post/exams, put related exams (Like "Futher reading", based on tags)
 - replace env secrets with secrets manager storage (CS becomes slower)
-- jpeg images have problems with dimensions determination (on uploads)
 - add image watermarks
 - add author to the footer
 - update logo in google auth
@@ -132,8 +130,6 @@ custom domain, with no `/api` path prefix.
 - cover all the avaiable web/API endpoints with integrations tests
 - refactor exam voting: vote from 0 to 5 (by star selection), user rating recalculated from exam rating
 - tags aliases: for example: cache=caching, cdn=content-delivery-network, etc.
-- exam page: similar exams section shows no the all exams
-- exam page: auto append/generate "More Exams to Read" paragraph
 - add tags_url function
 - popular pages are empty, for example: aws/exams and popular/aws/exams
 - instead of having exam slug uniqueness we should have user_id + exam slug uniqueness
@@ -166,14 +162,14 @@ TELEGRAM_LOG_LEVEL=INFO
 
 `TELEGRAM_LOG_LEVEL` controls Telegram independently of the console threshold:
 
-| Level | Records delivered |
-| --- | --- |
-| DEBUG | All application logs, including request diagnostics |
+| Level          | Records delivered                                       |
+|----------------|---------------------------------------------------------|
+| DEBUG          | All application logs, including request diagnostics     |
 | INFO (default) | Activity, other informational logs, warnings and errors |
-| WARNING | Warnings, errors and critical failures |
-| ERROR | Errors and critical failures |
-| CRITICAL | Critical failures only |
-| OFF | None |
+| WARNING        | Warnings, errors and critical failures                  |
+| ERROR          | Errors and critical failures                            |
+| CRITICAL       | Critical failures only                                  |
+| OFF            | None                                                    |
 
 Missing credentials disable the handler. Invalid levels disable it with a console
 diagnostic. This replaces `TELEGRAM_EVENTS_ENABLED` / `TELEGRAM_ERRORS_ENABLED`.
@@ -185,7 +181,8 @@ Activity records cover newly saved users, exams, comments, contact messages,
 and exam status changes. Existing-user logins do not log registration events.
 Web/API exception handlers log unexpected exceptions and HTTP 5xx exceptions at
 ERROR, and handled HTTP 4xx exceptions at INFO. Returning a 5xx response directly
-does not trigger an exception handler; log the failure where it occurs. Existing logged failures, including publication email failures, also
+does not trigger an exception handler; log the failure where it occurs. Existing logged failures, including publication
+email failures, also
 reach Telegram at the configured level. Handled HTTP 4xx diagnostics use INFO.
 
 The Telegram formatter includes stage, severity, logger name, message, exception

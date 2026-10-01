@@ -54,6 +54,8 @@ from api_utils import (
     delete_tag_subscription,
     update_category,
 )
+from certification_dtos import CertificationDTO
+from certification_utils import create_certification, get_certifications
 from deps import (
     ImageFileDTODep,
     ExamCommentQueryDep,
@@ -71,6 +73,10 @@ from deps import (
     UpdateCategoryDTODep,
 )
 from notifications import get_access_log
+from question_dtos import QuestionDTO, UpdateQuestionDTO
+from question_utils import Question, create_question, delete_question, get_question, get_questions, update_question
+from session_dtos import AnswerDTO
+from session_utils import answer_question, complete_session, create_session, get_session, get_sessions
 from shared_deps import (
     OptCurUserDep,
     CurUserDep,
@@ -92,13 +98,6 @@ from web import Application, Request, HTTPException, HTMLResponse, JSONResponse,
     RequestValidationError, CORSMiddleware
 from web import TrailingSlashMiddleware
 
-from question_dtos import QuestionDTO, UpdateQuestionDTO
-from certification_dtos import CertificationDTO
-from certification_utils import create_certification, get_certifications
-from question_utils import Question, create_question, delete_question, get_question, get_questions, update_question
-from session_dtos import AnswerDTO
-from session_utils import answer_question, complete_session, create_session, get_session, get_sessions
-
 app = Application()
 app.add_middleware(TrailingSlashMiddleware)
 
@@ -115,14 +114,15 @@ def route(method, name, **kwargs):
     return getattr(app, method)(API_URL_ROUTES[name], name=name, **kwargs)
 
 
-@route("get", "certifications", response_class=JSONResponse)
+@route("get", "api-certifications", response_class=JSONResponse)
 async def _get_certifications():
     return get_certifications()
 
 
-@route("post", "create-certification", response_class=JSONResponse)
-async def _create_certification(certification: CertificationDTO, cur_user: CurUserDep):
-    return create_certification(certification, cur_user)
+@route("post", "create-certification", response_class=JSONResponse, status_code=201)
+async def _create_certification(request: Request, certification: CertificationDTO, cur_user: CurUserDep) -> str:
+    certification = create_certification(certification, cur_user)
+    return get_url(request, "certification", slug=certification.slug)
 
 
 from web_route_metadata import WEB_URL_ROUTES
@@ -137,25 +137,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.middleware("http")
-async def redirect_legacy_api_endpoints(request: Request, call_next):
-    path = request.url.path
-    replacements = (
-        ("/posts", "/exams"),
-        ("/post-tags", "/tags"),
-    )
-    for old, new in replacements:
-        # In the combined local test app, GET /posts belongs to the web
-        # Lambda; API legacy writes still use the redirect below.
-        if old == "/posts" and request.method == "GET":
-            continue
-        if old in path:
-            path = path.replace(old, new, 1)
-            url = path + (f"?{request.url.query}" if request.url.query else "")
-            return RedirectResponse(url=url, status_code=308)
-    return await call_next(request)
 
 
 @app.middleware("http")
@@ -262,7 +243,7 @@ async def exams_fragment(query_dto: ExamQueryDep, cur_user: OptCurUserDep) -> st
     })
 
 
-@route("get", "exams", response_class=JSONResponse)
+@route("get", "api-exams", response_class=JSONResponse)
 async def _exams(cur_user: OptCurUserDep, request: Request) -> dict[str, str]:
     exams = await asyncio.to_thread(get_all_exams, cur_user)
     return {get_exam_url(request, exam): exam.title for exam in exams}
@@ -281,10 +262,9 @@ async def exam_comments_fragment(exam: ExamDep, query_dto: ExamCommentQueryDep) 
 
 
 @route("patch", "update-exam", response_class=JSONResponse)
-async def _update_exam(exam: ExamDep, update_exam_dto: UpdateExamDTODep, cur_user: CurUserDep,
-                          request: Request) -> str:
+async def _update_exam(exam: ExamDep, update_exam_dto: UpdateExamDTODep, cur_user: CurUserDep, request: Request) -> str:
     try:
-        update_exam(exam, update_exam_dto, cur_user, request)
+        update_exam(exam, update_exam_dto, cur_user)
         return get_exam_url(request, exam)
     except SlugDuplicationError as e:
         raise HTTPException(status_code=409, detail=e.to_dict())
@@ -292,15 +272,15 @@ async def _update_exam(exam: ExamDep, update_exam_dto: UpdateExamDTODep, cur_use
 
 @route("post", "update-exam-status", response_class=JSONResponse)
 async def _update_exam_status(exam: ExamDep, update_exam_status_dto: UpdateExamStatusDTODep,
-                                 cur_user: CurUserDep, request: Request) -> str:
-    update_exam_status(exam, update_exam_status_dto, cur_user, request)
+                              cur_user: CurUserDep, request: Request) -> str:
+    update_exam_status(exam, update_exam_status_dto, cur_user)
     return get_exam_url(request, exam)
 
 
 @route("post", "update-exam-impression", response_class=HTMLResponse)
 async def _update_exam_impression(exam: ExamDep, update_exam_impression_dto: UpdateExamImpressionDTODep,
-                                     cur_user: CurUserDep, request: Request) -> str:
-    update_exam_impression(exam, update_exam_impression_dto, cur_user, request)
+                                  cur_user: CurUserDep, request: Request) -> str:
+    update_exam_impression(exam, update_exam_impression_dto, cur_user)
     (
         exam,
         exam_impression,
@@ -317,16 +297,16 @@ async def _update_exam_impression(exam: ExamDep, update_exam_impression_dto: Upd
 
 @route("post", "create-exam-comment", response_class=JSONResponse)
 async def _create_exam_comment(exam: ExamDep, exam_comment_dto: ExamCommentDTO, cur_user: CurUserDep,
-                                  request: Request) -> str:
-    exam_comment = create_exam_comment(exam, exam_comment_dto, cur_user, request)
+                               request: Request) -> str:
+    exam_comment = create_exam_comment(exam, exam_comment_dto, cur_user)
     return get_exam_comment_url(request, exam, exam_comment)
 
 
 @route("patch", "update-exam-comment",
        response_class=JSONResponse)
 async def _update_exam_comment(exam: ExamDep, exam_comment: ExamCommentDep,
-                                  update_exam_comment_dto: UpdateExamCommentDTODep, cur_user: CurUserDep,
-                                  request: Request) -> str:
+                               update_exam_comment_dto: UpdateExamCommentDTODep, cur_user: CurUserDep,
+                               request: Request) -> str:
     update_exam_comment(exam, exam_comment, update_exam_comment_dto, cur_user, request)
     return get_exam_comment_url(request, exam, exam_comment)
 
@@ -366,8 +346,7 @@ async def _create_tag_subscription(dto: TagSubscriptionDTODep, cur_user: CurUser
         raise HTTPException(status_code=409, detail=exc.to_dict())
 
 
-@route("delete", "delete-tag-subscription",
-       response_class=HTMLResponse)
+@route("delete", "delete-tag-subscription", response_class=HTMLResponse)
 async def _delete_tag_subscription(tag_subscription_id: str, cur_user: CurUserDep):
     try:
         tag_subscription = delete_tag_subscription(tag_subscription_id, cur_user)
@@ -383,26 +362,23 @@ async def _delete_tag_subscription(tag_subscription_id: str, cur_user: CurUserDe
 
 
 @route("patch", "update-tag", response_class=JSONResponse)
-async def _update_tag(update_tag_dto: UpdateTagDTODep, tag: TagDep,
-                      cur_user: CurUserDep,
-                      request: Request) -> str:
-    update_tag(tag, update_tag_dto, cur_user, request)
+async def _update_tag(update_tag_dto: UpdateTagDTODep, tag: TagDep, cur_user: CurUserDep, request: Request) -> str:
+    update_tag(tag, update_tag_dto, cur_user)
     return get_tag_url(request, tag)
 
 
-@route("get", "tags", response_class=JSONResponse)
+@route("get", "api-tags", response_class=JSONResponse)
 async def _get_tags(query_dto: TagQueryDep) -> list[Tag]:
     return get_tags(query_dto)
 
 
-@route("get", "get-categories", response_class=JSONResponse)
+@route("get", "api-categories", response_class=JSONResponse)
 async def _get_categories() -> list:
     return get_categories()
 
 
 @route("patch", "update-category", response_class=JSONResponse)
-async def _update_category(update_category_dto: UpdateCategoryDTODep,
-                           category: CategoryDep, cur_user: CurUserDep,
+async def _update_category(update_category_dto: UpdateCategoryDTODep, category: CategoryDep, cur_user: CurUserDep,
                            request: Request) -> str:
     update_category(category, update_category_dto, cur_user)
     return get_url(request, "categories", True)
@@ -424,16 +400,16 @@ async def users_fragment(query_dto: UserQueryDep, cur_user: OptCurUserDep) -> st
 
 
 @route("post", "update-user-status", response_class=JSONResponse)
-async def _update_user_status(user: UserDep, update_user_status_dto: UpdateUserStatusDTODep,
-                              cur_user: CurUserDep, request: Request) -> str:
-    update_user_status(user, update_user_status_dto, cur_user, request)
+async def _update_user_status(user: UserDep, update_user_status_dto: UpdateUserStatusDTODep, cur_user: CurUserDep,
+                              request: Request) -> str:
+    update_user_status(user, update_user_status_dto, cur_user)
     return get_user_url(request, user)
 
 
 @route("post", "update-user-impression", response_class=HTMLResponse)
 async def _update_user_impression(user: UserDep, update_user_impression_dto: UpdateUserImpressionDTODep,
                                   cur_user: CurUserDep, request: Request) -> str:
-    update_user_impression(user, update_user_impression_dto, cur_user, request)
+    update_user_impression(user, update_user_impression_dto, cur_user)
     (
         user,
         user_impression,
@@ -450,7 +426,7 @@ async def _update_user_impression(user: UserDep, update_user_impression_dto: Upd
 
 @route("patch", "update-user", response_class=JSONResponse)
 async def _update_user(update_user_dto: UpdateUserDTODep, user: UserDep, cur_user: CurUserDep, request: Request) -> str:
-    update_user(user, update_user_dto, cur_user, request)
+    update_user(user, update_user_dto, cur_user)
     return get_user_url(request, user)
 
 
@@ -483,16 +459,19 @@ async def _drop_cdn_cache(cur_user: CurUserDep, drop_cache_dto: DropCDNCacheDTOD
 async def _create_question(exam: ExamDep, question_dto: QuestionDTO, cur_user: CurUserDep) -> Question:
     return create_question(exam, question_dto, cur_user)
 
-@route("get", "get-questions", response_class=JSONResponse)
+
+@route("get", "api-questions", response_class=JSONResponse)
 async def _get_questions(exam_id: str) -> list[Question]:
     return get_questions(exam_id)
 
-@route("get", "get-question", response_class=JSONResponse)
+
+@route("get", "api-question", response_class=JSONResponse)
 async def _get_question(exam_id: str, question_id: str) -> Question:
     try:
         return get_question(exam_id, question_id)
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
 
 @route("patch", "update-question", response_class=JSONResponse)
 async def _update_question(exam_id: str, question_id: str, question_dto: UpdateQuestionDTO,
@@ -501,6 +480,7 @@ async def _update_question(exam_id: str, question_id: str, question_dto: UpdateQ
         return update_question(get_question(exam_id, question_id), question_dto, cur_user)
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
 
 @route("delete", "delete-question", status_code=204)
 async def _delete_question(exam_id: str, question_id: str, cur_user: CurUserDep) -> None:
@@ -515,12 +495,12 @@ async def _create_exam_session(exam_id: str, cur_user: CurUserDep):
     return create_session(exam_id, cur_user)
 
 
-@route("get", "get-exam-sessions", response_class=JSONResponse)
+@route("get", "api-exam-sessions", response_class=JSONResponse)
 async def _get_exam_sessions(cur_user: CurUserDep):
     return get_sessions(cur_user.id)
 
 
-@route("get", "get-exam-session", response_class=JSONResponse)
+@route("get", "api-exam-session", response_class=JSONResponse)
 async def _get_exam_session(session_id: str, cur_user: CurUserDep):
     try:
         return get_session(cur_user.id, session_id)
