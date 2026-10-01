@@ -1,0 +1,49 @@
+{% if exam.status != ExamStatus.PUBLISHED and cur_user and check_auth(cur_user, Permission.UPDATE_EXAM_STATUS) %}
+    <div class="input-group">
+        <!-- Publish Exam -->
+        {% set is_published = exam.status == ExamStatus.PUBLISHED %}
+        <button type="button"
+                class="btn {% if is_published %}btn-success active{% else %}btn-light btn-exam-publish{% endif %}"
+                data-exam-id="{{ exam.id }}"
+                data-status="{{ ExamStatus.PUBLISHED.value }}"
+                {% if not is_published %}
+                title="Publish this exam"
+                {% endif %}>
+            {% if is_published %}<i class="bi bi-check2-all"></i>{% endif %} {% if is_published %}Published{% else %}
+            Publish{% endif %}
+        </button>
+
+        <!-- Unpublish Exam -->
+        {% set is_unpublished = exam.status == ExamStatus.UNPUBLISHED %}
+        <button type="button"
+                class="btn {% if is_unpublished %}btn-warning active{% else %}btn-light btn-exam-unpublish{% endif %}"
+                data-exam-id="{{ exam.id }}"
+                data-status="{{ ExamStatus.UNPUBLISHED.value }}"
+                {% if not is_unpublished %}
+                title="Unpublish this exam"
+                {% endif %}>
+            {% if is_unpublished %}<i class="bi bi-clock"></i>{% endif %} {% if is_unpublished %}Unpublished{% else %}
+            Unpublish{% endif %}
+        </button>
+
+        <!-- Reject Exam -->
+        {% set is_rejected = exam.status == ExamStatus.REJECTED %}
+        <input type="text"
+               class="form-control"
+               name="comment"
+               id="comment"
+               placeholder="Rejection reason..."
+               value="{{ exam.comment if exam and exam.comment else '' }}"
+               {% if is_rejected %}disabled{% endif %}>
+        <button type="button"
+                class="btn {% if is_rejected %}btn-danger active{% else %}btn-light btn-exam-reject{% endif %}"
+                data-exam-id="{{ exam.id }}"
+                data-status="{{ ExamStatus.REJECTED.value }}"
+                {% if not is_rejected %}
+                title="Reject this exam"
+                {% endif %}>
+            {% if is_rejected %}<i class="bi bi-x-lg"></i>{% endif %} {% if is_rejected %}Rejected{% else %}
+            Reject{% endif %}
+        </button>
+    </div>
+{% endif %}

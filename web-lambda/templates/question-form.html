@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+{% set title = ("New question" if is_new else "Edit " ~ question.title) %}
+
+{% block breadcrumbs %}
+    {% if is_new %}
+        {% with breadcrumbs = {"Home": url("index"), "Exams": exams_url(), (exam.title): exam_url(exam), "Questions": exam_url(exam) ~ "#questions", "New": None} %}
+            {% include "fragments/breadcrumbs.html" %}
+        {% endwith %}
+    {% else %}
+        {% with breadcrumbs = {"Exams": exams_url(), (exam.title): exam_url(exam), "Questions": exam_url(exam) ~ "#questions", (question.title): None, "Edit": None} %}
+            {% include "fragments/breadcrumbs.html" %}
+        {% endwith %}
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    <h1>{{ title }}</h1>
+    <form id="question-form" class="vstack gap-3" novalidate
+          data-question-url="{{ url('create-question', exam_id=exam.id, absolute=True) if is_new else url('update-question', exam_id=exam.id, question_id=question.id, absolute=True) }}"
+          data-success-url="{{ url('question-by-id', question_id=question.id, absolute=True) if question else exam_url(exam) ~ '#questions' }}"
+          data-method="{{ 'POST' if is_new else 'PATCH' }}">
+        <label>Title<input class="form-control" name="title" required value="{{ question.title if question else "" }}"></label>
+        <label>Description<textarea class="form-control" name="description"
+                                    required>{{ question.description if question else "" }}</textarea></label>
+        <div>
+            <h2 class="h5">Choices</h2>
+            {% for index in range(4) %}
+                {% set choice = question.choices[index] if question and index < question.choices|length else none %}
+                <div class="card card-body mb-2">
+                    <label>Title<input class="form-control" name="choice_title" required
+                                       value="{{ choice.title if choice else "" }}"></label>
+                    <label>Description<input class="form-control" name="choice_description"
+                                             value="{{ choice.description if choice else "" }}"></label>
+                    <label class="mt-2"><input type="radio" name="correct_choice" value="{{ index }}"
+                                               {% if choice and choice.is_correct or not choice and index == 0 %}checked{% endif %}>
+                        Correct choice</label>
+                </div>
+            {% endfor %}
+        </div>
+        <button class="btn btn-dark align-self-start" type="submit">{{ "Create" if is_new else "Save" }} question
+        </button>
+    </form>
+{% endblock %}

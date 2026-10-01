@@ -1,40 +1,17 @@
-{% set examColumns = columns or { md: 4 } %}
-{% set examUser = exam.creator or { id: exam.creatorId } %}
-<article
-  class="col{% if examColumns.xs %}-{{ examColumns.xs }}{% else %}-12{% endif %}{% if examColumns.sm %} col-sm-{{ examColumns.sm }}{% endif %}{% if examColumns.md %} col-md-{{ examColumns.md }}{% endif %}{% if examColumns.lg %} col-lg-{{ examColumns.lg }}{% endif %}{% if examColumns.xl %} col-xl-{{ examColumns.xl }}{% endif %}{% if examColumns.xxl %} col-xxl-{{ examColumns.xxl }}{% endif %}"
->
-  <div class="card h-100 overflow-hidden shadow-sm">
-    {% if exam.imageFilename %}
-    <a href="{{ examUrl(exam) }}">
-      <img class="card-img-top object-fit-cover" src="{{ staticUrl(exam.imageFilename) }}" alt="" loading="lazy" />
-    </a>
-    {% endif %}
-    <div class="card-body d-flex flex-column gap-2">
-      <h2 class="h5 card-title mb-0 text-break">
-        <a class="link-body-emphasis text-decoration-none" href="{{ examUrl(exam) }}">{{ exam.name }}</a>
-      </h2>
-      {% set rating = exam.rating %}{% set ratingClass = "" %}{% include "fragments/rating.html" %}
-      <div class="small text-secondary">
-        <i class="bi bi-journal-text" aria-hidden="true"></i>
-        {{ exam.questionCount or 0 }} questions {% if exam.requiredScore is not none %}
-        <span aria-hidden="true"> · </span>required score {{ exam.requiredScore or 0 }} {% endif %}
-      </div>
-      <a class="small text-secondary text-decoration-none" href="{{ userUrl(examUser) }}">
-        <i class="bi bi-person-circle" aria-hidden="true"></i>
-        {{ examUser.slug or examUser.name or examUser.id }}
-      </a>
-      {% if exam.tags %}
-      <div class="small d-flex flex-wrap align-items-center gap-2">
-        <i class="bi bi-tags text-secondary" aria-hidden="true"></i>
-        {% for tag in exam.tags %}
-        <a
-          class="badge rounded-pill text-bg-light text-decoration-none"
-          href="{{ url('tagBySlug', { slug: tag.slug }) }}"
-          >{{ tag.name }}</a
-        >
-        {% endfor %}
-      </div>
-      {% endif %}
+{% set image = exam.image_filename %}
+{% set preview = preview | default(True) and exam.preview %}
+{% set vert_gap = vert_gap | default(1) %}
+{% set h_tag_size = h_tag_size | default(3) %}
+{% set h_display_size = h_display_size | default(4) %}
+{% set exam_user = exam.get_user() %}
+{% set exam_img_sizes = exam_img_sizes | default({"768px": "25vw", "default": "100vw"}) %}
+
+<div class="exam col"{% if exam.offset %} data-offset="{{ exam.offset }}"{% endif %}>
+    <div class="card">
+        {% if image %}
+            {% include "fragments/exam-link-image.html" %}
+        {% endif %}
+
+        {% include "fragments/exam-body.html" %}
     </div>
-  </div>
-</article>
+</div>

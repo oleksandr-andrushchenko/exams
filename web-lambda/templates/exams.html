@@ -1,19 +1,208 @@
 {% extends "layout.html" %}
+{% set layout_assets = {"masonry": true, "tagify": true} %}
+
+
+{% set val_map = {
+    (ExamQueryType.LATEST): {"title": "Latest", "subtitle": "Recently added"},
+    (ExamQueryType.POPULAR): {"title": "Popular", "subtitle": "Most popular"},
+    (ExamStatus.PUBLISHED): {"title": None, "subtitle": None},
+    (ExamStatus.UNPUBLISHED): {"title": "Unpublished", "subtitle": "Unpublished"},
+    (ExamStatus.REJECTED): {"title": "Rejected", "subtitle": "Rejected"}
+} %}
+
+{% set title = ([val_map[exam_query.type]["title"]] + (exam_query.tags if exam_query.tags else [site_about]) + [val_map[exam_query.status]["title"]] + ["Exams"]) | select | join(" ") | title %}
+{% set meta_robots = "noindex, follow" if exam_query.status != ExamStatus.PUBLISHED else "index, follow" %}
+{% set subtitle = ([val_map[exam_query.type]["subtitle"]]  + exam_query.tags + [val_map[exam_query.status]["subtitle"]] + ["Exams"]) | select | join(" ") | title %}
+{% set meta_title = title ~ " | " ~ site_name %}
+{% set meta_canonical_url = exams_url(query=exam_query, tags=exam_query.tags|sort, absolute=True) %}
+{% set meta_desc = [title, subtitle, site_desc] | select | join('. ') | truncate(155, True, '...') %}
+{% block meta_schema %}
+    {% set items = namespace(values=[]) %}
+    {% for exam in exams %}
+        {% set items.values = items.values + [{
+            "@type": "ListItem",
+            "position": loop.index,
+            "name": exam.title,
+            "url": exam_url(exam, absolute=True)
+        }] %}
+    {% endfor %}
+    {% set breadcrumb_items = namespace(values=[
+        {"@type": "ListItem", "position": 1, "name": "Home", "item": url("index", absolute=True)},
+        {"@type": "ListItem", "position": 2, "name": "Exams", "item": exams_url(absolute=True)}
+    ]) %}
+    {% set breadcrumb_position = 2 %}
+    {% if exam_query.type and exam_query.type != ExamQueryDTO.DEFAULT_TYPE %}
+        {% set breadcrumb_position = breadcrumb_position + 1 %}
+        {% set breadcrumb_items.values = breadcrumb_items.values + [{
+            "@type": "ListItem",
+            "position": breadcrumb_position,
+            "name": exam_query.type | title,
+            "item": exams_url(type=exam_query.type, absolute=True)
+        }] %}
+    {% endif %}
+    {% set tag_path = namespace(values=[]) %}
+    {% for tag in exam_query.tags %}
+        {% set tag_path.values = tag_path.values + [tag] %}
+        {% set breadcrumb_position = breadcrumb_position + 1 %}
+        {% set breadcrumb_items.values = breadcrumb_items.values + [{
+            "@type": "ListItem",
+            "position": breadcrumb_position,
+            "name": tag | title,
+            "item": exams_url(tags=tag_path.values, type=exam_query.type, absolute=True)
+        }] %}
+    {% endfor %}
+    {% if exam_query.status and exam_query.status != ExamQueryDTO.DEFAULT_STATUS %}
+        {% set breadcrumb_position = breadcrumb_position + 1 %}
+        {% set breadcrumb_items.values = breadcrumb_items.values + [{
+            "@type": "ListItem",
+            "position": breadcrumb_position,
+            "name": exam_query.status | title,
+            "item": exams_url(type=exam_query.status, absolute=True)
+        }] %}
+    {% endif %}
+    {{- {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        "@id": meta_canonical_url,
+        "url": meta_canonical_url,
+        "name": title,
+        "description": meta_desc,
+        "inLanguage": "en",
+        "mainEntity": {
+            "@type": "ItemList",
+            "numberOfItems": items.values | length,
+            "itemListElement": items.values
+        },
+        "breadcrumb": {
+            "@type": "BreadcrumbList",
+            "itemListElement": breadcrumb_items.values
+        }
+    } | tojson | safe -}}
+{% endblock %}
+
+{% block breadcrumbs %}
+    {% set breadcrumbs = {"Home": url("index"), "Exams": exams_url()} %}
+
+    {% if exam_query.type and exam_query.type != ExamQueryDTO.DEFAULT_TYPE %}
+        {% set breadcrumbs = breadcrumbs.update({exam_query.type | title: exams_url(type=exam_query.type)}) or breadcrumbs %}
+    {% endif %}
+
+    {% set ns = namespace(path_tags=[]) %}
+    {% for tag in exam_query.tags %}
+        {% set ns.path_tags = ns.path_tags + [tag] %}
+        {% set breadcrumbs = breadcrumbs.update({tag | title: exams_url(tags=ns.path_tags, type=exam_query.type)}) or breadcrumbs %}
+    {% endfor %}
+
+    {% if exam_query.status and exam_query.status != ExamQueryDTO.DEFAULT_STATUS %}
+        {% set breadcrumbs = breadcrumbs.update({exam_query.status | title: exams_url(type=exam_query.status)}) or breadcrumbs %}
+    {% endif %}
+
+    {% set last_key = (breadcrumbs.keys() | list)[-1] %}
+    {% set breadcrumbs = breadcrumbs.update({ last_key: None }) or breadcrumbs %}
+
+    {% include "fragments/breadcrumbs.html" %}
+{% endblock %}
 
 {% block content %}
-{% set breadcrumbs = [["Home", "/"], ["Exams", none]] %}
-{% include "fragments/breadcrumbs.html" %}
+    <h1>{{ title }}</h1>
+    <p class="small text-secondary">{{ subtitle }}</p>
 
-<h1>Latest Exams</h1>
-<p class="small text-secondary">Recently Added Exams</p>
+    <form action="{{ exams_url() }}" method="get" class="d-flex flex-wrap align-items-center gap-3 mb-4">
+        <h2 class="h5 mb-0 text-decoration-underline bi bi-filter"> Filter exams</h2>
 
-<section class="d-flex flex-column gap-4">
-    <div class="row g-3">
-        {% for exam in exams %}
-        {% include "fragments/exam.html" %}
-        {% else %}
-        <p>No exams found.</p>
-        {% endfor %}
-    </div>
-</section>
+        <input type="hidden" name="type" value="{{ exam_query.type }}">
+        <input type="hidden" name="status" value="{{ exam_query.status }}">
+
+        <div class="d-flex align-items-center gap-2">
+            <small class="text-secondary bi bi-sort-down"> Show:</small>
+            <div class="btn-group btn-group-sm" role="group">
+                {% set is_latest = exam_query.type == ExamQueryType.LATEST %}
+                <a href="{{ exams_url(**exam_query.get_dict({"type": None if is_latest else ExamQueryType.LATEST})) }}"
+                   class="btn {% if is_latest %}btn-secondary active{% else %}btn-light{% endif %} bi bi-clock{{ "-fill" if is_latest else "" }}">
+                    {{ ExamQueryType.LATEST | title }} first
+                </a>
+                {% set is_popular = exam_query.type == ExamQueryType.POPULAR %}
+                <a href="{{ exams_url(**exam_query.get_dict({"type": None if is_popular else ExamQueryType.POPULAR})) }}"
+                   class="btn {% if is_popular %}btn-primary active{% else %}btn-light{% endif %} bi bi-star{{ "-fill" if is_popular else "" }}">
+                    {{ ExamQueryType.POPULAR | title }} first
+                </a>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <small class="text-secondary bi bi-tags"> Filter by tags:</small>
+            {% with url=url("tags", absolute=True),
+                            value=exam_query.tags,
+                            tag_items=exam_query_tag_items,
+                            class_name="w-auto",
+                            auto_submit=False,
+                            inject_hidden=True %}
+                {% include "fragments/tags-input.html" %}
+            {% endwith %}
+
+            <button class="btn btn-light btn-sm bi bi-search" type="submit"> Search</button>
+        </div>
+
+        {% if cur_user and check_auth(cur_user, Permission.READ_NON_PUBLISHED_EXAM) %}
+            <div class="d-flex align-items-center gap-2">
+                <small class="text-secondary bi bi-toggle2-on"> Filter by status:</small>
+                <div class="btn-group btn-group-sm" role="group">
+                    {% set is_published = exam_query.status == ExamStatus.PUBLISHED %}
+                    <a href="{{ exams_url(**exam_query.get_dict({"status": None if is_published else ExamStatus.PUBLISHED})) }}"
+                       class="btn {% if is_published %}btn-success active{% else %}btn-light{% endif %}">
+                        {{ ExamStatus.PUBLISHED | title }}
+                    </a>
+
+                    {% set is_unpublished = exam_query.status == ExamStatus.UNPUBLISHED %}
+                    <a href="{{ exams_url(**exam_query.get_dict({"status": None if is_unpublished else ExamStatus.UNPUBLISHED})) }}"
+                       class="btn {% if is_unpublished %}btn-warning active{% else %}btn-light{% endif %}">
+                        {{ ExamStatus.UNPUBLISHED | title }}
+                    </a>
+
+                    {% set is_rejected = exam_query.status == ExamStatus.REJECTED %}
+                    <a href="{{ exams_url(**exam_query.get_dict({"status": None if is_rejected else ExamStatus.REJECTED})) }}"
+                       class="btn {% if is_rejected %}btn-danger active{% else %}btn-light{% endif %}">
+                        {{ ExamStatus.REJECTED | title }}
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if exam_query.has_params() %}
+            <div>
+                <a href="{{ exams_url() }}" class="btn btn-light btn-sm bi bi-x-lg"> Reset</a>
+            </div>
+        {% endif %}
+
+        {% if tag and cur_user and check_auth(cur_user, Permission.UPDATE_TAG) %}
+            <a href="{{ url("edit-tag", slug=exam_query.tags[0]) }}"
+               class="btn btn-light btn-sm bi bi-pencil">
+                Edit tag
+            </a>
+        {% endif %}
+    </form>
+
+    {% if exams %}
+        <section id="exams" class="{{ {"def": 1, "sm": 2, "lg": 3, "xl": 4} | row_classes }} g-3"
+                 data-masonry='{"percentPosition": true }'>
+            {% with tags=exam_query.tags %}
+                {% include "fragments/tag-subscription.html" %}
+            {% endwith %}
+
+            {% with h_tag_size=2,
+                exam_img_sizes={"1400px": "196px", "1200px": "166px", "992px": "96px", "768px": "156px", "default": "100vw"} %}
+                {% include "fragments/exams.html" %}
+            {% endwith %}
+        </section>
+
+        {% with limit=exam_query.limit,
+            offset=exams[-1].offset,
+            url=url("exams-fragment", absolute=True, **exam_query.get_dict()),
+            container="#exams",
+            auto_click=True %}
+            {% include "fragments/load-more-button.html" %}
+        {% endwith %}
+    {% else %}
+        <div>N/A</div>
+    {% endif %}
 {% endblock %}

@@ -1,26 +1,18 @@
 {% extends "layout.html" %}
+{% set layout_assets = {"validation": true, "tagify": true} %}
+
+
+{% set title = ("Edit " ~ exam.title) | trim %}
+{% set meta_robots = "noindex, nofollow" %}
+{% set meta_title = title ~ " | " ~ site_name %}
+{% set meta_canonical_url = url("edit-exam", exam_id=exam.id, absolute=True) %}
+
+{% block breadcrumbs %}
+    {% with breadcrumbs = {"Home": url("index"), "Exams": exams_url(), (exam.title): exam_url(exam), "Edit": None} %}
+        {% include "fragments/breadcrumbs.html" %}
+    {% endwith %}
+{% endblock %}
 
 {% block content %}
-<h1>Edit {{ exam.name }}</h1>
-<form class="card card-body d-flex gap-3" enctype="multipart/form-data" method="post" data-api-form="updateExam"
-      data-resource-id="{{ exam.id }}" data-success-url="{{ examUrl(exam) }}">
-    <label>
-        Name
-        <input class="form-control" name="name" required value="{{ exam.name }}"/>
-    </label>
-
-    <label>
-        Required score
-        <input class="form-control" max="100" min="0" name="requiredScore" required type="number"
-               value="{{ exam.requiredScore or 0 }}"/>
-    </label>
-
-    <label>
-        Image
-        <input accept="image/jpeg,image/png,image/gif,image/webp" class="form-control" name="image"
-               type="file"/>
-    </label>
-
-    <button class="btn btn-primary">Save</button>
-</form>
+    {% include "fragments/exam-form.html" %}
 {% endblock %}

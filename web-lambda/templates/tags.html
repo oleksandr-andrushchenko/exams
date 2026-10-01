@@ -1,0 +1,116 @@
+{% extends "layout.html" %}
+{% set layout_assets = {"masonry": true} %}
+
+
+{% set val_map = {
+    (TagQueryType.LATEST): {"title": "Latest", "subtitle": "Recently added"},
+    (TagQueryType.POPULAR): {"title": "Popular", "subtitle": "Most popular"}
+} %}
+
+{% set title = ([val_map[tags_query.type]["title"], "Tags"]) | select | join(" ") | title %}
+{% set subtitle = ([val_map[tags_query.type]["subtitle"], "Tags"]) | select | join(" ") | title %}
+{% set meta_title = title ~ " | " ~ site_name %}
+{% set meta_robots = "index, follow" %}
+{% set meta_canonical_url = url("tags", type=None if tags_query.type == TagQueryDTO.DEFAULT_TYPE else tags_query.type, absolute=True) %}
+{% set meta_desc = [title, subtitle, site_desc] | select | join('. ') | truncate(155, True, '...') %}
+
+{% block meta_schema %}
+    {% set items = namespace(values=[]) %}
+    {% for tag in tags %}
+        {% set items.values = items.values + [{
+            "@type": "ListItem",
+            "position": loop.index,
+            "name": tag.name,
+            "url": exams_url(tags=[tag.slug], absolute=True)
+        }] %}
+    {% endfor %}
+    {{- {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        "@id": meta_canonical_url,
+        "url": meta_canonical_url,
+        "name": title,
+        "description": meta_desc,
+        "inLanguage": "en",
+        "mainEntity": {
+            "@type": "ItemList",
+            "numberOfItems": items.values | length,
+            "itemListElement": items.values
+        },
+        "breadcrumb": {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {"@type": "ListItem", "position": 1, "name": "Home", "item": url("index", absolute=True)},
+                {"@type": "ListItem", "position": 2, "name": "Tags", "item": url("tags", absolute=True)}
+            ] + ([{
+                "@type": "ListItem",
+                "position": 3,
+                "name": tags_query.type | title,
+                "item": meta_canonical_url
+            }] if tags_query.type != TagQueryDTO.DEFAULT_TYPE else [])
+        }
+    } | tojson | safe -}}
+{% endblock %}
+
+{% block breadcrumbs %}
+    {% set breadcrumbs = {"Home": url("index"), "Tags": url("tags")} %}
+
+    {% if tags_query.type and tags_query.type != TagQueryDTO.DEFAULT_TYPE %}
+        {% set breadcrumbs = breadcrumbs.update({tags_query.type | title: None}) or breadcrumbs %}
+    {% else %}
+        {% set breadcrumbs = breadcrumbs.update({"Tags": None}) or breadcrumbs %}
+    {% endif %}
+
+    {% include "fragments/breadcrumbs.html" %}
+{% endblock %}
+
+{% block content %}
+    <h1>{{ title }}</h1>
+    <p class="small text-secondary">{{ subtitle }}</p>
+
+    <form action="{{ url("tags") }}" method="get" class="d-flex flex-wrap align-items-center gap-3 mb-4">
+        <h2 class="h5 mb-0 text-decoration-underline bi bi-filter"> Filter tags</h2>
+
+        <input type="hidden" name="type" value="{{ tags_query.type }}">
+
+        <div class="d-flex align-items-center gap-2">
+            <small class="text-secondary bi bi-sort-down"> Show:</small>
+            <div class="btn-group btn-group-sm" role="group">
+                {% set is_latest = tags_query.type == TagQueryType.LATEST %}
+                <a href="{{ url("tags", **tags_query.get_dict({"type": None if is_latest else TagQueryType.LATEST})) }}"
+                   class="btn {% if is_latest %}btn-secondary active{% else %}btn-light{% endif %} bi bi-clock{{ "-fill" if is_latest else "" }}">
+                    {{ TagQueryType.LATEST | title }} first
+                </a>
+                {% set is_popular = tags_query.type == TagQueryType.POPULAR %}
+                <a href="{{ url("tags", **tags_query.get_dict({"type": None if is_popular else TagQueryType.POPULAR})) }}"
+                   class="btn {% if is_popular %}btn-primary active{% else %}btn-light{% endif %} bi bi-star{{ "-fill" if is_popular else "" }}">
+                    {{ TagQueryType.POPULAR | title }} first
+                </a>
+            </div>
+        </div>
+
+        {% if tags_query.has_params() %}
+            <div>
+                <a href="{{ url("tags") }}" class="btn btn-light btn-sm bi bi-x-lg"> Reset</a>
+            </div>
+        {% endif %}
+    </form>
+
+    {% if tags %}
+        <div class="{{ {"def": 2, "sm": 3, "md": 4, "lg": 5, "xl": 6} | row_classes }} g-3" id="tags" data-masonry='{"percentPosition": true }'>
+            {% for tag in tags %}
+                {% include "fragments/tag.html" %}
+            {% endfor %}
+        </div>
+
+        {% with limit=tags_query.limit,
+                offset=tags[-1].offset,
+                url=url("tags-fragment", absolute=True, **tags_query.get_dict()),
+                container="#tags",
+                auto_click=True %}
+            {% include "fragments/load-more-button.html" %}
+        {% endwith %}
+    {% else %}
+        <div>N/A</div>
+    {% endif %}
+{% endblock %}

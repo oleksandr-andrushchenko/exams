@@ -1,8 +1,17 @@
 {% extends "layout.html" %}
 
+{% set meta_robots = "noindex, nofollow" %}
+{% set meta_title = title %}
+
 {% block content %}
-<div class="alert alert-danger">
-    <h1>{{ statusCode or 500 }} {{ title or "Internal Server Error" }}</h1>
-    {% if message %}<p>{{ message }}</p>{% endif %}
-</div>
+    <h1>{{ code }} - {{ title }}</h1>
+    <p class="small text-secondary">{{ message }}</p>
+    <a href="{{ url('index') }}" class="btn btn-sm btn-light">
+        <i class="bi bi-arrow-left-short"></i> Back home
+    </a>
+    {% if code == 401 %}
+        <a href="{{ url('login') }}" class="btn btn-light" rel="nofollow">
+            <i class="bi bi-box-arrow-in-right"></i> Sign in
+        </a>
+    {% endif %}
 {% endblock %}

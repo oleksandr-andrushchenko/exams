@@ -1,6 +1,0 @@
-node_modules
-.next
-api-lambda/dist
-web-lambda/dist
-.git
-.env

@@ -1,0 +1,25 @@
+{% set image = exam.image_filename %}
+{% set preview = preview | default(True) and exam.preview %}
+{% set vert_gap = vert_gap | default(1) %}
+{% set h_tag_size = h_tag_size | default(3) %}
+{% set h_display_size = h_display_size | default(4) %}
+{% set image_column_size = image_column_size | default({"def": 12, "sm": 3}) if image else 0 %}
+{% set exam_user = exam.get_user() %}
+{% set exam_img_sizes = exam_img_sizes | default({"768px": "25vw", "default": "100vw"}) %}
+
+<div class="exam col"{% if exam.offset %} data-offset="{{ exam.offset }}"{% endif %}>
+    <div class="card">
+        {% if image %}
+            <div class="row g-0">
+                <div class="{{ image_column_size | col_classes }} d-flex align-items-center">
+                    {% include "fragments/exam-link-image.html" %}
+                </div>
+                <div class="{{ image_column_size | col_classes(inverse=True) }}">
+                    {% include "fragments/exam-body.html" %}
+                </div>
+            </div>
+        {% else %}
+            {% include "fragments/exam-body.html" %}
+        {% endif %}
+    </div>
+</div>

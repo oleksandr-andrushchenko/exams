@@ -1,0 +1,15 @@
+<form id="exam-comment-form" novalidate data-form-handler="exam-comment"
+      data-submit-url="{{ url('update-exam-comment', exam_id=exam.id, exam_comment_id=exam_comment.id, absolute=True) if exam_comment else url('create-exam-comment', exam_id=exam.id, absolute=True) }}"
+      data-method="{{ 'PATCH' if exam_comment else 'POST' }}">
+    <div class="form-group">
+        <label class="w-100">
+            <textarea class="form-control" id="text" name="text" placeholder="Write a comment" required
+                      rows="3">{{ exam_comment.text if exam_comment else "" }}</textarea>
+        </label>
+    </div>
+
+    <button type="submit" class="btn btn-light btn-sm">
+        <i class="bi {% if exam_comment %}bi-arrow-clockwise{% else %}bi-plus-lg{% endif %}"></i>
+        {% if exam_comment %}Update{% else %}Add{% endif %} exam comment
+    </button>
+</form>

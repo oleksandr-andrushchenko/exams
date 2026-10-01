@@ -1,19 +1,35 @@
 {% extends "layout.html" %}
-
+{% block title %}Questions · {{ exam.title }}{% endblock %}
 {% block content %}
-{% set breadcrumbs = [["Home", "/"], ["Questions", none]] %}
-{% include "fragments/breadcrumbs.html" %}
-
-<h1>Latest Questions</h1>
-<p class="small text-secondary">Recently Added Questions</p>
-
-<section class="d-flex flex-column gap-4">
-    <div class="d-flex flex-column gap-3">
-        {% for question in questions %}
-        {% include "fragments/question.html" %}
-        {% else %}
-        <div class="card p-3">No questions found.</div>
-        {% endfor %}
-    </div>
-</section>
+    <h1 class="h3">Questions for {{ exam.title }}</h1>
+    {% if cur_user and check_auth(cur_user, Permission.CREATE_QUESTION, exam) %}
+        <form id="question-form" class="card card-body mb-4"
+              data-question-url="{{ url('create-question', exam_id=exam.id, absolute=True) }}"
+              data-method="POST" data-reload-on-success="true">
+            <h2 class="h5">Add question</h2>
+            <input class="form-control mb-2" name="title" placeholder="Question title" required>
+            <textarea class="form-control mb-2" name="description" placeholder="Question description"
+                      required></textarea>
+            <div id="choices" class="mb-2">
+                {% for index in range(4) %}
+                    <div class="input-group mb-2"><input class="form-control" name="choice_title"
+                                                         placeholder="Choice {{ index + 1 }}" required><input
+                            class="form-control" name="choice_description" placeholder="Choice description"><span
+                            class="input-group-text"><input type="radio" name="correct_choice" value="{{ index }}"
+                                                            {% if index == 0 %}checked{% endif %}> Correct</span></div>
+                {% endfor %}
+            </div>
+            <button class="btn btn-dark align-self-start" type="submit">Add question</button>
+        </form>
+    {% endif %}
+    {% if questions %}
+        <ol class="list-group list-group-numbered">
+            {% for question in questions %}
+                <li class="list-group-item"><a
+                        href="{{ url('question-by-id', question_id=question.id) }}">{{ question.title }}</a></li>
+            {% endfor %}
+        </ol>
+    {% else %}
+        <p class="text-secondary">This exam has no questions yet.</p>
+    {% endif %}
 {% endblock %}

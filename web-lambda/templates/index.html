@@ -1,0 +1,200 @@
+{% extends "layout.html" %}
+{% set layout_assets = {"masonry": true} %}
+
+
+{% set meta_title = site_name ~ " - " ~ site_short_desc %}
+{% set meta_desc = meta_desc or site_desc %}
+{% set main_class = "" %}
+{% set meta_robots = "index, follow" %}
+{% set meta_canonical_url = url("index", absolute=True) %}
+{% block meta_schema %}
+    {{- {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "@id": meta_canonical_url,
+        "url": meta_canonical_url,
+        "name": site_name,
+        "description": meta_desc,
+        "inLanguage": "en"
+    } | tojson | safe -}}
+{% endblock %}
+
+{% block content %}
+    {% if False and site_img_filename %}
+        {% with filename=site_img_filename, alt=site_about, figure=True %}
+            {% include "fragments/image.html" %}
+        {% endwith %}
+    {% endif %}
+
+    <section class="py-5 text-bg-light overflow-hidden mb-4">
+        <div class="container text-center">
+            <h1 class="d-inline">{{ site_name }} <i class="bi bi-{{ site_icon }}"></i></h1>
+            <span class="mt-2 fw-bold mb-3">&mdash; {{ site_short_desc }}</span>
+            <p class="mt-3 mb-4">{{ site_desc }}</p>
+            <div class="d-flex flex-wrap align-items-center justify-content-center gap-1">
+                <a href="{{ exams_url() }}" class="btn btn-dark">
+                    <i class="bi bi-compass" aria-hidden="true"></i>
+                    Explore exams
+                </a>
+                <a href="{{ users_url() }}" class="btn btn-dark btn-sm">
+                    <i class="bi bi-people" aria-hidden="true"></i>
+                    Meet the community
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <div class="container">
+        <div class="row g-5">
+            <div class="{{ {"def": 12, "lg": 8} | col_classes }}">
+                <section class="mb-4">
+                    <h2 class="h5 mb-2 text-decoration-underline">Popular tags</h2>
+                    {% if popular_tags %}
+                        <div class="{{ {"def": 2, "sm": 3, "md": 4} | row_classes }} g-2 mb-2"
+                             data-masonry='{"percentPosition": true }'>
+                            {% for tag in popular_tags[:20] %}
+                                {% include "fragments/tag.html" %}
+                            {% endfor %}
+                        </div>
+
+                        {% for tag in popular_tags[20:] %}
+                            <a href="{{ exams_url(tags=[tag.slug]) }}" class="btn btn-light btn-sm tag mb-1">
+                                <h3 class="h6 fw-normal mb-0">{{ tag.name }} &mdash; {{ tag.exams_count }}</h3>
+                            </a>
+                        {% endfor %}
+
+                        <a href="{{ url("tags") }}?type=popular" class="btn btn-light btn-sm bi bi-tags">
+                            See all popular tags
+                        </a>
+                        <a href="{{ url("tags") }}" class="btn btn-light btn-sm bi bi-tags">
+                            See all tags
+                        </a>
+                    {% else %}
+                        <div>N/A</div>
+                    {% endif %}
+                </section>
+
+                <section class="mb-4">
+                    <h2 class="h5 mb-2">
+                        <a href="{{ users_url(type=UserQueryType.POPULAR) }}" class="link-body-emphasis">
+                            Popular authors
+                        </a>
+                    </h2>
+                    {% if popular_users %}
+                        <div id="popular-users" class="{{ {"def": 1, "sm": 2} | row_classes }} g-2 mb-2"
+                             data-masonry='{"percentPosition": true }'>
+                            {% with users=popular_users[:3] %}
+                                {% include "fragments/popular-users.html" %}
+                            {% endwith %}
+
+                            {% if should_show_become_an_author %}
+                                <div class="col">
+                                    {% include "fragments/become-an-author.html" %}
+                                </div>
+                            {% endif %}
+
+                            {% with users=popular_users[3:] %}
+                                {% include "fragments/popular-users.html" %}
+                            {% endwith %}
+                        </div>
+
+                        <a href="{{ users_url(type=UserQueryType.POPULAR) }}" class="btn btn-light btn-sm bi bi-heart">
+                            See all popular authors
+                        </a>
+                    {% else %}
+                        <div>N/A</div>
+                    {% endif %}
+                </section>
+
+                {% if should_show_become_an_author and not popular_users %}
+                    {% include "fragments/become-an-author.html" %}
+                {% endif %}
+            </div>
+
+            <div class="{{ {"def": 12, "lg": 4} | col_classes }} border-start">
+                {% if show_popular_exams %}
+                    <section class="mb-4">
+                        <h2 class="h5 mb-2">
+                            <a href="{{ exams_url(type=ExamQueryType.POPULAR) }}" class="link-body-emphasis">
+                                Popular exams
+                            </a>
+                        </h2>
+                        {% if popular_exams %}
+                            <div id="popular-exams" class="{{ {"def": 1} | row_classes }} g-2 mb-2">
+                                {% with exams=popular_exams,
+                                preview=False,
+                                vert_gap=0,
+                                h_display_size=6,
+                                horizontal=True,
+                                exam_img_sizes={"1400px": "86px", "1200px": "71px", "992px": "96px", "768px": "156px", "default": "100vw"} %}
+                                    {% include "fragments/exams.html" %}
+                                {% endwith %}
+                            </div>
+
+                            <a href="{{ exams_url(type=ExamQueryType.POPULAR) }}"
+                               class="btn btn-light btn-sm bi bi-star">
+                                See all popular exams
+                            </a>
+                            <a href="{{ exams_url(type=ExamQueryType.POPULAR) }}"
+                               class="btn btn-light btn-sm bi bi-tags">
+                                Search popular exams by tags
+                            </a>
+                        {% else %}
+                            <div>N/A</div>
+                        {% endif %}
+                    </section>
+                {% endif %}
+
+                <section class="mb-4">
+                    <h2 class="h5 mb-2 text-decoration-underline">Latest comments</h2>
+                    {% if latest_exam_comments %}
+                        <div id="latest-exam-comments"
+                             class="{{ {"def": 1, "sm": 2, "lg": 1} | row_classes }} g-2 mb-2">
+                            {% include "fragments/latest-exam-comments.html" %}
+                        </div>
+                    {% else %}
+                        <div>N/A</div>
+                    {% endif %}
+                </section>
+            </div>
+        </div>
+
+        <section>
+            <h2 class="h5 mb-2">
+                <a href="{{ exams_url() }}" class="link-body-emphasis">
+                    Latest exams
+                </a>
+            </h2>
+            {% if latest_exams %}
+                <div id="exams" class="{{ {"def": 1, "sm": 2, "lg": 3, "xl": 4} | row_classes }} g-3 mb-2"
+                     data-masonry='{"percentPosition": true }'>
+                    {% with exams=latest_exams,
+                            exam_img_sizes={"1400px": "196px", "1200px": "166px", "992px": "96px", "768px": "156px", "default": "100vw"} %}
+                        {% include "fragments/exams.html" %}
+                    {% endwith %}
+                </div>
+
+                {% with limit=latest_exams_query.limit,
+                        offset=latest_exams[-1].offset,
+                        url=url("exams-fragment", absolute=True, **latest_exams_query.get_dict()),
+                        container="#exams",
+                        auto_click=True %}
+                    {% include "fragments/load-more-button.html" %}
+                {% endwith %}
+
+                <div>
+                    <a href="{{ exams_url(type=ExamQueryType.LATEST) }}"
+                       class="btn btn-light btn-sm bi bi-clock">
+                        See all latest exams
+                    </a>
+                    <a href="{{ exams_url(type=ExamQueryType.LATEST) }}"
+                       class="btn btn-light btn-sm bi bi-tags">
+                        Search latest exams by tags
+                    </a>
+                </div>
+            {% else %}
+                <div>N/A</div>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

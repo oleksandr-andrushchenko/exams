@@ -1,0 +1,73 @@
+<form id="exam-form" novalidate data-form-handler="exam"
+      data-submit-url="{{ url('update-exam', exam_id=exam.id, absolute=True) if exam else url('create-exam', absolute=True) }}"
+      data-method="{{ 'PATCH' if exam else 'POST' }}">
+    <div>
+        <label class="w-100">
+            <textarea class="form-control h1 border-0" id="title" name="title" placeholder="Title"
+                      required rows="1" autofocus>{{ exam.title if exam else "" }}</textarea>
+        </label>
+    </div>
+
+    <div>
+        <label class="w-100">
+            <textarea class="form-control" id="description" name="description" placeholder="Description" rows="4"
+                      required minlength="10" maxlength="500">{{ exam.description if exam else "" }}</textarea>
+        </label>
+    </div>
+
+    <div>
+        <label class="small text-secondary" for="image_file">Cover image:</label>
+        <input class="form-control" id="image_file" name="image_file" type="file"
+               accept="image/jpeg,image/png" data-public-file>
+        {% if exam and exam.image_filename %}
+            <img class="img-fluid rounded mt-2" src="{{ static_url(exam.image_filename) }}" alt="{{ exam.title }}">
+        {% endif %}
+    </div>
+
+    <div>
+        <label class="small text-secondary" for="category">Category:</label>
+        <select class="form-select" id="category" name="category" required>
+            {% for category in categories %}
+                <option value="{{ category.slug }}"
+                        {% if exam and exam.category == category.slug %}selected{% endif %}>{{ category.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label class="small text-secondary" for="certification_id">Certification:</label>
+        <select class="form-select" id="certification_id" name="certification_id">
+            <option value="">Custom exam</option>
+            {% for certification in certifications %}
+                <option value="{{ certification.id }}"
+                        {% if exam and exam.certification_id == certification.id %}selected{% endif %}>{{ certification.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="row g-2">
+        <label class="col">Difficulty<select class="form-select" name="difficulty">
+            {% for value in ["beginner", "intermediate", "advanced", "professional"] %}
+                <option value="{{ value }}"
+                        {% if exam and exam.difficulty == value %}selected{% endif %}>{{ value|title }}</option>{% endfor %}
+        </select></label>
+        <label class="col">Language<input class="form-control" name="language"
+                                          value="{{ exam.language if exam else "en" }}" maxlength="10"></label>
+    </div>
+    <small class="text-secondary bi bi-tags"> Tags:</small>
+    {% with url=url("tags", absolute=True), value=exam.tags if exam else [] %}
+        {% include "fragments/tags-input.html" %}
+    {% endwith %}
+
+    <div>
+        {% if exam %}<a class="btn btn-outline-secondary" href="{{ url('new-question', exam_id=exam.id) }}">Add
+            question</a>{% endif %}
+        <p class="small text-body-secondary mb-2">
+            By submitting an exam, you agree to our
+            <a href="{{ url('terms') }}" class="link-body-emphasis" target="_blank" rel="noopener noreferrer">Terms of
+                Service <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i><span class="visually-hidden"> (opens in a new tab)</span></a>.
+        </p>
+        <button type="submit" class="btn btn-light">
+            <i class="bi {% if exam %}bi-arrow-clockwise{% else %}bi-plus-lg{% endif %}"></i>
+            {% if exam %}Update{% else %}Create{% endif %} exam
+        </button>
+    </div>
+</form>

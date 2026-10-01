@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+{% set title = "Try " ~ exam.title %}
+{% block breadcrumbs %}
+    {% with breadcrumbs = {"Home": url("index"), "My history": url("exam-sessions"), (exam.title): None} %}
+        {% include "fragments/breadcrumbs.html" %}
+    {% endwith %}
+{% endblock %}
+{% block content %}
+    <h1>{{ title }}</h1>
+    {% if session.status == 'in_progress' %}
+        <p class="text-secondary">Answer all {{ session.total_questions }} questions to receive your result.</p>
+    {% else %}
+        <div class="alert {% if session.status == 'passed' %}alert-success{% else %}alert-danger{% endif %}" role="status">
+            <h2 class="h5">You {{ session.status }} this exam</h2>
+            <p class="mb-0">Result: {{ session.score }}% ({{ session.correct_answers }}/{{ session.total_questions }} correct)</p>
+        </div>
+    {% endif %}
+    {% if session.status == 'in_progress' %}
+        <form id="session-form" class="vstack gap-4"
+              data-answer-url="{{ url('answer-exam-session', session_id=session.id, absolute=True) }}"
+              data-complete-url="{{ url('complete-exam-session', session_id=session.id, absolute=True) }}">
+            {% for question in questions %}
+                <fieldset class="card card-body">
+                    <legend class="h5">{{ loop.index }}. {{ question.title }}</legend>
+                    <p>{{ question.description }}</p>
+                    {% for choice in question.choices %}
+                        <label class="d-block border rounded p-2 mb-2">
+                            <input required type="radio" name="question-{{ question.id }}" value="{{ loop.index0 }}">
+                            <strong>{{ choice.title }}</strong>
+                            {% if choice.description %}<span class="d-block text-secondary ms-4">{{ choice.description }}</span>{% endif %}
+                        </label>
+                    {% endfor %}
+                </fieldset>
+            {% endfor %}
+            <button class="btn btn-dark align-self-start" type="submit">Submit exam</button>
+        </form>
+    {% else %}
+        <p>Your result is recorded in your exam history.</p>
+        <a class="btn btn-dark" href="{{ url('exam-sessions') }}">Back to history</a>
+    {% endif %}
+{% endblock %}

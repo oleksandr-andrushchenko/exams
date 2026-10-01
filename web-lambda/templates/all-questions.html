@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+{% set title = "Questions" %}
+{% block breadcrumbs %}
+    {% with breadcrumbs = {"Home": url("index"), "Questions": None} %}
+        {% include "fragments/breadcrumbs.html" %}
+    {% endwith %}
+{% endblock %}
+{% block content %}
+    <h1>{{ title }}</h1>
+    {% if questions %}
+        <div class="list-group">
+            {% for question in questions %}
+                {% set exam = exams[question.exam_id] %}
+                {% if exam.user_slug and exam.slug %}
+                    {% set question_url = url('question-by-slugs', user_slug=exam.user_slug, exam_slug=exam.slug, question_slug=question.slug) %}
+                {% else %}
+                    {% set question_url = url('question-by-id', question_id=question.id) %}
+                {% endif %}
+                <a class="list-group-item list-group-item-action" href="{{ question_url }}">
+                    <strong>{{ question.title }}</strong><br>
+                    <span class="text-secondary">{{ question.description }}</span>
+                    <small class="d-block mt-2">Exam: {{ exam.title }} · Category: {{ exam.category }} · Tags: {{ exam.tags | join(', ') }}</small>
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}<p class="text-secondary">No questions yet.</p>{% endif %}
+{% endblock %}

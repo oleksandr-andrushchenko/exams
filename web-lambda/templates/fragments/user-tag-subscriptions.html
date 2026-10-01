@@ -1,0 +1,31 @@
+<section class="mb-4">
+    <h2 class="h5 mb-2 text-decoration-underline">
+        Interests
+    </h2>
+
+    {% if tag_subscriptions %}
+        <div class="d-flex flex-wrap gap-2">
+            {% for subscription in tag_subscriptions %}
+                {% if cur_user and cur_user.id == user.id %}
+                    <div class="tag-subscription-item"
+                         data-tag-subscription-id="{{ subscription.id }}">
+                        <button class="btn btn-light btn-sm fw-semibold btn-tag-subscription bi bi-bell-slash"
+                                type="button"
+                                data-tag-subscription-id="{{ subscription.id }}"
+                                title="Unsubscribe from {{ subscription.tags | join(' + ') }}">
+                            {{ subscription.tags | join(' + ') }}
+                        </button>
+                        <small class="tag-subscription-message text-secondary"></small>
+                    </div>
+                {% else %}
+                    <a href="{{ exams_url(tags=subscription.tags) }}"
+                       class="badge text-bg-light text-decoration-none">
+                        {{ subscription.tags | join(' + ') }}
+                    </a>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-muted small">N/A</div>
+    {% endif %}
+</section>

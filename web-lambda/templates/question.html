@@ -1,48 +1,32 @@
 {% extends "layout.html" %}
-
+{% block title %}{{ question.title }} · {{ exam.title }}{% endblock %}
+{% block breadcrumbs %}
+    {% with breadcrumbs = {
+        "Exams": exams_url(),
+        (exam.title): exam_url(exam),
+        "Questions": exam_url(exam) ~ "#questions",
+        (question.title): None
+    } %}
+        {% include "fragments/breadcrumbs.html" %}
+    {% endwith %}
+{% endblock %}
 {% block content %}
-{% if question.exam %}
-{% set breadcrumbs = [["Home", url("home")], ["Exams", url("exams")], [question.exam.name, examUrl(question.exam)], [question.title, none]] %}
-{% else %}
-{% set breadcrumbs = [["Home", url("home")], ["Exams", url("exams")], [question.title, none]] %}
-{% endif %}
-{% include "fragments/breadcrumbs.html" %}
-
-<div class="d-flex align-items-start gap-3">
-  {% if question.imageFilename %}
-  <img class="entity-image entity-image-lg" src="{{ staticUrl(question.imageFilename) }}" alt="{{ question.title }}"/>
-  {% endif %}
-
-  <div>
-    <h1>{{ question.title }}</h1>
-
-    {% if curUser and checkAuth(curUser, Permission.UpdateQuestion, question) %}
-    <a class="btn btn-outline-primary mb-3" href="{{ url("questionEdit", { questionId: question.id }) }}">Edit question</a>
+    <h1 class="h3">{{ question.title }}</h1>
+    <p>{{ question.description }}</p>
+    {% if cur_user and check_auth(cur_user, Permission.UPDATE_QUESTION, question) %}
+        <a class="btn btn-outline-secondary mb-3" href="{{ url('edit-question', question_id=question.id) }}">Edit
+            question</a>
     {% endif %}
+    <ol class="list-group list-group-numbered mb-3">
+        {% for choice in question.choices %}
+            <li class="list-group-item"><strong>{{ choice.title }}</strong>{% if choice.description %}<br>
+                <span class="text-secondary">{{ choice.description }}</span>{% endif %}</li>{% endfor %}
+    </ol>
 
-    {% if currentUser %}
-    <form class="rating-form mb-4" method="post" data-question-id="{{ question.id }}">
-      {% set rating = question.rating %}{% set userMark = question.userMark %}
-      {% include "fragments/rating-form.html" %}
-    </form>
-    {% else %}
-
-    {% set rating = question.rating %}
-    {% set ratingClass = "fs-4" %}
-    {% include "fragments/rating.html" %}
-
-    <p><a href="{{ url("login") }}">Log in</a> to rate this question.</p>
-    {% endif %}
-
-    <p class="text-secondary">{{ question.difficulty or '' }} {{ question.type or '' }}</p>
-  </div>
-</div>
-
-<h2 class="h5 mb-0 text-decoration-underline">Author</h2>
-{% set user = question.creator %}
-{% include "fragments/user.html" %}
-
-<h2 class="h5 mb-0 text-decoration-underline">Exam</h2>
-{% set exam = question.exam %}
-{% include "fragments/exam.html" %}
+    <section class="mt-4">
+        <h2 class="h4">Exam</h2>
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
+            {% include "fragments/exam.html" %}
+        </div>
+    </section>
 {% endblock %}

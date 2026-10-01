@@ -1,0 +1,60 @@
+{% extends "layout.html" %}
+
+{% set title = "Utils" %}
+{% set meta_robots = "noindex, nofollow" %}
+{% set meta_title = title ~ " | " ~ site_name %}
+{% set meta_canonical_url = url("utils", absolute=True) %}
+{% set layout_assets = {"tagify": true} %}
+
+{% block breadcrumbs %}
+    {% with breadcrumbs = {"Home": url("index"), (title): None} %}
+        {% include "fragments/breadcrumbs.html" %}
+    {% endwith %}
+{% endblock %}
+
+{% block content %}
+    <h1>{{ title }}</h1>
+
+    <div class="{{ {"def": 1, "sm": 2, "md": 3} | row_classes }}">
+        {% if check_auth(cur_user, Permission.GENERATE_SITEMAP) %}
+            <div class="col">
+                <section class="border rounded p-4 mb-4 bg-light">
+                    <h2 class="h4 mb-2">Generate Sitemap</h2>
+
+                    <p class="small text-muted mb-3">
+                        Generate the latest sitemap.xml and notify search engines about updated pages.
+                        Use this after publishing or updating content to improve indexing speed.
+                    </p>
+
+                    <form id="generate-sitemap-form" novalidate data-form-handler="generate-sitemap"
+                          data-submit-url="{{ url('generate-sitemap', absolute=True) }}" data-method="POST">
+                        <button class="btn btn-primary" type="submit">Generate & Notify</button>
+                    </form>
+
+                </section>
+            </div>
+        {% endif %}
+
+        {% if check_auth(cur_user, Permission.DROP_CDN_CACHE) %}
+            <div class="col">
+                <section class="col border rounded p-4 mb-4 bg-light">
+                    <h2 class="h4 mb-2">Drop Static CDN Cache</h2>
+
+                    <p class="small text-muted mb-3">
+                        Invalidate files cached by static asset CloudFront.
+                    </p>
+
+                    <form id="drop-cdn-cache-form" novalidate data-form-handler="drop-cdn-cache"
+                          data-submit-url="{{ url('drop-cdn-cache', absolute=True) }}" data-method="POST">
+                        <label class="form-label" for="cdn-cache-paths">Paths</label>
+                        <input id="cdn-cache-paths" class="form-control mb-3" name="paths" type="text"
+                               value="/robots.txt,/sitemap.xml,/scripts.js,/styles.css"
+                               placeholder="Add cache path" autocomplete="off">
+                        <button class="btn btn-primary" type="submit">Drop</button>
+                    </form>
+
+                </section>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

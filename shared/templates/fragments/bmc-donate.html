@@ -1,0 +1,25 @@
+{% if user.bmc_username %}
+    <section class="card shadow-sm mb-4 text-bg-warning">
+        <div class="card-body">
+            <div class="h4 card-title">
+                <i class="bi bi-lightbulb"></i>
+                {{ header | default("Enjoyed this exam?") }}
+            </div>
+
+            <p class="card-text">
+                Support {{ user.name }}
+            </p>
+
+            <a href="https://buymeacoffee.com/{{ user.bmc_username }}"
+               target="_blank" rel="noopener noreferrer"
+               class="btn btn-dark mb-2">
+                <i class="bi bi-cup-hot"></i>
+                Buy me a coffee
+            </a>
+
+            <p class="card-text mb-0">
+                This helps {{ user.name }} continue creating useful content
+            </p>
+        </div>
+    </section>
+{% endif %}

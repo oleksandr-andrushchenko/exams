@@ -1,0 +1,39 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: S3 Bucket for Lambda / CloudFront Code Storage
+
+Parameters:
+  Project:
+    Type: String
+    Description: Logical project identifier (e.g. blog)
+  Owner:
+    Type: String
+    Description: Resource owner (e.g. olek)
+  Stage:
+    Type: String
+    Description: Deployment stage (e.g. local, dev, test, prod, etc.)
+    AllowedValues: [ local, dev, test, prod ]
+
+Resources:
+  CodeBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref AWS::StackName
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Stage
+          Value: !Ref Stage
+        - Key: Project
+          Value: !Ref Project
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Region
+          Value: !Ref AWS::Region
+
+Outputs:
+  CodeBucketName:
+    Description: Name of the S3 bucket for storing Lambda / CloudFront code
+    Value: !Ref CodeBucket

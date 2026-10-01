@@ -1,0 +1,1091 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Blog infrastructure with S3, CloudFront, API Gateway, Lambda, DynamoDB, Cognito
+
+Parameters:
+  Project:
+    Type: String
+    Description: Logical project identifier (e.g. blog)
+  Owner:
+    Type: String
+    Description: Resource owner (e.g. olek)
+  Stage:
+    Type: String
+    Description: Deployment stage (e.g. local, dev, test, prod, etc.)
+    AllowedValues: [ local, dev, test, prod ]
+  Env:
+    Type: String
+    Description: Environment (e.g. dev, prod, etc.)
+    AllowedValues: [ dev, prod ]
+  Debug:
+    Type: String
+    Description: Debug mode
+    AllowedValues: [ 0, 1 ]
+  Secret:
+    Type: String
+    Description: Application secret
+    NoEcho: true
+  DomainName:
+    Type: String
+    Description: The domain name (e.g. blog.com)
+  HostedZoneId:
+    Type: String
+    Description: Route 53 Hosted Zone ID for your domain
+  CertificateArn:
+    Type: String
+    Description: ARN of the ACM certificate in us-east-1 for the static CloudFront domain
+  TelegramBotToken:
+    Type: String
+    Default: ''
+    NoEcho: true
+  TelegramChatId:
+    Type: String
+    Default: ''
+  TelegramLogLevel:
+    Type: String
+    Default: INFO
+    AllowedValues: [ 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL', 'OFF' ]
+  NotificationEmail:
+    Type: String
+    Description: Email for contact form notifications
+  NotificationPhone:
+    Type: String
+    Description: Phone for contact form notifications
+  GoogleAnalyticsId:
+    Type: String
+    Description: Google Analytics tracking ID (e.g. UA-XXXXX-Y)
+  GoogleOauthClientId:
+    Type: String
+    Description: Google OAuth Client ID for Cognito Identity Provider
+    NoEcho: true
+  GoogleOauthClientSecret:
+    Type: String
+    Description: Google OAuth Client Secret for Cognito Identity Provider
+    NoEcho: true
+  TinyMceApiKey:
+    Type: String
+    Description: TinyMCE API key
+    NoEcho: true
+  CssCacheCounter:
+    Type: String
+    Description: CSS file query param value
+  JsCacheCounter:
+    Type: String
+    Description: JS file query param value
+  AuthJwtSecret:
+    Type: String
+    Description: Auth JWT secret
+    NoEcho: true
+  WebFuncS3Key:
+    Type: String
+    Description: S3 key of the web function zip file
+  ApiFuncS3Key:
+    Type: String
+    Description: S3 key of the API function zip file
+  ImgFuncS3Key:
+    Type: String
+    Description: S3 key of the image Lambda zip file
+
+Resources:
+  SiteBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !Sub "${AWS::StackName}-site"
+      NotificationConfiguration:
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: [ "*" ]
+            AllowedMethods: [ GET, HEAD ]
+            AllowedOrigins:
+              - !Sub "https://${DomainName}"
+            MaxAge: 86400
+      Tags:
+        - Key: Stage
+          Value: !Ref Stage
+        - Key: Project
+          Value: !Ref Project
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Region
+          Value: !Ref AWS::Region
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SiteBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowCloudFrontOAIGetObject
+            Effect: Allow
+            Principal:
+              CanonicalUser: !GetAtt CloudFrontOAI.S3CanonicalUserId
+            Action: s3:GetObject
+            Resource: !Sub "arn:aws:s3:::${SiteBucket}/*"
+
+          - Sid: AllowCloudFrontOAIListBucket
+            Effect: Allow
+            Principal:
+              CanonicalUser: !GetAtt CloudFrontOAI.S3CanonicalUserId
+            Action: s3:ListBucket
+            Resource: !Sub "arn:aws:s3:::${SiteBucket}"
+
+  CloudFrontOAI:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub "Access Identity for ${DomainName}"
+
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    Properties:
+      TableName: !Sub "${AWS::StackName}-${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+        - AttributeName: user_email_pk
+          AttributeType: S
+        - AttributeName: username
+          AttributeType: S
+        - AttributeName: exam_status_pk
+          AttributeType: S
+        - AttributeName: exam_category_status_pk
+          AttributeType: S
+        - AttributeName: exam_slug
+          AttributeType: S
+        - AttributeName: tag_type_pk
+          AttributeType: S
+        - AttributeName: rating_sk
+          AttributeType: N
+        - AttributeName: tag_name_sk
+          AttributeType: S
+        - AttributeName: user_status_pk
+          AttributeType: S
+        - AttributeName: exam_user_status_pk
+          AttributeType: S
+        - AttributeName: exam_comment_pk
+          AttributeType: S
+        - AttributeName: exam_comment_user_pk
+          AttributeType: S
+        - AttributeName: created_at
+          AttributeType: N
+      KeySchema:
+        - AttributeName: pk # e.g. "PROVIDER_USER#cognito#1", "USER#1", "EXAM#1", "EXAM_SLUG#slug1", "EXAM_TAG#tag1", "EXAM_TAG_COMBO#tag1#tag2", "CONTACT_MESSAGE#1"
+          KeyType: HASH
+        - AttributeName: sk # e.g. "META", "1759086095241", "EXAM#1"
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: USERS_BY_EMAIL # get_user_by_user_token (get user by email)
+          KeySchema:
+            - AttributeName: user_email_pk # e.g. "me@example.com"
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: USERS_BY_USERNAME # get_user_by_slug (get user by username)
+          KeySchema:
+            - AttributeName: username # e.g. "user-123"
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: USERS_BY_STATUS_RATING # get_popular_active_users
+          KeySchema:
+            - AttributeName: user_status_pk # e.g. "USER#active"
+              KeyType: HASH
+            - AttributeName: rating_sk # e.g. 10000001759086095241
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: EXAMS_BY_STATUS_CREATED_AT_2 # get_latest_exams
+          KeySchema:
+            - AttributeName: exam_status_pk # e.g. "EXAM#published"
+              KeyType: HASH
+            - AttributeName: created_at # e.g. 1759086095241
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: EXAMS_BY_CATEGORY_STATUS_CREATED_AT # get_latest_exams by category
+          KeySchema:
+            - AttributeName: exam_category_status_pk
+              KeyType: HASH
+            - AttributeName: created_at
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: EXAMS_BY_SLUG # get_exam_by_slugs
+          KeySchema:
+            - AttributeName: exam_slug # e.g. "post-title-about-something"
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: TAGS_BY_TYPE_RATING # get_popular_exam_tags
+          KeySchema:
+            - AttributeName: tag_type_pk # e.g. "EXAM_TAG"
+              KeyType: HASH
+            - AttributeName: rating_sk # e.g. 10000001759086095241
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: TAGS_BY_TYPE_CREATED_AT # get_latest_topics
+          KeySchema:
+            - AttributeName: tag_type_pk # e.g. "EXAM_TAG"
+              KeyType: HASH
+            - AttributeName: created_at # e.g. 1759086095241
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: EXAMS_BY_STATUS_RATING # get_popular_exams
+          KeySchema:
+            - AttributeName: exam_status_pk # e.g. "EXAM#published"
+              KeyType: HASH
+            - AttributeName: rating_sk # e.g. 10000001759086095241
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: EXAMS_BY_CATEGORY_STATUS_RATING # get_popular_exams by category
+          KeySchema:
+            - AttributeName: exam_category_status_pk
+              KeyType: HASH
+            - AttributeName: rating_sk
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: TAGS_BY_TYPE_NAME # get_exam_tags_by_prefix
+          KeySchema:
+            - AttributeName: tag_type_pk # e.g. "EXAM_TAG"
+              KeyType: HASH
+            - AttributeName: tag_name_sk # e.g. "tag1"
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: USERS_BY_STATUS_CREATED_AT_2 # get_latest_active_users
+          KeySchema:
+            - AttributeName: user_status_pk # e.g. "USER#active"
+              KeyType: HASH
+            - AttributeName: created_at # e.g. 1759086095241
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: EXAMS_BY_USER_STATUS_CREATED_AT_2 # get_latest_exams_by_user
+          KeySchema:
+            - AttributeName: exam_user_status_pk # e.g. "EXAM#1#published"
+              KeyType: HASH
+            - AttributeName: created_at # e.g. 1759086095241
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: EXAM_COMMENTS_BY_CREATED_AT # get_latest_exam_comments
+          KeySchema:
+            - AttributeName: exam_comment_pk # e.g. "EXAM_COMMENT"
+              KeyType: HASH
+            - AttributeName: created_at # e.g. 1759086095241
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: EXAM_COMMENTS_BY_USER_CREATED_AT # get_all_exam_comments_by_user
+          KeySchema:
+            - AttributeName: exam_comment_user_pk # e.g. "USER#1"
+              KeyType: HASH
+            - AttributeName: created_at # e.g. 1759086095241
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Stage
+          Value: !Ref Stage
+        - Key: Project
+          Value: !Ref Project
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Region
+          Value: !Ref AWS::Region
+
+  WebLamdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-${Stage}-web"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ContactFormPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: !GetAtt ContactFormTopic.TopicArn
+        - PolicyName: LambdaDynamoDBPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                  - dynamodb:BatchGetItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt DynamoDBTable.Arn
+                  - !Sub "${DynamoDBTable.Arn}/index/*"
+        - PolicyName: LambdaLoggingPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+        - PolicyName: LambdaS3Policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource: !Sub "arn:aws:s3:::${SiteBucket}/*"
+        - PolicyName: LambdaCloudFrontInvalidationPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudfront:CreateInvalidation
+                Resource: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
+        - PolicyName: SesSendingPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ses:SendEmail
+                Resource: !Sub "arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/${DomainName}"
+      Tags:
+        - Key: Stage
+          Value: !Ref Stage
+        - Key: Project
+          Value: !Ref Project
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Region
+          Value: !Ref AWS::Region
+
+  ImageLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-${Stage}-image"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ImageS3Policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: !Sub "arn:aws:s3:::${SiteBucket}/*"
+        - PolicyName: ImageLoggingPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+      Tags:
+        - Key: Stage
+          Value: !Ref Stage
+        - Key: Project
+          Value: !Ref Project
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Region
+          Value: !Ref AWS::Region
+
+  ImageLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-${Stage}-image"
+      Description: Generate responsive image variants after S3 uploads
+      Role: !GetAtt ImageLambdaRole.Arn
+      Handler: handler.handler
+      Runtime: python3.12
+      Timeout: 60
+      MemorySize: 1024
+      Environment:
+        Variables:
+          STATIC_S3_BUCKET: !Ref SiteBucket
+      Code:
+        S3Bucket: !Sub "${AWS::StackName}-code"
+        S3Key: !Ref ImgFuncS3Key
+      Tags:
+        - Key: Stage
+          Value: !Ref Stage
+        - Key: Project
+          Value: !Ref Project
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Region
+          Value: !Ref AWS::Region
+
+  ImageEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub "${AWS::StackName}-${Stage}-image"
+      State: ENABLED
+      EventPattern:
+        source:
+          - aws.s3
+        detail-type:
+          - Object Created
+        detail:
+          bucket:
+            name:
+              - !Ref SiteBucket
+          object:
+            key:
+              - suffix: .png
+              - suffix: .jpg
+              - suffix: .jpeg
+      Targets:
+        - Id: ImageLambda
+          Arn: !GetAtt ImageLambda.Arn
+
+  ImageEventPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref ImageLambda
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ImageEventRule.Arn
+
+  WebLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-${Stage}-web"
+      Description: Lambda function to serve website requests
+      Role: !GetAtt WebLamdaRole.Arn
+      Handler: handler.handler
+      Runtime: python3.12
+      Timeout: 60
+      MemorySize: 512
+      Environment:
+        Variables:
+          TELEGRAM_BOT_TOKEN: !Ref TelegramBotToken
+          TELEGRAM_CHAT_ID: !Ref TelegramChatId
+          TELEGRAM_LOG_LEVEL: !Ref TelegramLogLevel
+          APP_STAGE: !Ref Stage
+          APP_ENV: !Ref Env
+          APP_DEBUG: !Ref Debug
+          APP_SECRET: !Ref Secret
+          WEB_BASE_URL: !Sub "https://${DomainName}"
+          API_BASE_URL: !Sub "https://api.${DomainName}"
+          STATIC_BASE_URL: !Sub "https://static.${DomainName}"
+          DYNAMODB_TABLE: !Ref DynamoDBTable
+          GOOGLE_ANALYTICS_ID: !Ref GoogleAnalyticsId
+          TINYMCE_API_KEY: !Ref TinyMceApiKey
+          CONTACT_TOPIC_ARN: !Ref ContactFormTopic
+          ALLOWED_ORIGIN: !Sub "https://${DomainName}"
+          COGNITO_DOMAIN: !Sub "${CognitoUserPoolDomain}.auth.${AWS::Region}.amazoncognito.com"
+          COGNITO_CLIENT_ID: !Ref CognitoUserPoolClient
+          COGNITO_CLIENT_SECRET: !GetAtt CognitoUserPoolClient.ClientSecret
+          COGNITO_USER_POOL_ID: !Ref CognitoUserPoolV2
+          CSS_CACHE_COUNTER: !Ref CssCacheCounter
+          JS_CACHE_COUNTER: !Ref JsCacheCounter
+          AUTH_JWT_SECRET: !Ref AuthJwtSecret
+      Code:
+        S3Bucket: !Sub "${AWS::StackName}-code"
+        S3Key: !Ref WebFuncS3Key
+      Tags:
+        - Key: Stage
+          Value: !Ref Stage
+        - Key: Project
+          Value: !Ref Project
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Region
+          Value: !Ref AWS::Region
+
+  ApiLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-${Stage}-api"
+      Description: Lambda function to serve API requests
+      Role: !GetAtt WebLamdaRole.Arn
+      Handler: handler.handler
+      Runtime: python3.12
+      Timeout: 60
+      MemorySize: 512
+      Environment:
+        Variables:
+          TELEGRAM_BOT_TOKEN: !Ref TelegramBotToken
+          TELEGRAM_CHAT_ID: !Ref TelegramChatId
+          TELEGRAM_LOG_LEVEL: !Ref TelegramLogLevel
+          APP_STAGE: !Ref Stage
+          APP_ENV: !Ref Env
+          APP_DEBUG: !Ref Debug
+          APP_SECRET: !Ref Secret
+          API_BASE_URL: !Sub "https://api.${DomainName}"
+          WEB_BASE_URL: !Sub "https://${DomainName}"
+          STATIC_BASE_URL: !Sub "https://static.${DomainName}"
+          DYNAMODB_TABLE: !Ref DynamoDBTable
+          ALLOWED_ORIGIN: !Sub "https://${DomainName}"
+          CONTACT_TOPIC_ARN: !Ref ContactFormTopic
+          SES_FROM_EMAIL: !Sub "no-reply@${DomainName}"
+          STATIC_S3_BUCKET: !Ref SiteBucket
+          AUTH_JWT_SECRET: !Ref AuthJwtSecret
+          CLOUDFRONT_DISTRIBUTION_ID: !Ref CloudFrontDistribution
+      Code:
+        S3Bucket: !Sub "${AWS::StackName}-code"
+        S3Key: !Ref ApiFuncS3Key
+
+  WebGatewayLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref WebLambda
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebGateway}/*"
+
+  ApiGatewayLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref ApiLambda
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*"
+
+  WebGateway:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub "${AWS::StackName}-web"
+      ProtocolType: HTTP
+      DisableExecuteApiEndpoint: true
+      Tags:
+        Stage: !Ref Stage
+        Project: !Ref Project
+        Owner: !Ref Owner
+        Region: !Ref AWS::Region
+
+  WebGatewayLambdaIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebGateway
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt WebLambda.Arn
+      PayloadFormatVersion: "2.0"
+
+  WebGatewayDefaultRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebGateway
+      RouteKey: "$default"
+      Target: !Sub "integrations/${WebGatewayLambdaIntegration}"
+
+  WebGatewayDefaultStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref WebGateway
+      StageName: $default
+      AutoDeploy: true
+      Tags:
+        Stage: !Ref Stage
+        Project: !Ref Project
+        Owner: !Ref Owner
+        Region: !Ref AWS::Region
+
+  WebCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref DomainName
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !Ref DomainName
+          HostedZoneId: !Ref HostedZoneId
+      Tags:
+        - Key: Stage
+          Value: !Ref Stage
+        - Key: Project
+          Value: !Ref Project
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Region
+          Value: !Ref AWS::Region
+
+  WebGatewayDomainName:
+    Type: AWS::ApiGatewayV2::DomainName
+    Properties:
+      DomainName: !Ref DomainName
+      DomainNameConfigurations:
+        - CertificateArn: !Ref WebCertificate
+          EndpointType: REGIONAL
+          SecurityPolicy: TLS_1_2
+
+  WebGatewayMapping:
+    Type: AWS::ApiGatewayV2::ApiMapping
+    Properties:
+      ApiId: !Ref WebGateway
+      DomainName: !Ref WebGatewayDomainName
+      Stage: !Ref WebGatewayDefaultStage
+
+  ApiGateway:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub "${AWS::StackName}-api"
+      ProtocolType: HTTP
+      DisableExecuteApiEndpoint: true
+      Tags:
+        Stage: !Ref Stage
+        Project: !Ref Project
+        Owner: !Ref Owner
+        Region: !Ref AWS::Region
+
+  ApiGatewayLambdaIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ApiGateway
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt ApiLambda.Arn
+      PayloadFormatVersion: "2.0"
+
+  ApiGatewayRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApiGateway
+      RouteKey: "$default"
+      Target: !Sub "integrations/${ApiGatewayLambdaIntegration}"
+
+  ApiGatewayStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref ApiGateway
+      StageName: $default
+      AutoDeploy: true
+      Tags:
+        Stage: !Ref Stage
+        Project: !Ref Project
+        Owner: !Ref Owner
+        Region: !Ref AWS::Region
+
+  ApiCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Sub "api.${DomainName}"
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !Sub "api.${DomainName}"
+          HostedZoneId: !Ref HostedZoneId
+      Tags:
+        - Key: Stage
+          Value: !Ref Stage
+        - Key: Project
+          Value: !Ref Project
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Region
+          Value: !Ref AWS::Region
+
+  ApiGatewayDomainName:
+    Type: AWS::ApiGatewayV2::DomainName
+    Properties:
+      DomainName: !Sub "api.${DomainName}"
+      DomainNameConfigurations:
+        - CertificateArn: !Ref ApiCertificate
+          EndpointType: REGIONAL
+          SecurityPolicy: TLS_1_2
+
+  ApiGatewayMapping:
+    Type: AWS::ApiGatewayV2::ApiMapping
+    Properties:
+      ApiId: !Ref ApiGateway
+      DomainName: !Ref ApiGatewayDomainName
+      Stage: !Ref ApiGatewayStage
+
+  ApiGatewayDnsRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Sub "api.${DomainName}"
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt ApiGatewayDomainName.RegionalDomainName
+        HostedZoneId: !GetAtt ApiGatewayDomainName.RegionalHostedZoneId
+
+  CognitoUserPoolV2:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub "${AWS::StackName}-user-pool"
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+
+  GoogleIdentityProvider:
+    Type: AWS::Cognito::UserPoolIdentityProvider
+    Properties:
+      ProviderName: Google
+      ProviderType: Google
+      UserPoolId: !Ref CognitoUserPoolV2
+      ProviderDetails:
+        client_id: !Ref GoogleOauthClientId
+        client_secret: !Ref GoogleOauthClientSecret
+        authorize_scopes: "openid email profile"
+      AttributeMapping:
+        email: email
+        username: sub
+
+  CognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    DependsOn: GoogleIdentityProvider
+    Properties:
+      ClientName: !Sub "${AWS::StackName}-user-pool-client"
+      UserPoolId: !Ref CognitoUserPoolV2
+      GenerateSecret: true
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthScopes:
+        - email
+        - openid
+        - profile
+      CallbackURLs:
+        - !Sub "https://${DomainName}/login-callback"
+        - !Sub "https://${DomainName}"
+      LogoutURLs:
+        - !Sub "https://${DomainName}/logout-callback"
+        - !Sub "https://${DomainName}"
+      SupportedIdentityProviders:
+        - COGNITO
+        - Google
+
+  CognitoUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      UserPoolId: !Ref CognitoUserPoolV2
+      Domain: !Ref AWS::StackName
+
+  # S3 static - cache aggressively, forward Origin header only
+  S3CachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        Name: !Sub "${AWS::StackName}-s3-cache-policy"
+        MinTTL: 31536000 # 1 year
+        MaxTTL: 31536000 # 1 year
+        DefaultTTL: 31536000 # 1 year
+        ParametersInCacheKeyAndForwardedToOrigin:
+          EnableAcceptEncodingGzip: true
+          QueryStringsConfig:
+            QueryStringBehavior: whitelist
+            QueryStrings:
+              - "_"
+          HeadersConfig:
+            HeaderBehavior: whitelist
+            Headers:
+              - Origin
+          CookiesConfig:
+            CookieBehavior: none
+
+  S3OriginRequestPolicy:
+    Type: AWS::CloudFront::OriginRequestPolicy
+    Properties:
+      OriginRequestPolicyConfig:
+        Name: !Sub "${AWS::StackName}-s3-origin-request-policy"
+        QueryStringsConfig:
+          QueryStringBehavior: whitelist
+          QueryStrings:
+            - "_"
+        HeadersConfig:
+          HeaderBehavior: whitelist
+          Headers:
+            - Origin
+        CookiesConfig:
+          CookieBehavior: none
+
+  StaticResponseHeadersPolicy:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: !Sub "${AWS::StackName}-static-cache-headers"
+        Comment: One-month browser caching for static assets
+        CustomHeadersConfig:
+          Items:
+            - Header: Cache-Control
+              Value: public, max-age=31536000, immutable # 1 year
+              Override: false
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases: [ !Sub "static.${DomainName}" ]
+        Enabled: true
+        Origins:
+          - Id: s3Origin
+            DomainName: !GetAtt SiteBucket.RegionalDomainName
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOAI}"
+        DefaultCacheBehavior:
+          TargetOriginId: s3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [ GET, HEAD ]
+          CachedMethods: [ GET, HEAD ]
+          CachePolicyId: !Ref S3CachePolicy
+          OriginRequestPolicyId: !Ref S3OriginRequestPolicy
+          ResponseHeadersPolicyId: !Ref StaticResponseHeadersPolicy
+        ViewerCertificate:
+          AcmCertificateArn: !Ref CertificateArn
+          SslSupportMethod: sni-only
+      Tags:
+        - Key: Stage
+          Value: !Ref Stage
+        - Key: Project
+          Value: !Ref Project
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Region
+          Value: !Ref AWS::Region
+
+  DNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DomainName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt WebGatewayDomainName.RegionalDomainName
+        HostedZoneId: !GetAtt WebGatewayDomainName.RegionalHostedZoneId
+
+  StaticDnsRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Sub "static.${DomainName}"
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt CloudFrontDistribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2
+
+  SesEmailIdentity:
+    Type: AWS::SES::EmailIdentity
+    Properties:
+      EmailIdentity: !Ref DomainName
+      DkimAttributes:
+        SigningEnabled: true
+      MailFromAttributes:
+        MailFromDomain: !Sub "bounce.${DomainName}"
+        BehaviorOnMxFailure: USE_DEFAULT_VALUE
+      Tags:
+        - Key: Stage
+          Value: !Ref Stage
+        - Key: Project
+          Value: !Ref Project
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Region
+          Value: !Ref AWS::Region
+
+  SesDkimRecord1:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !GetAtt SesEmailIdentity.DkimDNSTokenName1
+      Type: CNAME
+      TTL: 300
+      ResourceRecords:
+        - !GetAtt SesEmailIdentity.DkimDNSTokenValue1
+
+  SesDkimRecord2:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !GetAtt SesEmailIdentity.DkimDNSTokenName2
+      Type: CNAME
+      TTL: 300
+      ResourceRecords:
+        - !GetAtt SesEmailIdentity.DkimDNSTokenValue2
+
+  SesDkimRecord3:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !GetAtt SesEmailIdentity.DkimDNSTokenName3
+      Type: CNAME
+      TTL: 300
+      ResourceRecords:
+        - !GetAtt SesEmailIdentity.DkimDNSTokenValue3
+
+  SesMailFromMxRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Sub "bounce.${DomainName}"
+      Type: MX
+      TTL: 300
+      ResourceRecords:
+        - !Sub "10 feedback-smtp.${AWS::Region}.amazonses.com"
+
+  SesMailFromSpfRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Sub "bounce.${DomainName}"
+      Type: TXT
+      TTL: 300
+      ResourceRecords:
+        - '"v=spf1 include:amazonses.com ~all"'
+
+  ContactFormTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${AWS::StackName}-contact-form-topic"
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref NotificationEmail
+        - Protocol: sms
+          Endpoint: !Ref NotificationPhone
+      Tags:
+        - Key: Stage
+          Value: !Ref Stage
+        - Key: Project
+          Value: !Ref Project
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Region
+          Value: !Ref AWS::Region
+
+  WebLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${WebLambda}"
+      RetentionInDays: 14
+      Tags:
+        - Key: Stage
+          Value: !Ref Stage
+        - Key: Project
+          Value: !Ref Project
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Region
+          Value: !Ref AWS::Region
+
+  ApiLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-${Stage}-api"
+      RetentionInDays: 14
+      Tags:
+        - Key: Stage
+          Value: !Ref Stage
+        - Key: Project
+          Value: !Ref Project
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Region
+          Value: !Ref AWS::Region
+
+  ImageLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-${Stage}-image"
+      RetentionInDays: 14
+      Tags:
+        - Key: Stage
+          Value: !Ref Stage
+        - Key: Project
+          Value: !Ref Project
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Region
+          Value: !Ref AWS::Region
+
+Outputs:
+  WebCertificateArn:
+    Value: !Ref WebCertificate
+    Description: ARN of the regional Web API Gateway certificate
+  ApiCertificateArn:
+    Value: !Ref ApiCertificate
+    Description: ARN of the regional API Gateway certificate
+  SesIdentityArn:
+    Value: !Sub "arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/${DomainName}"
+    Description: ARN of the verified SES sending identity
+  SesMailFromDomain:
+    Value: !Sub "bounce.${DomainName}"
+    Description: Custom SES MAIL FROM domain
+  WebsiteUrl:
+    Value: !Sub "https://${DomainName}"
+    Description: URL of the deployed website
+  CloudFrontDistributionId:
+    Value: !GetAtt CloudFrontDistribution.Id
+    Description: ID of the CloudFront distribution serving static files
+  StaticUrl:
+    Value: !Sub "https://static.${DomainName}"
+    Description: URL of the static file distribution
+  WebLambdaName:
+    Value: !Ref WebLambda
+    Description: Name of the Web Lambda function
+  ContactFormTopicArn:
+    Value: !Ref ContactFormTopic
+    Description: ARN of the SNS topic used for contact form notifications
+  LambdaRoleName:
+    Value: !Ref WebLamdaRole
+    Description: Shared IAM role name for the Web and API Lambdas
+  WebLambdaLogGroupName:
+    Value: !Ref WebLambdaLogGroup
+    Description: CloudWatch log group for the Web Lambda
+  ApiLambdaLogGroupName:
+    Value: !Ref ApiLambdaLogGroup
+    Description: CloudWatch log group for the API Lambda
+  ImageLambdaLogGroupName:
+    Value: !Ref ImageLambdaLogGroup
+    Description: CloudWatch log group for the image variants Lambda
+  ApiGatewayId:
+    Value: !Ref ApiGateway
+    Description: ID of the API Gateway dedicated to the API Lambda
+  ApiUrl:
+    Value: !Sub "https://api.${DomainName}"
+    Description: Custom domain URL of the API Lambda
+  WebGatewayId:
+    Value: !Ref WebGateway
+    Description: ID of the API Gateway for the Web Lambda
+  DynamoDbTableName:
+    Value: !Ref DynamoDBTable
+    Description: Name of the application DynamoDB table
+  CognitoUserPoolId:
+    Value: !Ref CognitoUserPoolV2
+    Description: ID of the Cognito User Pool
+  CognitoUserPoolClientId:
+    Value: !Ref CognitoUserPoolClient
+    Description: ID of the Cognito User Pool Client

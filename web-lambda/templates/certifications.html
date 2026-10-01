@@ -1,0 +1,34 @@
+{% extends "layout.html" %}
+{% set layout_assets = {"masonry": true} %}
+{% set title = "Certifications" %}
+{% block breadcrumbs %}
+    {% with breadcrumbs = {"Home": url("index"), "Certifications": None} %}
+        {% include "fragments/breadcrumbs.html" %}
+    {% endwith %}
+{% endblock %}
+{% block content %}
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <h1 class="mb-0">Certifications</h1>
+        {% if cur_user and check_auth(cur_user, Permission.ROOT) %}
+            <a class="btn btn-dark" href="{{ url('new-certification') }}">New certification</a>
+        {% endif %}
+    </div>
+    <p class="text-secondary">Choose a target credential and practice with community-created exams.</p>
+    <div id="certifications" class="row row-cols-1 row-cols-md-3 g-3"
+         data-masonry='{"percentPosition": true}'>
+        {% for certification in certifications %}
+            <div class="col">
+                <a class="card card-body h-100 text-decoration-none" href="{{ url('certification', slug=certification.slug) }}">
+                    {% if certification.image_filename %}
+                        <img class="card-img-top rounded mb-2" src="{{ static_url(certification.image_filename) }}" alt="{{ certification.name }}">
+                    {% endif %}
+                    <small class="text-secondary">{{ certification.provider }} · {{ certification.level|title }}</small>
+                    <h2 class="h5">{{ certification.name }}</h2>
+                    <p class="mb-0 text-body-secondary">{{ certification.description }}</p>
+                </a>
+            </div>
+        {% else %}
+            <p class="text-secondary">No certifications have been added yet.</p>
+        {% endfor %}
+    </div>
+{% endblock %}

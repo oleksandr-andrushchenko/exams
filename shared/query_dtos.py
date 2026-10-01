@@ -1,0 +1,121 @@
+from dataclasses import asdict, dataclass, field
+from enum import StrEnum
+
+from validation import validate_category_slug
+
+
+@dataclass(slots=True)
+class BaseQueryDTO:
+    DEFAULT_OFFSET = None
+    DEFAULT_LIMIT = 40
+
+    offset: str | None = DEFAULT_OFFSET
+    limit: int = DEFAULT_LIMIT
+
+    def __post_init__(self):
+        self.limit = _limit(self.limit)
+
+    def get_dict(self, rewrite=None):
+        result = asdict(self)
+        result.update(rewrite or {})
+        return {k: v.value if isinstance(v, StrEnum) else v for k, v in result.items()}
+
+    def has_params(self):
+        return self.offset is not None or self.limit != self.DEFAULT_LIMIT
+
+
+def _limit(value) -> int:
+    try:
+        value = int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("limit must be an integer") from exc
+    if not 1 <= value <= BaseQueryDTO.DEFAULT_LIMIT and value != 1000:
+        raise ValueError("limit must be between 1 and " + str(BaseQueryDTO.DEFAULT_LIMIT))
+    return value
+
+
+class UserQueryType(StrEnum):
+    LATEST = "latest"
+    POPULAR = "popular"
+
+
+class UserStatus(StrEnum):
+    ACTIVE = "active"
+    BANNED = "banned"
+
+
+@dataclass(slots=True)
+class UserQueryDTO(BaseQueryDTO):
+    DEFAULT_TYPE = UserQueryType.LATEST
+    DEFAULT_STATUS = UserStatus.ACTIVE
+
+    type: UserQueryType = UserQueryType.LATEST
+    status: UserStatus = UserStatus.ACTIVE
+
+    def __post_init__(self):
+        BaseQueryDTO.__post_init__(self)
+        self.type = UserQueryType(self.type)
+        self.status = UserStatus(self.status)
+
+    def has_params(self):
+        return BaseQueryDTO.has_params(self) or self.type != self.DEFAULT_TYPE or self.status != self.DEFAULT_STATUS
+
+
+class TagQueryType(StrEnum):
+    LATEST = "latest"
+    POPULAR = "popular"
+
+
+@dataclass(slots=True)
+class TagQueryDTO(BaseQueryDTO):
+    DEFAULT_TYPE = TagQueryType.LATEST
+
+    type: TagQueryType = DEFAULT_TYPE
+    prefix: str | None = None
+
+    def __post_init__(self):
+        BaseQueryDTO.__post_init__(self)
+        self.type = TagQueryType(self.type)
+        if self.prefix is not None and not 1 <= len(self.prefix) <= 40:
+            raise ValueError("prefix must contain between 1 and 40 characters")
+
+    def has_params(self):
+        return BaseQueryDTO.has_params(self) or self.type != self.DEFAULT_TYPE or self.prefix is not None
+
+
+class ExamQueryType(StrEnum):
+    LATEST = "latest"
+    POPULAR = "popular"
+
+
+class ExamStatus(StrEnum):
+    UNPUBLISHED = "unpublished"
+    PUBLISHED = "published"
+    REJECTED = "rejected"
+
+
+@dataclass(slots=True)
+class ExamQueryDTO(BaseQueryDTO):
+    DEFAULT_TYPE = ExamQueryType.LATEST
+    DEFAULT_STATUS = ExamStatus.PUBLISHED
+
+    tags: list[str] = field(default_factory=list)
+    type: ExamQueryType = ExamQueryType.LATEST
+    status: ExamStatus = ExamStatus.PUBLISHED
+    category: str | None = None
+
+    def __post_init__(self):
+        BaseQueryDTO.__post_init__(self)
+        self.type = ExamQueryType(self.type)
+        self.status = ExamStatus(self.status)
+        if self.category is not None:
+            self.category = validate_category_slug(self.category)
+
+    def has_params(self):
+        return BaseQueryDTO.has_params(self) or bool(
+            self.tags) or self.category is not None or self.type != self.DEFAULT_TYPE or self.status != self.DEFAULT_STATUS
+
+
+@dataclass(slots=True)
+class ExamCommentQueryDTO(BaseQueryDTO):
+    pass

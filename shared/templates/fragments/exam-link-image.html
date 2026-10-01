@@ -1,0 +1,9 @@
+<a href="{{ exam_url(exam) }}" class="d-block w-100">
+    {% with filename=image,
+        alt=exam.title,
+        img_class="img-fluid w-100 h-auto",
+        img_style=None,
+        img_sizes=exam_img_sizes %}
+        {% include "fragments/image.html" %}
+    {% endwith %}
+</a>

@@ -1,0 +1,20 @@
+<section class="card shadow-sm text-bg-warning">
+    <div class="card-body">
+        <h2 class="h4 card-title">
+            <i class="bi bi-star-fill"></i>
+            Become an author
+        </h2>
+
+        <p class="card-text">
+            Share your ideas and earn money from your content.
+        </p>
+
+        <a href="{{ url('new-exam') if cur_user else url('login', redirect_url=url('new-exam')) }}"
+           class="btn btn-dark bi bi-pencil-fill"{% if not cur_user %} rel="nofollow"{% endif %}>
+            Write an exam
+        </a>
+        <a href="{{ url("earn") }}" class="btn btn-dark btn-sm bi bi-currency-dollar">
+            Earn with us
+        </a>
+    </div>
+</section>

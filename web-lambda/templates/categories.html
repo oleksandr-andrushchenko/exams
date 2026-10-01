@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+{% set title = "Categories" %}
+{% set meta_title = title ~ " | " ~ site_name %}
+{% set meta_desc = "Browse exams by system design area on " ~ site_name ~ "." %}
+{% set meta_robots = "index, follow" %}
+{% set meta_canonical_url = url("categories", absolute=True) %}
+
+{% block breadcrumbs %}
+    {% with breadcrumbs = {"Home": url("index"), "Categories": None} %}
+        {% include "fragments/breadcrumbs.html" %}
+    {% endwith %}
+{% endblock %}
+
+{% block content %}
+    <h1>{{ title }}</h1>
+    <p class="text-secondary">Browse exams by system design area.</p>
+    <div class="row row-cols-1 row-cols-lg-2 g-3" id="categories">
+        {% for category in categories %}
+            {% include "fragments/category.html" %}
+        {% endfor %}
+    </div>
+{% endblock %}

@@ -1,0 +1,7 @@
+{% for exam in exams %}
+    {% if horizontal | default(False) %}
+        {% include "fragments/horizontal-exam.html" %}
+    {% else %}
+        {% include "fragments/exam.html" %}
+    {% endif %}
+{% endfor %}

@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+{% set title = "Exam history" %}
+{% block breadcrumbs %}
+    {% with breadcrumbs = {"Home": url("index"), "My history": None} %}
+        {% include "fragments/breadcrumbs.html" %}
+    {% endwith %}
+{% endblock %}
+{% block content %}
+    <h1>{{ title }}</h1>
+    {% if sessions %}
+        <div class="list-group">
+            {% for session in sessions %}
+                <a class="list-group-item list-group-item-action" href="{{ url('exam-session', session_id=session.id) }}">
+                    Exam {{ session.exam_id }} · {{ session.status|replace('_', ' ')|title }}
+                    {% if session.score is not none %} · {{ session.score }}%{% endif %}
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}<p class="text-secondary">You have not tried an exam yet.</p>{% endif %}
+{% endblock %}

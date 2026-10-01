@@ -1,1 +1,0 @@
-export type RatingMarkType = 'exam' | 'question'

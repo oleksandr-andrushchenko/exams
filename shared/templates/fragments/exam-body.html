@@ -1,0 +1,51 @@
+<div class="card-body">
+    <a class="link-body-emphasis text-decoration-none" href="{{ exam_url(exam) }}">
+        <h{{ h_tag_size }} class="h{{ h_display_size | default(3) }} mb-1 card-title">
+            {{ exam.title }}
+        </h{{ h_tag_size }}>
+
+        {% if preview %}
+            <div class="card-text mb-1 text-secondary two-line-ellipsis">
+                {{ exam.preview }}
+            </div>
+        {% endif %}
+    </a>
+
+    {% include "fragments/exam-rating.html" %}
+
+    {% if exam_user %}
+        <a href="{{ user_url(exam_user) }}" class="small link-secondary bi bi-person me-2" title="Exam">
+            {{ exam_user.name }}
+        </a>
+    {% endif %}
+
+    <small class="text-secondary bi bi-calendar2 me-2" title="Created at">
+        {{ (exam.created_at / 1000) | unix_to_full_date }}
+    </small>
+
+    {% if exam.status == ExamStatus.REJECTED %}
+        <span class="badge text-bg-danger fs-6 me-2" title="{{ exam.comment }}">Rejected</span>
+    {% elif exam.status == ExamStatus.UNPUBLISHED %}
+        <span class="badge text-bg-warning fs-6 me-2" title="Pending">Unpublished</span>
+    {% endif %}
+
+    {% if exam.likes_count or exam.dislikes_count %}
+        <small class="text-secondary me-2">
+            {% if exam.likes_count %}
+                <span class="bi bi-hand-thumbs-up" title="Likes"> {{ exam.likes_count }}</span>
+            {% endif %}
+
+            {% if exam.dislikes_count %}
+                <span class="bi bi-hand-thumbs-down" title="Dislikes"> {{ exam.dislikes_count }}</span>
+            {% endif %}
+        </small>
+    {% endif %}
+
+    {% if exam.tags %}
+        <div class="small d-inline-block text-secondary bi bi-tags">
+            {% for tag in exam.tags %}
+                <a href="{{ exams_url(tags=[tag]) }}" class="link-secondary text-decoration-none"> {{ tag }}</a>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>

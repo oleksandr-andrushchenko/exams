@@ -1,0 +1,22 @@
+{% set exam_rating = exam_sentiment_rating(exam.likes_count, exam.dislikes_count) %}
+
+{% if exam_rating %}
+    <div class="exam-rating {{ rating_size | default("") }}"
+         title="{{ exam_rating.score }} out of 5 from {{ exam_rating.total_count }} votes"
+         aria-label="{{ exam_rating.score }} out of 5 from {{ exam_rating.total_count }} votes">
+        {% for star in range(1, 6) %}
+            {% if star <= exam_rating.filled_stars %}
+                <i class="bi bi-star-fill text-warning"></i>
+            {% elif star == exam_rating.filled_stars + 1 and exam_rating.has_half_star %}
+                <i class="bi bi-star-half text-warning"></i>
+            {% else %}
+                <i class="bi bi-star text-secondary"></i>
+            {% endif %}
+        {% endfor %}
+        {% if rating_extended | default(False) %}
+            <span class="text-secondary fs-6">{{ exam_rating.score }} out of 5 from {{ exam_rating.total_count }} votes</span>
+        {% else %}
+            <small class="text-secondary">{{ exam_rating.score }}/5 ({{ exam_rating.total_count }})</small>
+        {% endif %}
+    </div>
+{% endif %}

@@ -1,0 +1,6 @@
+<form class="d-flex flex-column gap-3" id="category-form" novalidate data-form-handler="category"
+      data-submit-url="{{ url('update-category', slug=category.slug, absolute=True) }}" data-method="PATCH">
+    <div><label for="name" class="form-label label-required">Name</label><input type="text" class="form-control" id="name" name="name" value="{{ category.name }}"><div class="form-text">Slug: <code>{{ category.slug }}</code></div></div>
+    <div><label for="description" class="form-label label-required">Description</label><textarea class="form-control" id="description" name="description" rows="4">{{ category.description }}</textarea></div>
+    <button type="submit" class="btn btn-light align-self-start bi bi-arrow-clockwise"> Update category</button>
+</form>

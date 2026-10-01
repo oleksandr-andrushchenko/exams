@@ -23,7 +23,7 @@
 
 - API Lambda source files live directly under `api-lambda/src`; keep its single runtime entrypoint at `server.ts`. It must expose the application factory used by functional tests and the Lambda handler, while only starting a local HTTP server when run directly.
 
-- Put common functions and behavior that may be used by both Lambdas in `lambda-shared`.
+- Put common functions and behavior that may be used by both Lambdas in `shared`.
 - For example, a shared exam-item fragment could be consumed by the web Lambda for rendering and by the API Lambda when returning content during subsequent lazy loads.
 
 ## Static assets
@@ -43,6 +43,8 @@
 ## Templates
 
 - Store layout and page templates in the templates root; store reusable partial HTML templates in the `fragments` directory.
+- Build internal links with named web-route helpers (`url(...)`, `exam_url(...)`, etc.); do not use bare fragment-only links such as `href="#questions"`. A fragment may be appended to a generated endpoint URL when the target is a section on that page.
+- Keep application JavaScript in `static/scripts.js`. Templates should provide endpoint URLs and page data through `data-*` attributes or the shared body configuration. Inline application `<script>` blocks are not allowed; external library scripts and structured-data blocks are exceptions.
 
 ## Web errors
 
@@ -54,11 +56,26 @@
 - The web Lambda owns GET page endpoints, including login and registration pages. All non-GET endpoints, including login, logout, uploads, and resource mutations, belong to the API Lambda. The web Lambda may pass the configured API URL to client scripts, but it must not proxy API requests.
 - The API Lambda owns resource operations, mutations, authentication, uploads, and JSON/HTML responses through Express routes. The browser client communicates with it through AJAX calls only.
 - API responses may contain rendered HTML fragments, such as updated rating markup. The client should replace the corresponding page fragment with that response.
-- Shared HTML fragments used by both Lambdas belong in lambda-shared/templates/fragments.
+- Shared HTML fragments used by both Lambdas belong in shared/templates/fragments.
 - Authentication cookies and their supporting token logic must be compatible between the web and API Lambdas.
-- Keep access-token extraction from Bearer headers and authentication cookies in `lambda-shared`; each Lambda owns token verification and user lookup.
+- Keep access-token extraction from Bearer headers and authentication cookies in `shared`; each Lambda owns token verification and user lookup.
 - Keep the web Lambda dependency footprint minimal to reduce bundle size and cold-start time.
 - Do not add API-only, mutation-only, or heavyweight dependencies to the web Lambda unless page rendering or authentication genuinely requires them; keep such dependencies in the API Lambda.
 - Keep web Lambda PostgreSQL queries in web-lambda/src/repositories, organized by entity or read model.
-- Shared domain entities, enums, database transformers, and model normalizers belong in `lambda-shared`; API services may depend on them but must not own them.
-- Deploy each Lambda from its complete dist directory: the build emits Lambda code under <lambda>-lambda/dist/<lambda>-lambda/src and compiled shared modules under <lambda>-lambda/dist/lambda-shared; do not deploy only the Lambda source subtree.
+- Shared domain entities, enums, database transformers, and model normalizers belong in `shared`; API services may depend on them but must not own them.
+- Deploy each Lambda from its complete dist directory: the build emits Lambda code under <lambda>-lambda/dist/<lambda>-lambda/src and compiled shared modules under <lambda>-lambda/dist/shared; do not deploy only the Lambda source subtree.
+
+
+## Python migration
+
+- The application now follows the ExamMe Python/Starlette two-Lambda layout: shared modules live in `shared`, and Lambda-specific code stays in `api-lambda` or `web-lambda`.
+- DynamoDB exam records use `EXAM#<id>` partitions; questions are stored beneath an exam as `QUESTION#<id>` sort keys.
+- Questions are validated in `shared/question_dtos.py` and exposed by the API under `/exams/{exam_id}/questions`.
+- Certifications represent official provider credentials; user-owned practice exams may reference a certification but remain separate content. Certification records use the `CERTIFICATION` partition and certification slugs as sort keys.
+- Exams expose discovery metadata including `certification_id`, `provider` through the certification, `difficulty`, and `language`; categories remain curated taxonomy while tags remain flexible keywords.
+- Run the Python functional suite with `make tests`; its isolated Compose stack uses DynamoDB rather than PostgreSQL.
+- After DynamoDB schema/index changes, run `make recreate-local-dynamodb`; the local table is persistent and cannot be migrated in place. Local AWS CLI commands default to `us-west-2`.
+- Exam categories use `CATEGORY` partitions, category/status exam indexes, and the `published_exams_count` counter; legacy exams without a category are read as `other`.
+- Exam descriptions are plain text, limited to 500 characters; the legacy DynamoDB `content` field is retained only as a migration alias. Exam and certification cover images use the explicit `image_filename` field. New exams receive a starter choice question so they can be tried immediately.
+- Questions use `title`, `description`, and a list of choice objects (`title`, `description`, `is_correct`); do not reintroduce the old `Question.prompt` or string-choice shape.
+- Exam sessions are stored under the user partition, with answers under the session partition. The web session page submits answers through API routes and records a passed/failed result in history.

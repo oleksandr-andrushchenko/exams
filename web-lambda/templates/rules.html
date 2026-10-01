@@ -1,0 +1,144 @@
+{% extends "layout.html" %}
+
+{% set title = "Rules" %}
+
+{% set meta_title = "Community Rules & Content Publishing Guidelines ~ " ~ site_name %}
+{% set meta_desc = "Read the " ~ site_name ~ " community rules for technical exams and discussions, including accuracy, AI use, source credit, privacy, reporting, and moderation." %}
+{% set meta_robots = "index, follow" %}
+{% set meta_canonical_url = url("rules", absolute=True) %}
+
+{% block meta_schema %}
+    {{- {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "@id": meta_canonical_url,
+        "url": meta_canonical_url,
+        "name": title,
+        "description": meta_desc,
+        "inLanguage": "en",
+        "breadcrumb": {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {"@type": "ListItem", "position": 1, "name": "Home", "item": url("index", absolute=True)},
+                {"@type": "ListItem", "position": 2, "name": title, "item": meta_canonical_url}
+            ]
+        }
+    } | tojson | safe -}}
+{% endblock %}
+
+{% block breadcrumbs %}
+    {% with breadcrumbs = {"Home": url("index"), (title): None} %}
+        {% include "fragments/breadcrumbs.html" %}
+    {% endwith %}
+{% endblock %}
+
+{% block content %}
+    <article>
+        <header>
+            <h1>{{ site_name }} {{ title }}</h1>
+            <p class="text-secondary"><b>Last updated:</b> <time datetime="2026-09-04">September 4, 2026</time></p>
+            <p class="small text-secondary">Updated with technical publishing standards, AI assistance, responsible security discussion, reporting, and moderation review.</p>
+            <p>Welcome to <b>{{ site_name }}</b>! These guidelines describe how we expect users to behave when
+                interacting on our site. By participating (commenting, posting, sharing), you agree to follow these
+                rules.</p>
+        </header>
+
+        <section>
+            <h2>1. Be Respectful</h2>
+            <p>You should treat other members of our community with respect. Do not harass, bully, intimidate or
+                discriminate against others. Constructive disagreement is fine — personal attacks or hateful language
+                are not.</p>
+        </section>
+
+        <section>
+            <h2>2. Publish Useful, Accurate Technical Content</h2>
+            <p>Keep exams and comments relevant to software architecture, system design, and related engineering
+                topics. Use clear titles, relevant tags, readable explanations, and examples you have checked.
+                Distinguish facts, opinions, estimates, and assumptions. Link to supporting sources for factual claims
+                where practical, and correct material errors when you discover them.</p>
+            <p>AI assistance is allowed, but you remain responsible for accuracy, originality, and rights. Review
+                generated text and code; do not invent citations, benchmarks, credentials, or claims of personal
+                experience. Disclose substantial AI-generated material when omitting that information would mislead
+                readers. Do not flood the site with repetitive or unreviewed generated exams.</p>
+            <p>Submissions begin unpublished, and publication depends on permissions and review. Major edits or tag
+                changes can return an exam to unpublished status. Do not use edits to replace approved content
+                with spam or unrelated material.</p>
+        </section>
+
+        <section>
+            <h2>3. No Hate Speech, Harassment or Discrimination</h2>
+            <p>We do not tolerate content or behavior that targets a person or group based on race, ethnicity, national
+                origin, religion, gender, sexual orientation, disability, age or other protected characteristic.</p>
+        </section>
+
+        <section>
+            <h2>4. Share Security Knowledge Responsibly</h2>
+            <p>Technical discussion of security is welcome. Do not distribute malware, steal credentials, encourage
+                unauthorized access, or publish secrets, access tokens, or private customer data. Use synthetic or
+                properly anonymized examples and environments you are authorized to test. Report vulnerabilities in
+                this Website privately through Contacts with enough detail to investigate; do not exploit them.</p>
+            <p>Do not post unlawful threats, sexual exploitation, or content that promotes violence or self-harm.</p>
+        </section>
+
+        <section>
+            <h2>5. No Spam, Manipulation, or Hidden Promotions</h2>
+            <p>Do not use duplicate accounts, bots, coordinated voting, fake follows, or repeated comments to
+                manipulate ratings or visibility. Do not impersonate another author or evade a ban. Critique ideas
+                constructively; do not harass authors over ratings or moderation decisions.</p>
+            <p>Relevant links and your profile's donation option are welcome. Disclose sponsorships, affiliate
+                relationships, and other financial interests when discussing a product. Do not use misleading
+                donation links, unsolicited advertisements, or payment promises to influence reviews or moderation.</p>
+        </section>
+
+        <section>
+            <h2>6. Respect Intellectual Property</h2>
+            <p>Only share content you own, have permission to use, or may use under applicable law.
+                Attribution alone does not grant permission to use third-party work.</p>
+            <p>You may reuse or republish content covered by our
+                <a href="{{ url('terms') }}#content-reuse" class="link-body-emphasis">content reuse policy</a>
+                by crediting {{ site_name }} and linking to the original page. Check that policy for third-party
+                material and earlier contributor content. When publishing here, you must have the rights needed
+                to grant the permissions in our Terms of Service.</p>
+            <p>AI rewriting is not a way around the source credit requirement. If you reuse or adapt content
+                under our policy, including by paraphrasing, summarizing, translating, or restructuring it with
+                AI or manually, credit {{ site_name }} and link to the original page. Do not conceal the source
+                or present someone else's adapted work as independently created content. The scope and legal
+                exceptions in our content reuse policy still apply.</p>
+        </section>
+
+        <section>
+            <h2>7. Protect Personal &amp; Confidential Information</h2>
+            <p>Do not publish another person's private information without an appropriate right to do so. Do not
+                upload passwords, private keys, customer records, confidential employer documents, or identifying
+                screenshots. Uploaded images are accessible by URL even before an exam is published.</p>
+            <p>Your profile location, external links, subscribed interests, and selected activity history may be public.
+                Share only what you want visitors to see. Use Contacts for private reports and privacy requests rather
+                than posting sensitive information in comments.</p>
+        </section>
+
+        <section>
+            <h2>8. Reports, Moderation &amp; Review</h2>
+            <p>Report rule violations through our <a href="{{ url('contacts') }}"
+                class="link-body-emphasis">Contacts</a> page. Include the relevant URL, a short description, and
+                supporting information that you have a right to share. For copyright reports, follow
+                <a href="{{ url('terms') }}" class="link-body-emphasis">Terms section 5</a>.</p>
+            <p>We may reject exams, restrict content, or ban accounts based on the circumstances and severity of
+                the issue. If you believe a decision was mistaken, request review through Contacts and explain why.
+                We do not guarantee a particular outcome or continuous monitoring of all content. Do not retaliate
+                against someone for reporting a concern.</p>
+        </section>
+
+        <section>
+            <h2>9. Changes to These Guidelines</h2>
+            <p>We may update these guidelines as the community and features change. Revisions will appear here with
+                a fixed update date, and material changes will be identified. These Rules work together with our
+                <a href="{{ url('terms') }}" class="link-body-emphasis">Terms of Service</a>.</p>
+        </section>
+
+        <footer>
+            <h2>Contact</h2>
+            <p>If you have questions or would like to report a violation, please contact us at the <a
+                    href="{{ url('contacts') }}" class="link-body-emphasis">Contacts</a> page of {{ site_name }}.</p>
+        </footer>
+    </article>
+{% endblock %}

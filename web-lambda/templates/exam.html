@@ -1,62 +1,299 @@
 {% extends "layout.html" %}
+{% set layout_assets = {"prism": true} %}
+
+{% set exam_canonical_url = exam_url(exam, absolute=True) %}
+{% set exam_alternate_url = url("exam", exam_id=exam.id, absolute=True) %}
+{% set author_canonical_url = user_url(author, absolute=True) %}
+{% set author_alternate_url = url("user", user_id=author.id, absolute=True) %}
+{% set meta_desc = [exam.title, exam.preview, meta_desc] | select | join('. ') | truncate(155, True, '...') %}
+{% set meta_title = exam.title ~ " | by " ~ author.name ~ " ~ " ~ site_name %}
+{% set meta_robots = "index, follow" %}
+{% set og_type = "exam" %}
+{% set meta_canonical_url = exam_canonical_url %}
+{% set og_url = meta_canonical_url %}
+{% set og_img_filename = exam.image_filename %}
+{% set exam_og_author = author_canonical_url %}
+{% set exam_og_published_time = exam.published_at | iso_utc if exam.published_at else None %}
+{% set exam_og_modified_time = exam.updated_at | iso_utc if exam.updated_at and exam.published_at else None %}
+{% set exam_og_tags = exam.tags %}
+{% block meta_schema %}
+    {% set exam_body = html_to_text(exam.description) %}
+    {% set exam_image_url = static_url(exam.image_filename, absolute=True) if exam.image_filename else None %}
+    {% set comment_schemas = namespace(values=[]) %}
+    {% for exam_comment in comments %}
+        {% set comment_user = exam_comment.get_user() %}
+        {% set comment_anchor = "comment-" ~ (exam_comment.id | replace("#", "-")) %}
+        {% set comment_schemas.values = comment_schemas.values + [{
+            "@type": "Comment",
+            "@id": meta_canonical_url ~ "#" ~ comment_anchor,
+            "url": meta_canonical_url ~ "#" ~ comment_anchor,
+            "author": {
+                "@type": "Person",
+                "@id": user_url(comment_user, absolute=True),
+                "name": comment_user.name,
+                "url": user_url(comment_user, absolute=True)
+            },
+            "datePublished": exam_comment.created_at | iso_utc,
+            "text": exam_comment.text
+        }] %}
+    {% endfor %}
+    {% set author_schema = {
+        "@context": "https://schema.org",
+        "@id": author_canonical_url,
+        "@type": "Person",
+        "identifier": author.username or author.id,
+        "name": author.name,
+        "url": author_canonical_url,
+        "sameAs": [author.website] if author.website else []
+    } %}
+    {% set exam_schema = {
+        "@context": "https://schema.org",
+        "@id": meta_canonical_url,
+        "@type": "Exam",
+        "url": meta_canonical_url,
+        "dateCreated": exam.created_at | iso_utc,
+        "datePublished": (exam.published_at | iso_utc) if exam.published_at else None,
+        "headline": exam.title,
+        "name": exam.title,
+        "description": meta_desc,
+        "examBody": exam_body,
+        "wordCount": exam_body.split() | length,
+        "inLanguage": "en",
+        "identifier": exam.id,
+        "commentCount": exam.comments_count | int,
+        "author": author_schema,
+        "creator": author_schema,
+        "publisher": {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            "@id": author_schema["@id"],
+            "name": author_schema["name"],
+            "url": author_schema["url"],
+            "logo": {
+                "@type": "ImageObject",
+                "url": static_url(site_img_filename, absolute=True)
+            } if site_img_filename else None,
+            "sameAs": ([author_alternate_url] if author_canonical_url != author_alternate_url else [])
+                       + ([author.website] if author.website else [])
+        },
+        "mainEntityOfPage": meta_canonical_url,
+        "isAccessibleForFree": not exam.is_premium,
+        "breadcrumb": {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {"@type": "ListItem", "position": 1, "name": "Home", "item": url("index", absolute=True)},
+                {"@type": "ListItem", "position": 2, "name": "Exams", "item": exams_url(absolute=True)},
+                {"@type": "ListItem", "position": 3, "name": exam.title, "item": meta_canonical_url}
+            ]
+        }
+    } %}
+    {% if exam_image_url %}
+        {% set exam_schema = exam_schema.update({
+            "image": [exam_image_url],
+            "thumbnailUrl": exam_image_url
+        }) or exam_schema %}
+    {% endif %}
+    {% if comment_schemas.values %}
+        {% set exam_schema = exam_schema.update({"comment": comment_schemas.values}) or exam_schema %}
+    {% endif %}
+    {% if exam.updated_at and exam.published_at and exam.updated_at - exam.published_at > 86_400_000 %}
+        {% set exam_schema = exam_schema.update({"dateModified": exam.updated_at | iso_utc}) or exam_schema %}
+    {% endif %}
+    {{- exam_schema | tojson | safe -}}
+{% endblock %}
+
+{% block breadcrumbs %}
+    {% with breadcrumbs = {"Home": url("index"), "Exams": exams_url(), (exam.title): None} %}
+        {% include "fragments/breadcrumbs.html" %}
+    {% endwith %}
+{% endblock %}
 
 {% block content %}
-{% if exam %}
-{% set breadcrumbs = [["Home", url("home")], ["Exams", url("exams")], [exam.name, none]] %}
-{% include "fragments/breadcrumbs.html" %}
+    <div class="row g-5">
+        <div class="{{ {"def": 12, "lg": 8} | col_classes }} overflow-auto exam-content">
+            <article class="mb-4">
+                <header>
+                    <h1 class="mb-0">{{ exam.title }}</h1>
+                    {% if exam.certification_slug %}
+                        <p class="mb-1 text-secondary">Practice for <a
+                                href="{{ url('certification', slug=exam.certification_slug) }}">{{ exam.certification_name }}</a>
+                        </p>
+                    {% endif %}
 
-<div class="d-flex align-items-start gap-3">
-  {% if exam.imageFilename %}
-  <img alt="{{ exam.name }}" class="entity-image entity-image-lg" src="{{ staticUrl(exam.imageFilename) }}"/>
-  {% endif %}
+                    {% with rating_size="fs-3", rating_extended=True %}
+                        {% include "fragments/exam-rating.html" %}
+                    {% endwith %}
+                </header>
 
-  <div>
-    <h1>{{ exam.name }}</h1>
+                <div class="d-flex flex-wrap align-items-center gap-3 mb-2">
+                    <div>
+                        By <a href="{{ user_url(author) }}" class="link-secondary">{{ author.name }}</a>
+                        {% if exam.published_at %}
+                            &mdash;
+                            Published on
+                            <time>{{ (exam.published_at / 1000) | unix_to_full_date }}</time>
+                            {% if exam.updated_at and exam.updated_at - exam.published_at > 86_400_000 %}
+                                &mdash; Modified on
+                                <time>{{ (exam.updated_at / 1000) | unix_to_full_date }}</time>
+                            {% endif %}
+                        {% endif %}
+                    </div>
 
-    {% if curUser and checkAuth(curUser, Permission.UpdateExam, exam) %}
-    <a class="btn btn-outline-primary mb-3" href="{{ url("examEdit", { examId: exam.id }) }}">Edit exam</a>
-    {% endif %}
+                    {% if exam.tags %}
+                        <div>
+                            <small class="text-secondary bi bi-tags"> Tags:</small>
+                            {% for tag in exam.tags %}
+                                <a href="{{ exams_url(tags=[tag]) }}" class="btn btn-light btn-sm">
+                                    {{ tag }}
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
 
-    {% if curUser and checkAuth(curUser, Permission.AddQuestion, exam) %}
-    <a class="btn btn-primary mb-3" href="{{ url("newQuestion", { examId: exam.id }) }}">Add question</a>
-    {% endif %}
+                    {% if exam.status == ExamStatus.REJECTED %}
+                        <div>
+                            <small class="text-secondary">Status:</small>
+                            <span class="badge text-bg-danger fs-5" title="{{ exam.comment }}">Rejected</span>
+                        </div>
+                    {% elif exam.status == ExamStatus.UNPUBLISHED %}
+                        <div>
+                            <small class="text-secondary">Status:</small>
+                            <span class="badge text-bg-warning fs-6">Unpublished (Pending)</span>
+                        </div>
+                    {% endif %}
 
-    {% set rating = exam.rating %}
-    {% set ratingClass = "" %}
-    {% include "fragments/rating.html" %}
+                    {% include "fragments/exam-status.html" %}
+                    {% include "fragments/exam-impressions.html" %}
 
-    <dl class="row">
-      <dt class="col-sm-3">Required score</dt>
-      <dd class="col-sm-9">{{ exam.requiredScore or 0 }}</dd>
-      <dt class="col-sm-3">Approved questions</dt>
-      <dd class="col-sm-9">{{ exam.approvedQuestionCount or 0 }}</dd>
-    </dl>
+                    {% if cur_user and check_auth(cur_user, Permission.UPDATE_EXAM, exam) %}
+                        <div>
+                            <a href="{{ url("edit-exam", exam_id=exam.id) }}"
+                               class="btn btn-light btn-sm bi bi-pencil">
+                                Edit exam
+                            </a>
+                        </div>
+                    {% endif %}
 
-    <h2 class="h5 mb-0 text-decoration-underline">Topics</h2>
-    <div class="d-flex gap-2">
-      {% for tag in exam.tags %}
-      <a class="btn btn-light border" href="{{ url("tagBySlug", { slug: tag.slug }) }}">{{ tag.name }}</a>
-      {% else %}
-      <span class="text-secondary">No topics.</span>
-      {% endfor %}
+                    {% with share_label="Share this exam" %}
+                        {% include "fragments/share.html" %}
+                    {% endwith %}
+                </div>
+
+                {% if exam.image_filename %}
+                    <img class="img-fluid rounded mb-3" src="{{ static_url(exam.image_filename) }}"
+                         alt="{{ exam.title }}">
+                {% endif %}
+
+                <p class="exam-description">{{ exam.description }}</p>
+            </article>
+
+            <section id="questions" class="mb-4">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <h2 class="h5 mb-2 text-decoration-underline">Questions &mdash; {{ questions|length }}</h2>
+                    {% if cur_user and check_auth(cur_user, Permission.CREATE_QUESTION, exam) %}
+                        <a class="btn btn-dark btn-sm" href="{{ url('new-question', exam_id=exam.id) }}">Add
+                            question</a>
+                    {% endif %}
+                </div>
+                {% if questions %}
+                    <ol class="list-group list-group-numbered">
+                        {% for question in questions %}
+                            <li class="list-group-item">
+                                {% if exam.user_slug and exam.slug %}
+                                    <a href="{{ url('question-by-slugs', user_slug=exam.user_slug, exam_slug=exam.slug, question_slug=question.slug) }}">{{ question.title }}</a>
+                                {% else %}
+                                    <a href="{{ url('question-by-id', question_id=question.id) }}">{{ question.title }}</a>
+                                {% endif %}
+                                {% if cur_user and check_auth(cur_user, Permission.UPDATE_QUESTION, question) %}
+                                    <a class="btn btn-link btn-sm"
+                                       href="{{ url('edit-question', question_id=question.id) }}">Edit</a>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ol>
+                {% else %}
+                    <p class="text-secondary">This exam has no questions yet.</p>
+                {% endif %}
+            </section>
+
+            <section class="exam-comments">
+                <h3 class="h5 mb-2 text-decoration-underline">Comments &mdash; {{ exam.comments_count }}</h3>
+
+                <div class="d-flex flex-column gap-4">
+                    {% include "fragments/exam-comment-form.html" %}
+
+                    {% if comments %}
+                        <div id="exam-comments" class="{{ {"def": 1} | row_classes }} g-2 mb-2">
+                            {% with exam_comments=comments %}
+                                {% include "fragments/exam-comments.html" %}
+                            {% endwith %}
+                        </div>
+
+                        {% with limit=comments_query.limit,
+                            offset=comments[-1].offset,
+                            url=url("exam-comments-fragment", exam_id=exam.id, absolute=True, **comments_query.get_dict()),
+                            container="#exam-comments" %}
+                            {% include "fragments/load-more-button.html" %}
+                        {% endwith %}
+                    {% endif %}
+                </div>
+            </section>
+        </div>
+
+        <div class="{{ {"def": 12, "lg": 4} | col_classes }}">
+            <aside class="sticky-lg-top" style="top: 1rem;">
+                <section class="mb-4">
+                    <h2 class="h5 text-decoration-underline">Author</h2>
+                    {% with user=author, h_tag_size=3, image_column_size={"def":3,"md":2}, user_bg_color="light", user_shadow=True %}
+                        {% include "fragments/user.html" %}
+                    {% endwith %}
+                </section>
+
+                {% with user=author %}
+                    {% include "fragments/bmc-donate.html" %}
+                {% endwith %}
+
+                <div class="mb-4">
+                    {% include "fragments/exam-status.html" %}
+                    {% include "fragments/exam-impressions.html" %}
+
+                    {% if cur_user and check_auth(cur_user, Permission.UPDATE_EXAM, exam) %}
+                        <a href="{{ url("edit-exam", exam_id=exam.id) }}" class="btn btn-light bi bi-pencil">
+                            Edit exam
+                        </a>
+                    {% endif %}
+                </div>
+
+                {% with share_label="Share this exam" %}
+                    {% include "fragments/share.html" %}
+                {% endwith %}
+
+                {% if cur_user and questions %}
+                    <button class="btn btn-dark" id="try-exam"
+                            data-create-session-url="{{ url('create-exam-session', exam_id=exam.id, absolute=True) }}"
+                            data-session-url-template="{{ url('exam-session', session_id='SESSION_ID', absolute=True) }}">Try exam
+                    </button>
+                {% endif %}
+            </aside>
+        </div>
     </div>
-  </div>
-</div>
 
-<h2 class="h5 mb-0 text-decoration-underline">Author</h2>
-{% set user = exam.creator %}
-{% include "fragments/user.html" %}
-
-<h2 class="h5 mb-0 text-decoration-underline">Questions</h2>
-<div class="d-flex flex-column gap-3">
-  {% for question in questions %}
-  {% include "fragments/question.html" %}
-  {% else %}
-  <div class="card p-3">No questions found.</div>
-  {% endfor %}
-</div>
-{% else %}
-<h1>Exam not found</h1>
-<a href="{{ url("exams") }}">Back to exams</a>
-{% endif %}
+    {% if related_exams %}
+        <section class="mb-4">
+            <h2 class="h5 mb-2 text-decoration-underline">
+                Related exams
+            </h2>
+            <div id="related-exams" class="{{ {"def": 1} | row_classes }} g-2">
+                {% with exams=related_exams,
+                            horizontal=True,
+                            preview=False,
+                            vert_gap=0,
+                            h_tag_size=3,
+                            h_display_size=6,
+                            image_order_size={"def":12} %}
+                    {% include "fragments/exams.html" %}
+                {% endwith %}
+            </div>
+        </section>
+    {% endif %}
 {% endblock %}

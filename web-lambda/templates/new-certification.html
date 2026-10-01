@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+{% set title = "New certification" %}
+{% set meta_title = title ~ " | " ~ site_name %}
+{% set meta_robots = "noindex, nofollow" %}
+{% set layout_assets = {"validation": true} %}
+
+{% block breadcrumbs %}
+    {% with breadcrumbs = {"Home": url("index"), "Certifications": url("certifications"), (title): None} %}
+        {% include "fragments/breadcrumbs.html" %}
+    {% endwith %}
+{% endblock %}
+
+{% block content %}
+    <h1>{{ title }}</h1>
+    <form id="certification-form" class="vstack gap-3" novalidate data-form-handler="certification"
+          data-submit-url="{{ url('create-certification', absolute=True) }}"
+          data-success-url="{{ url('certification', slug='{slug}') }}">
+        <label>Name<input class="form-control" name="name" required maxlength="200"></label>
+        <label>Provider<input class="form-control" name="provider" required maxlength="100"></label>
+        <label>Description<textarea class="form-control" name="description" required minlength="10" maxlength="5000" rows="4"></textarea></label>
+        <label>Category<input class="form-control" name="category" value="other" required maxlength="80"></label>
+        <label>Level<input class="form-control" name="level" value="professional" required maxlength="40"></label>
+        <label>Official URL<input class="form-control" name="official_url" type="url"></label>
+        <label>Cover image<input class="form-control" name="image_file" type="file" accept="image/jpeg,image/png" data-public-file></label>
+        <button class="btn btn-dark align-self-start" type="submit">Create certification</button>
+    </form>
+{% endblock %}

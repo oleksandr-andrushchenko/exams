@@ -1,49 +1,255 @@
 {% extends "layout.html" %}
+{% set layout_assets = {"masonry": true} %}
+
+{% set main_class = "" %}
+{% set user_canonical_url = user_url(user, absolute=True) %}
+{% set user_alternate_url = url("user", user_id=user.id, absolute=True) %}
+{% set meta_canonical_url = user_canonical_url %}
+{% set og_type = "profile" %}
+{% set og_url = meta_canonical_url %}
+{% set og_img_filename = user.avatar_filename %}
+{% set val_map = {
+    (ExamQueryType.LATEST): {"title": "Latest", "subtitle": "Recently added", "icon": "clock-fill"},
+    (ExamQueryType.POPULAR): {"title": "Popular", "subtitle": "Most rated", "icon": "star-fill"},
+    (ExamStatus.PUBLISHED): {"title": None, "subtitle": None},
+    (ExamStatus.UNPUBLISHED): {"title": "Unpublished", "subtitle": "Unpublished"},
+    (ExamStatus.REJECTED): {"title": "Rejected", "subtitle": "Rejected"}
+} %}
+
+{% set exams_icon = val_map[ExamQueryType.LATEST]["icon"] %}
+{% set exams_title = ([val_map[exam_query.type]["title"]] + [val_map[exam_query.status]["title"]] + ["Exams"]) | select | join(" ") | title %}
+{% set meta_robots = "index, follow" %}
+{% set exams_subtitle = ([val_map[exam_query.type]["subtitle"]] + [val_map[exam_query.status]["subtitle"]] + ["Exams"]) | select | join(" ") | title %}
+{% set meta_title = user.name ~ " - " ~ site_name %}
+{% set meta_desc = [
+    user.name ~ (user.username and ' (@' ~ user.username ~ ')') ~ " blog on " ~ site_name,
+    user.headline,
+    html_to_text(user.about),
+    site_desc
+] | select | join('. ') | truncate(155, True, '...') %}
+{% block meta_schema %}
+    {% set same_as = [] %}
+    {% if user.website %}{% set same_as = same_as + [user.website] %}{% endif %}
+    {% if user.github_username %}{% set same_as = same_as + ["https://github.com/" ~ user.github_username] %}{% endif %}
+    {% set user_schema = {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "@id": meta_canonical_url,
+        "identifier": user.username or user.id,
+        "name": user.name,
+        "url": meta_canonical_url,
+        "description": [user.headline, html_to_text(user.about)] | select | join('. '),
+        "sameAs": same_as,
+        "mainEntityOfPage": meta_canonical_url,
+        "breadcrumb": {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {"@type": "ListItem", "position": 1, "name": "Home", "item": url("index", absolute=True)},
+                {"@type": "ListItem", "position": 2, "name": "Users", "item": users_url(absolute=True)},
+                {"@type": "ListItem", "position": 3, "name": user.name, "item": meta_canonical_url}
+            ]
+        }
+    } %}
+    {% if user.headline %}
+        {% set user_schema = user_schema.update({"jobTitle": user.headline}) or user_schema %}
+    {% endif %}
+    {% if user.avatar_filename %}
+        {% set user_schema = user_schema.update({"image": static_url(user.avatar_filename, absolute=True)}) or user_schema %}
+    {% endif %}
+    {{- user_schema | tojson | safe -}}
+{% endblock %}
+
+{% block breadcrumbs %}
+    <div class="container">
+        {% with breadcrumbs = {"Home": url("index"), "Users": users_url(), (user.name): None} %}
+            {% include "fragments/breadcrumbs.html" %}
+        {% endwith %}
+    </div>
+{% endblock %}
 
 {% block content %}
-{% set breadcrumbs = [["Home", url("home")], ["Users", url("users")], [user.name or user.id, none]] %}
-{% include "fragments/breadcrumbs.html" %}
+    <section class="py-5 text-bg-light overflow-hidden mb-4">
+        <div class="container">
+            <div class="row align-items-center g-4">
+                <div class="{{ {"def": 12, "sm": 3, "lg": 2} | col_classes }}">
+                    {% include "fragments/user-avatar.html" %}
+                </div>
 
-<div class="d-flex align-items-start gap-3">
-  {% if user.imageFilename %}
-  <img class="entity-image entity-image-lg" src="{{ staticUrl(user.imageFilename) }}" alt="{{ user.name or user.id }}"/>
-  {% endif %}
+                <div class="{{ {"def": 12, "sm": 9, "lg": 10} | col_classes }}">
+                    <h1 class="mb-0">{{ user.name }}</h1>
 
-  <div>
-    <h1>{{ user.name or user.id }}</h1>
+                    {% if user.username %}
+                        <div class="mb-2">
+                            @{{ user.username }}
+                        </div>
+                    {% endif %}
 
-    {% if curUser and checkAuth(curUser, Permission.UpdateUser, user) %}
-    <a class="btn btn-outline-primary mb-3" href="{{ url("userEdit", { userId: user.id }) }}">Edit user</a>
-    {% endif %}
+                    {% if user.headline %}
+                        <h2 class="h6">{{ user.headline }}</h2>
+                    {% endif %}
 
-    {% set rating = user.rating %}
-    {% set ratingClass = "" %}
-    {% include "fragments/rating.html" %}
-  </div>
-</div>
+                    <div class="d-flex gap-3 flex-wrap mb-2">
+                        {% if user.website %}
+                            <div>
+                                <small class="bi bi-link-45deg"> Website:</small>
+                                <a class="text-decoration-none link-body-emphasis d-inline-block me-2"
+                                   href="{{ user.website }}"
+                                   target="_blank" rel="noopener noreferrer">
+                                    {{ user.website | replace("https://", "", 1) | replace("http://", "", 1) }}
+                                    <i class="bi bi-box-arrow-up-right"></i>
+                                </a>
+                            </div>
+                        {% endif %}
 
-<h2 class="h5 mb-0 text-decoration-underline">Exams</h2>
-<div class="row g-3">
-  {% for exam in exams.data %}
-  {% include "fragments/exam.html" %}
-  {% else %}
-  <div class="col-12">
-    <div class="card p-3">No exams.</div>
-  </div>
-  {% endfor %}
-</div>
+                        {% if user.github_username %}
+                            <div>
+                                <small class="bi bi-github"> GitHub:</small>
+                                <a class="text-decoration-none link-body-emphasis d-inline-block me-2"
+                                   href="https://github.com/{{ user.github_username }}" target="_blank"
+                                   rel="noopener noreferrer">
+                                    {{ user.github_username }}
+                                    <i class="bi bi-box-arrow-up-right"></i>
+                                </a>
+                            </div>
+                        {% endif %}
 
-<h2 class="h5 mb-0 text-decoration-underline">Exam sessions</h2>
-<div class="d-flex flex-column gap-3">
-  {% for session in sessions %}
-  <div class="card p-3">
-    {{ session.exam.name if session.exam else session.examId }}
-    <span class="d-block small text-secondary">
-      {{ session.answeredQuestionCount }}/{{ session.questionCount }} answered
-    </span>
-  </div>
-  {% else %}
-  <div class="card p-3">No exam sessions.</div>
-  {% endfor %}
-</div>
+                        {% if user.bmc_username and user.published_exams_count %}
+                            <div>
+                                <small class="bi bi-currency-dollar"> Buy Me a Coffee:</small>
+                                <a class="text-decoration-none link-body-emphasis d-inline-block me-2"
+                                   href="https://buymeacoffee.com/{{ user.bmc_username }}" target="_blank"
+                                   rel="noopener noreferrer">
+                                    {{ user.bmc_username }}
+                                    <i class="bi bi-box-arrow-up-right"></i>
+                                </a>
+                            </div>
+                        {% endif %}
+
+                        {% if user.address %}
+                            <div>
+                                <small class="bi bi-geo"> Location:</small>
+                                {{ user.address }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex gap-3 flex-wrap mb-2">
+                        <div>
+                            <small class="bi bi-calendar2"> Joined:</small>
+                            {{ (user.created_at / 1000) | unix_to_full_date() }}
+                        </div>
+
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="bi bi-heart"> {{ user.followers_count }}</span>
+                            Followers
+                        </div>
+
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="bi bi-person-heart"> {{ user.following_count }}</span>
+                            Following
+                        </div>
+
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="bi bi-pencil"> {{ user.published_exams_count }}</span>
+                            Exams
+                        </div>
+
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="bi bi-chat"> {{ user.exam_comments_count }}</span>
+                            Comments
+                        </div>
+                    </div>
+
+                    {% include "fragments/user-status.html" %}
+                    {% include "fragments/user-impressions.html" %}
+
+                    {% if cur_user and check_auth(cur_user, Permission.UPDATE_USER, user) %}
+                        <a href="{{ url("edit-user", user_id=user.id) }}"
+                           class="btn btn-light btn-sm bi bi-pencil">
+                            Edit profile
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="container">
+        <div class="row g-5">
+            <div class="{{ {"def": 12, "lg": 8} | col_classes }}">
+                {% if user.about %}
+                    <div class="mb-4">
+                        <h2 class="h5 mb-2 text-decoration-underline">About</h2>
+                        <div class="card-text">{{ user.about }}</div>
+                    </div>
+                {% endif %}
+
+                {% include "fragments/user-activities.html" %}
+            </div>
+
+            <div class="{{ {"def": 12, "lg": 4} | col_classes }} border-start">
+                {% if user.published_exams_count %}
+                    {% with header="Enjoy this author’s work?" %}
+                        {% include "fragments/bmc-donate.html" %}
+                    {% endwith %}
+                {% endif %}
+
+                {% include "fragments/user-tag-subscriptions.html" %}
+            </div>
+        </div>
+
+        <section>
+            <h2 class="h5 mb-2 text-decoration-underline">
+                {{ exams_title }}
+            </h2>
+
+            {% if cur_user and check_auth(cur_user, Permission.READ_NON_PUBLISHED_EXAM, user) %}
+                <div class="d-flex justify-content-start align-items-center gap-1 mb-2">
+                    <small class="text-secondary">Filter by status:</small>
+
+                    <div class="btn-group btn-group-sm" role="group">
+                        {% set is_published = exam_query.status == ExamStatus.PUBLISHED %}
+                        <a href="{{ user_url(user, **exam_query.get_dict({"status": None if is_published else ExamStatus.PUBLISHED.value})) }}"
+                           class="btn {% if is_published %}btn-success active{% else %}btn-light{% endif %}">
+                            {{ ExamStatus.PUBLISHED | title }} ({{ user.published_exams_count }})
+                        </a>
+
+                        {% set is_unpublished = exam_query.status == ExamStatus.UNPUBLISHED %}
+                        <a href="{{ user_url(user, **exam_query.get_dict({"status": None if is_unpublished else ExamStatus.UNPUBLISHED.value})) }}"
+                           class="btn {% if is_unpublished %}btn-warning active{% else %}btn-light{% endif %}">
+                            {{ ExamStatus.UNPUBLISHED | title }} ({{ user.unpublished_exams_count }})
+                        </a>
+
+                        {% set is_rejected = exam_query.status == ExamStatus.REJECTED %}
+                        <a href="{{ user_url(user, **exam_query.get_dict({"status": None if is_rejected else ExamStatus.REJECTED.value})) }}"
+                           class="btn {% if is_rejected %}btn-danger active{% else %}btn-light{% endif %}">
+                            {{ ExamStatus.REJECTED | title }} ({{ user.rejected_exams_count }})
+                        </a>
+                    </div>
+
+                    {% if exam_query.has_params() %}
+                        <a href="{{ user_url(user) }}" class="btn btn-light btn-sm bi bi-x-lg"> Reset</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            {% if exams %}
+                <div id="exams" class="{{ {"def": 1, "sm": 2, "lg": 3, "xl": 4} | row_classes }} g-3"
+                     data-masonry='{"percentPosition": true }'>
+                    {% with exam_img_sizes={"1400px": "196px", "1200px": "166px", "992px": "96px", "768px": "156px", "default": "100vw"} %}
+                        {% include "fragments/exams.html" %}
+                    {% endwith %}
+                </div>
+
+                {% with limit=exam_query.limit,
+                        offset=exams[-1].offset,
+                        url=url("user-exams-fragment", user_id=user.id, absolute=True, **exam_query.get_dict()),
+                        container="#exams" %}
+                    {% include "fragments/load-more-button.html" %}
+                {% endwith %}
+            {% else %}
+                <div>N/A</div>
+            {% endif %}
+        </section>
+    </div>
 {% endblock %}

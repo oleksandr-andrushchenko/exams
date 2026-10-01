@@ -1,0 +1,39 @@
+<div class="card-body">
+    <a class="link-body-emphasis text-decoration-none" href="{{ user_url(user) }}">
+        <h{{ h_tag_size }} class="h{{ h_display_size }} mb-1 card-title text-truncate w-75">
+            {{ user.name }}
+        </h{{ h_tag_size }}>
+
+        {% if user.headline %}
+            <div class="card-text text-truncate w-75 mb-1">
+                {{ user.headline }}
+            </div>
+        {% endif %}
+    </a>
+
+    <small class="text-secondary bi bi-calendar2 me-2" title="Joined at">
+        {{ (user.created_at / 1000) | unix_to_full_date }}
+    </small>
+
+    {% if user.status == UserStatus.BANNED %}
+        <span class="badge text-bg-danger fs-6 me-2" title="{{ user.comment }}">Banned</span>
+    {% endif %}
+
+    {% if user.followers_count %}
+        <small class="text-secondary bi bi-heart me-2" title="Followers">
+            {{ user.followers_count }}
+        </small>
+    {% endif %}
+
+    {% if user.published_exams_count %}
+        <small class="text-secondary bi bi-pencil me-2" title="Exams written">
+            {{ user.published_exams_count }}
+        </small>
+    {% endif %}
+
+    {% if user.exam_comments_count %}
+        <small class="text-secondary bi bi-chat" title="Exam comments added">
+            {{ user.exam_comments_count }}
+        </small>
+    {% endif %}
+</div>

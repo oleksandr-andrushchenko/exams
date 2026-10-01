@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% set title = certification.name %}
+{% block breadcrumbs %}
+    {% with breadcrumbs = {"Home": url("index"), "Certifications": url("certifications"), (certification.name): None} %}
+        {% include "fragments/breadcrumbs.html" %}
+    {% endwith %}
+{% endblock %}
+{% block content %}
+    {% if certification.image_filename %}
+        <img class="img-fluid rounded mb-3" src="{{ static_url(certification.image_filename) }}" alt="{{ certification.name }}">
+    {% endif %}
+    <p class="text-secondary">{{ certification.provider }} · {{ certification.level|title }}</p>
+    <h1>{{ certification.name }}</h1>
+    <p>{{ certification.description }}</p>
+    {% if certification.official_url %}<a href="{{ certification.official_url }}" rel="noopener noreferrer">Official certification page</a>{% endif %}
+
+    <section class="mt-4">
+        <h2 class="h4">Practice exams</h2>
+        {% if related_exams %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
+                {% with exams=related_exams %}
+                    {% include "fragments/exams.html" %}
+                {% endwith %}
+            </div>
+        {% else %}
+            <p class="text-secondary">No practice exams are available for this certification yet.</p>
+            <a class="btn btn-dark" href="{{ exams_url(category=certification.category) }}">Browse exams in this category</a>
+        {% endif %}
+    </section>
+{% endblock %}
