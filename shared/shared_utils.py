@@ -349,6 +349,8 @@ class Permission(StrEnum):
     CREATE_EXAM = "create_exam"
     UPDATE_EXAM = "update_exam"
     UPDATE_CATEGORY = "update-category"
+    CREATE_CERTIFICATION = "create_certification"
+    UPDATE_CERTIFICATION = "update_certification"
     UPDATE_EXAM_STATUS = "update_exam_status"
     CREATE_QUESTION = "create_question"
     UPDATE_QUESTION = "update_question"
@@ -1412,7 +1414,7 @@ def exam_from_dynamodb(d_item: dict[str, Any]) -> Exam:
         certification_id=d_item.get("certification_id"),
         certification_slug=d_item.get("certification_slug"),
         certification_name=d_item.get("certification_name"),
-        difficulty=d_item.get("difficulty", "medium"),
+        difficulty=d_item.get("difficulty", "intermediate"),
         language=d_item.get("language", "en"),
         description=description,
         category=d_item.get("category", "other"),

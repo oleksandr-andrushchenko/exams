@@ -10,7 +10,13 @@
         <img class="img-fluid rounded mb-3" src="{{ static_url(certification.image_filename) }}" alt="{{ certification.name }}">
     {% endif %}
     <p class="text-secondary">{{ certification.provider }} · {{ certification.level|title }}</p>
-    <h1>{{ certification.name }}</h1>
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <h1>{{ certification.name }}</h1>
+        {% if cur_user and check_auth(cur_user, Permission.UPDATE_CERTIFICATION) %}
+            <a class="btn btn-light bi bi-pencil" href="{{ url('edit-certification', slug=certification.slug) }}">
+                Edit certification</a>
+        {% endif %}
+    </div>
     <p>{{ certification.description }}</p>
     {% if certification.official_url %}<a href="{{ certification.official_url }}" rel="noopener noreferrer">Official certification page</a>{% endif %}
 

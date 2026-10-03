@@ -34,7 +34,7 @@ from certification_utils import create_certification, find_certification
 from shared_utils import to_kebab_case
 
 
-def create_dummy_fixtures(req=None) -> None:
+def create_dummy_fixtures() -> None:
     import random
     import uuid
     if is_prod():
@@ -182,14 +182,14 @@ def create_dummy_fixtures(req=None) -> None:
                "publishing software like Aldus PageMaker including versions of Lorem Ipsum."),
         address="1600 Pennsylvania Ave NW, Washington, DC 20500"
     )
-    update_user(root_user, update_user_dto, root_user, req)
+    update_user(root_user, update_user_dto, root_user)
     user_token3 = get_dummy_user_token(sub="p3", email="test3@example.com")
     user3 = upsert_user_by_user_token(user_token3)
     created_users.append(user3)
     update_user(user3, UpdateUserDTO(
         name=unique_user_name(),
         avatar_action="delete",
-    ), root_user, req)
+    ), root_user)
     user_token4 = get_dummy_user_token(sub="p4", email="test4@example.com")
     user4 = upsert_user_by_user_token(user_token4)
     created_users.append(user4)
@@ -197,7 +197,7 @@ def create_dummy_fixtures(req=None) -> None:
         name=unique_user_name(),
         avatar_action="replace",
         avatar_filename="5b027ec7-c018-4744-9eda-00abf75cf685_1111x712.png",
-    ), root_user, req)
+    ), root_user)
     user4.avatar_filename = "5b027ec7-c018-4744-9eda-00abf75cf685_1111x712.png"
 
     def ensure_tag_subscription(user, tags):
@@ -232,7 +232,7 @@ def create_dummy_fixtures(req=None) -> None:
         link_certification(exam, index)
         created_exam = create_exam(exam, root_user)
         add_default_question(created_exam, root_user)
-        update_exam_status(created_exam, UpdateExamStatusDTO(status=ExamStatus.PUBLISHED), root_user, req)
+        update_exam_status(created_exam, UpdateExamStatusDTO(status=ExamStatus.PUBLISHED), root_user)
         created_exams.append(created_exam)
     user_token2 = get_dummy_user_token(sub="p2", email="test2@example.com", name=unique_user_name())
     user2 = upsert_user_by_user_token(user_token2)
@@ -240,7 +240,7 @@ def create_dummy_fixtures(req=None) -> None:
     update_user(user2, UpdateUserDTO(
         name=user2.name,
         avatar_action="delete",
-    ), root_user, req)
+    ), root_user)
     exams = [
         ExamDTO(
             title=unique_exam_title(),
@@ -265,7 +265,7 @@ def create_dummy_fixtures(req=None) -> None:
         link_certification(exam, index)
         created_exam = create_exam(exam, user2)
         add_default_question(created_exam, user2)
-        update_exam_status(created_exam, UpdateExamStatusDTO(status=ExamStatus.PUBLISHED), root_user, req)
+        update_exam_status(created_exam, UpdateExamStatusDTO(status=ExamStatus.PUBLISHED), root_user)
         created_exams.append(created_exam)
 
     # Add enough published exams to exercise sitemap generation with a larger dataset.
@@ -282,7 +282,6 @@ def create_dummy_fixtures(req=None) -> None:
             generated_exam,
             UpdateExamStatusDTO(status=ExamStatus.PUBLISHED),
             root_user,
-            req,
         )
         created_exams.append(generated_exam)
 
@@ -293,7 +292,7 @@ def create_dummy_fixtures(req=None) -> None:
             name=tag_name,
             image_action="replace",
             image_filename=image_filename,
-        ), root_user, req)
+        ), root_user)
         tag.image_filename = image_filename
 
     comment_texts = [
@@ -306,7 +305,7 @@ def create_dummy_fixtures(req=None) -> None:
         commenters = [user for user in created_users if user.id != exam.owner_id]
         for comment_index, user in enumerate(commenters[:2]):
             text = comment_texts[(exam_index + comment_index) % len(comment_texts)]
-            create_exam_comment(exam, ExamCommentDTO(text=text), user, req)
+            create_exam_comment(exam, ExamCommentDTO(text=text), user)
 
     # Seed exam feedback through the same impression flow used by the API.
     # Each exam gets a random, unique subset of the available users as voters.
@@ -317,14 +316,13 @@ def create_dummy_fixtures(req=None) -> None:
                 action=random.choice([
                     ExamImpressionAction.LIKE,
                     ExamImpressionAction.DISLIKE,
-                ])), user, req)
+                ])), user)
 
     for user in created_users:
         for user2 in created_users:
             if user.id != user2.id:
                 update_user_impression(user, UpdateUserImpressionDTO(
-                    action=UserImpressionAction.FOLLOW if random.random() < .5 else UserImpressionAction.BLOCK), user2,
-                                       req)
+                    action=UserImpressionAction.FOLLOW if random.random() < .5 else UserImpressionAction.BLOCK), user2)
     unpublished_exams = [
         ExamDTO(
             title=unique_exam_title(),
@@ -375,7 +373,7 @@ def create_dummy_fixtures(req=None) -> None:
         add_default_question(created_exam, user3)
         update_exam_status(created_exam,
                               UpdateExamStatusDTO(status=ExamStatus.REJECTED, comment="Some rejection reason"),
-                              root_user, req)
+                              root_user)
 
 
 if __name__ == "__main__":

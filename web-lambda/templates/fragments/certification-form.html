@@ -1,0 +1,64 @@
+<form id="certification-form" class="vstack gap-3" novalidate>
+    <label>Name<input class="form-control" name="name" value="{{ certification.name if certification else '' }}"
+                      required maxlength="200"></label>
+    <label>Provider<input class="form-control" name="provider"
+                          value="{{ certification.provider if certification else '' }}" required maxlength="100">
+        <span class="form-text">Use the official organization name, such as AWS, Cisco, or CompTIA.</span>
+    </label>
+    <label>Description<textarea class="form-control" name="description" required minlength="10" maxlength="5000"
+                                rows="4">{{ certification.description if certification else '' }}</textarea></label>
+    <fieldset>
+        <legend class="fs-6 mb-2">Category</legend>
+        <div class="d-flex flex-wrap gap-3">
+            {% for category in categories %}
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="category" id="certification-category-{{ category.slug }}"
+                           value="{{ category.slug }}" required
+                           {% if (certification and certification.category == category.slug) or (not certification and category.slug == 'other') %}checked{% endif %}>
+                    <label class="form-check-label" for="certification-category-{{ category.slug }}">{{ category.name }}</label>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="form-text">Category missing? <a href="{{ url('contacts') }}">Ask us to add it</a>.</div>
+    </fieldset>
+    <fieldset>
+        <legend class="fs-6 mb-2">Credential level</legend>
+        <div class="d-flex flex-wrap gap-3">
+            {% for value, label in certification_levels %}
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="level" id="certification-level-{{ value }}"
+                           value="{{ value }}" required
+                           {% if (certification and certification.level == value) or (not certification and value == 'professional') %}checked{% endif %}>
+                    <label class="form-check-label" for="certification-level-{{ value }}">{{ label }}</label>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="form-text">Choose the provider's official tier. If none fits, <a href="{{ url('contacts') }}">request a level</a>.</div>
+    </fieldset>
+    <label>Official URL<input class="form-control" name="official_url" type="url"
+                              value="{{ certification.official_url or '' if certification else '' }}"></label>
+    {% if certification and certification.image_filename %}
+        <img class="img-fluid rounded" src="{{ static_url(certification.image_filename) }}" alt="{{ certification.name }}">
+        <input name="image_filename" type="hidden" value="{{ certification.image_filename }}">
+    {% endif %}
+    <label>Cover image<input class="form-control" name="image_file" type="file" accept="image/jpeg,image/png"
+                             data-public-file></label>
+    <button class="btn btn-dark align-self-start" type="submit">
+        {{ "Update" if certification else "Create" }} certification
+    </button>
+</form>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    handleFormSubmit("#certification-form", {{ (url('update-certification', slug=certification.slug, absolute=True) if certification else url('create-certification', absolute=True))|tojson }}, {
+      method: "{{ 'PATCH' if certification else 'POST' }}",
+      rules: {
+        name: [{rule: "required"}, {rule: "minLength", value: 3}, {rule: "maxLength", value: 200}],
+        provider: [{rule: "required"}, {rule: "minLength", value: 2}, {rule: "maxLength", value: 100}],
+        description: [{rule: "required"}, {rule: "minLength", value: 10}, {rule: "maxLength", value: 5000}]
+      },
+      onSuccess: (res) => res && (window.location.href = res),
+      successMessage: "Certification {{ 'updated' if certification else 'created' }}!"
+    })
+  })
+</script>

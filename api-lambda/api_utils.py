@@ -603,6 +603,8 @@ def create_exam(exam_dto: ExamDTO, cur_user: User) -> Exam:
     tags = sanitize_tags(exam_dto.tags)
     category = exam_dto.category
     certification = get_certification_by_id(exam_dto.certification_id) if exam_dto.certification_id else None
+    if certification:
+        category = certification.category
     slug = to_kebab_case(title)
 
     transacts = []
@@ -677,14 +679,18 @@ def update_exam(exam: Exam, update_exam_dto: UpdateExamDTO, cur_user: User) -> N
     if not changes:
         return
 
-    if "category" in changes:
-        get_category(changes["category"])
     if "certification_id" in changes:
         certification_id = changes["certification_id"]
         certification = get_certification_by_id(certification_id) if certification_id else None
         changes["certification_id"] = certification.id if certification else None
         changes["certification_slug"] = certification.slug if certification else None
         changes["certification_name"] = certification.name if certification else None
+        if certification:
+            changes["category"] = certification.category
+    elif "category" in changes and exam.certification_id:
+        changes["category"] = get_certification_by_id(exam.certification_id).category
+    if "category" in changes:
+        get_category(changes["category"])
 
     if "description" in changes:
         changes["content"] = changes["description"]

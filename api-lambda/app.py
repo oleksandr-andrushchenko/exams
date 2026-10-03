@@ -55,7 +55,7 @@ from api_utils import (
     update_category,
 )
 from certification_dtos import CertificationDTO
-from certification_utils import create_certification, get_certifications
+from certification_utils import create_certification, get_certification, get_certifications, update_certification
 from deps import (
     ImageFileDTODep,
     ExamCommentQueryDep,
@@ -122,6 +122,16 @@ async def _get_certifications():
 @route("post", "create-certification", response_class=JSONResponse, status_code=201)
 async def _create_certification(request: Request, certification: CertificationDTO, cur_user: CurUserDep) -> str:
     certification = create_certification(certification, cur_user)
+    return get_url(request, "certification", slug=certification.slug)
+
+
+@route("patch", "update-certification", response_class=JSONResponse)
+async def _update_certification(slug: str, dto: CertificationDTO, cur_user: CurUserDep, request: Request) -> str:
+    try:
+        certification = get_certification(slug)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    update_certification(certification, dto, cur_user)
     return get_url(request, "certification", slug=certification.slug)
 
 

@@ -1,11 +1,11 @@
 {% extends "layout.html" %}
-{% set title = "New certification" %}
+{% set title = "Edit " ~ certification.name %}
 {% set meta_title = title ~ " | " ~ site_name %}
 {% set meta_robots = "noindex, nofollow" %}
 {% set layout_assets = {"validation": true} %}
 
 {% block breadcrumbs %}
-    {% with breadcrumbs = {"Home": url("index"), "Certifications": url("certifications"), (title): None} %}
+    {% with breadcrumbs = {"Home": url("index"), "Certifications": url("certifications"), certification.name: url("certification", slug=certification.slug), "Edit": None} %}
         {% include "fragments/breadcrumbs.html" %}
     {% endwith %}
 {% endblock %}

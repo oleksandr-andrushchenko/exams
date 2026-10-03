@@ -5,6 +5,7 @@ from starlette.responses import PlainTextResponse
 from starlette.routing import Match
 
 from certification_utils import get_certification, get_certifications
+from form_options import CERTIFICATION_LEVELS, EXAM_DIFFICULTIES, EXAM_LANGUAGES
 from notifications import get_access_log
 from query_dtos import (
     TagQueryDTO,
@@ -25,7 +26,7 @@ from shared_deps import (
 from shared_utils import ExamNotFoundError, get_exam
 from shared_utils import (
     find_category, find_exam_by_slug_follow_redirects, find_user_by_username_follow_redirects,
-    get_categories, get_category, get_static_url, get_tags
+    get_categories, get_category, get_static_base_url, get_static_url, get_tags
 )
 from web import (
     Application,
@@ -101,14 +102,14 @@ app.add_middleware(TrailingSlashMiddleware)
 
 
 @app.get("/robots.txt", name="web-robots")
-async def robots_txt(request: Request):
+async def robots_txt():
     return PlainTextResponse(
         "User-agent: *\n"
         "Content-Signal: search=yes, ai-input=yes, ai-train=no\n"
         "Allow: /\n"
         "Disallow: /login\n"
         "Disallow: /logout\n"
-        f"Sitemap: {get_static_url(request, 'sitemap.xml')}\n"
+        f"Sitemap: {get_static_base_url()}/sitemap.xml\n"
     )
 
 
@@ -352,6 +353,8 @@ async def new_exam(cur_user: CurUserDep) -> str:
         "cur_user": cur_user,
         "categories": get_categories(),
         "certifications": get_certifications(),
+        "exam_difficulties": EXAM_DIFFICULTIES,
+        "exam_languages": EXAM_LANGUAGES,
     })
 
 
@@ -388,9 +391,11 @@ async def certifications_page(cur_user: OptCurUserDep) -> str:
 
 @route("get", "new-certification", response_class=HTMLResponse)
 async def new_certification_page(cur_user: CurUserDep) -> str:
-    verify_authorization(cur_user, Permission.ROOT)
+    verify_authorization(cur_user, Permission.CREATE_CERTIFICATION)
     return get_html_content("new-certification.html", {
         "cur_user": cur_user,
+        "categories": get_categories(),
+        "certification_levels": CERTIFICATION_LEVELS,
     })
 
 
@@ -409,6 +414,21 @@ async def certification_page(slug: str, cur_user: OptCurUserDep) -> str:
     })
 
 
+@route("get", "edit-certification", response_class=HTMLResponse)
+async def edit_certification_page(slug: str, cur_user: CurUserDep) -> str:
+    verify_authorization(cur_user, Permission.UPDATE_CERTIFICATION)
+    try:
+        certification = get_certification(slug)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return get_html_content("edit-certification.html", {
+        "cur_user": cur_user,
+        "certification": certification,
+        "categories": get_categories(),
+        "certification_levels": CERTIFICATION_LEVELS,
+    })
+
+
 @route("get", "exam")
 async def exam_page(exam: ExamDep, cur_user: OptCurUserDep):
     return await _exam_page(exam, cur_user)
@@ -424,6 +444,8 @@ async def edit_exam(exam: ExamDep, cur_user: CurUserDep) -> str:
         "exam": exam,
         "categories": get_categories(),
         "certifications": get_certifications(),
+        "exam_difficulties": EXAM_DIFFICULTIES,
+        "exam_languages": EXAM_LANGUAGES,
     })
 
 

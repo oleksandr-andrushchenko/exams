@@ -354,6 +354,56 @@ def test_regular_user_first_login(request, user_alias):
     user_ids[user_alias] = get_logged_in_user_id(user_data)
 
 
+def test_certification_create_edit_and_permissions(guest_client):
+    root_client = get_logged_in_client(root_user)
+    regular_client = get_logged_in_client(regular_user)
+    dynamodb_table.put_item(Item={
+        "pk": "CATEGORY",
+        "sk": "other",
+        "category_slug": "other",
+        "name": "Other",
+        "description": "Certifications that do not fit another category.",
+        "published_exams_count": 0,
+        "created_at": 1,
+    })
+
+    new_page = get(root_client, "/certifications/new")
+    assert new_page.status_code == 200
+    new_doc = pq(new_page.text)
+    assert new_doc('input[name="category"][value="other"]').attr("checked") == "checked"
+    assert len(new_doc('input[name="level"]')) == 5
+    assert get(regular_client, "/certifications/new").status_code == 403
+
+    payload = {
+        "name": "Functional Certification",
+        "provider": "Example Provider",
+        "description": "An official credential used by the functional test suite.",
+        "category": "other",
+        "level": "associate",
+        "official_url": "https://example.com/certification",
+    }
+    create_response = post(root_client, "/certifications", json=payload)
+    assert create_response.status_code == 201, create_response.text
+    assert post(regular_client, "/certifications", json=payload).status_code == 403
+
+    root_page = get(root_client, "/certifications/functional-certification")
+    assert root_page.status_code == 200
+    assert pq(root_page.text)('a[href$="/certifications/functional-certification/edit"]')
+    guest_page = get(guest_client, "/certifications/functional-certification")
+    assert guest_page.status_code == 200
+    assert not pq(guest_page.text)('a[href$="/certifications/functional-certification/edit"]')
+
+    edit_page = get(root_client, "/certifications/functional-certification/edit")
+    assert edit_page.status_code == 200
+    assert pq(edit_page.text)('input[name="provider"]').attr("value") == "Example Provider"
+
+    payload["provider"] = "Updated Provider"
+    update_response = patch(root_client, "/certifications/functional-certification", json=payload)
+    assert update_response.status_code == 200, update_response.text
+    item = dynamodb_table.get_item(Key={"pk": "CERTIFICATION", "sk": "functional-certification"})["Item"]
+    assert item["provider"] == "Updated Provider"
+
+
 def test_guest_user_get_index(guest_client):
     doc = get_index(guest_client)
     check_header(doc, user_alias=None)

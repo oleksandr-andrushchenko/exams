@@ -122,14 +122,14 @@ def _is_api_request(method: str, url: str) -> bool:
         return path in {"/tag-subscriptions", "/tags"}
     if method == "POST":
         return path in {
-            "/public-file", "/exams", "/contacts/message",
+            "/public-file", "/certifications", "/exams", "/contacts/message",
             "/tag-subscriptions",
             "/generate-sitemap", "/drop-cdn-cache",
         } or bool(re.fullmatch(r"/exams/[^/]+/(status|impression|comment)", path)) or bool(
             re.fullmatch(r"/users/[^/]+/(status|impression)", path)
         )
     if method == "PATCH":
-        return path.startswith(("/exams/", "/users/", "/tags/"))
+        return path.startswith(("/certifications/", "/exams/", "/users/", "/tags/"))
     return method == "DELETE" and path.startswith("/tag-subscriptions/")
 
 

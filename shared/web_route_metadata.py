@@ -23,6 +23,7 @@ WEB_URL_ROUTES = WEB_AUTH_URL_ROUTES | {
     "categories": "/categories",
     "certifications": "/certifications",
     "new-certification": "/certifications/new",
+    "edit-certification": "/certifications/{slug}/edit",
     "certification": "/certifications/{slug}",
     "exam": "/exams/{exam_id}",
     "edit-exam": "/exams/{exam_id}/edit",

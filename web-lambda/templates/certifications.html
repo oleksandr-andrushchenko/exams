@@ -9,7 +9,7 @@
 {% block content %}
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
         <h1 class="mb-0">Certifications</h1>
-        {% if cur_user and check_auth(cur_user, Permission.ROOT) %}
+        {% if cur_user and check_auth(cur_user, Permission.CREATE_CERTIFICATION) %}
             <a class="btn btn-dark" href="{{ url('new-certification') }}">New certification</a>
         {% endif %}
     </div>

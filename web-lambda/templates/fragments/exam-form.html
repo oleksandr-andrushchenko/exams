@@ -22,34 +22,64 @@
         {% endif %}
     </div>
 
-    <div>
-        <label class="small text-secondary" for="category">Category:</label>
-        <select class="form-select" id="category" name="category" required>
+    <fieldset>
+        <legend class="fs-6 mb-2">Category</legend>
+        <div class="d-flex flex-wrap gap-3">
             {% for category in categories %}
-                <option value="{{ category.slug }}"
-                        {% if exam and exam.category == category.slug %}selected{% endif %}>{{ category.name }}</option>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="category" id="exam-category-{{ category.slug }}"
+                           value="{{ category.slug }}" required
+                           {% if (exam and exam.category == category.slug) or (not exam and category.slug == 'other') %}checked{% endif %}>
+                    <label class="form-check-label" for="exam-category-{{ category.slug }}">{{ category.name }}</label>
+                </div>
             {% endfor %}
-        </select>
-    </div>
+        </div>
+        <div class="form-text">Category missing? <a href="{{ url('contacts') }}">Ask us to add it</a>.</div>
+    </fieldset>
     <div>
         <label class="small text-secondary" for="certification_id">Certification:</label>
         <select class="form-select" id="certification_id" name="certification_id">
-            <option value="">Custom exam</option>
+            <option value="">Custom exam / certification not listed</option>
             {% for certification in certifications %}
                 <option value="{{ certification.id }}"
+                        data-category="{{ certification.category }}"
                         {% if exam and exam.certification_id == certification.id %}selected{% endif %}>{{ certification.name }}</option>
             {% endfor %}
         </select>
+        <div class="form-text">
+            You can create a custom exam now or <a href="{{ url('contacts') }}">request a certification</a>.
+            {% if cur_user and check_auth(cur_user, Permission.CREATE_CERTIFICATION) %}
+                You can also <a href="{{ url('new-certification') }}">add the certification</a> first.
+            {% endif %}
+        </div>
     </div>
-    <div class="row g-2">
-        <label class="col">Difficulty<select class="form-select" name="difficulty">
-            {% for value in ["beginner", "intermediate", "advanced", "professional"] %}
-                <option value="{{ value }}"
-                        {% if exam and exam.difficulty == value %}selected{% endif %}>{{ value|title }}</option>{% endfor %}
-        </select></label>
-        <label class="col">Language<input class="form-control" name="language"
-                                          value="{{ exam.language if exam else "en" }}" maxlength="10"></label>
-    </div>
+    <fieldset>
+        <legend class="fs-6 mb-2">Practice exam difficulty</legend>
+        <div class="d-flex flex-wrap gap-3">
+            {% for value, label in exam_difficulties %}
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="difficulty" id="exam-difficulty-{{ value }}"
+                           value="{{ value }}" required
+                           {% if (exam and ((exam.difficulty == value) or (value == 'intermediate' and exam.difficulty == 'medium') or (value == 'advanced' and exam.difficulty == 'professional'))) or (not exam and value == 'intermediate') %}checked{% endif %}>
+                    <label class="form-check-label" for="exam-difficulty-{{ value }}">{{ label }}</label>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="form-text">This rates the challenge of this practice exam, not the certification's credential level.</div>
+    </fieldset>
+    <fieldset>
+        <legend class="fs-6 mb-2">Language</legend>
+        <div class="d-flex flex-wrap gap-3">
+            {% for value, label in exam_languages %}
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="language" id="exam-language-{{ value }}"
+                           value="{{ value }}" required
+                           {% if (exam and exam.language == value) or (not exam and value == 'en') %}checked{% endif %}>
+                    <label class="form-check-label" for="exam-language-{{ value }}">{{ label }}</label>
+                </div>
+            {% endfor %}
+        </div>
+    </fieldset>
     <small class="text-secondary bi bi-tags"> Tags:</small>
     {% with url=url("tags", absolute=True), value=exam.tags if exam else [] %}
         {% include "fragments/tags-input.html" %}
@@ -78,11 +108,15 @@
       rules: {
         title: [{rule: "required"}, {rule: "minLength", value: 2}, {rule: "maxLength", value: 500}],
         description: [{rule: "required"}, {rule: "minLength", value: 10}, {rule: "maxLength", value: 500}],
-        tags: [{rule: "required"}, {rule: "tags", minCnt: 1, maxCnt: 3, minLen: 2, maxLen: 40}],
-        category: [{rule: "required"}]
+        tags: [{rule: "required"}, {rule: "tags", minCnt: 1, maxCnt: 3, minLen: 2, maxLen: 40}]
       },
       onSuccess: (res) => res && (window.location.href = res),
       successMessage: "Exam created!"
+    })
+
+    document.getElementById("certification_id").addEventListener("change", event => {
+      const category = event.target.selectedOptions[0].dataset.category
+      if (category) document.querySelector(`[name="category"][value="${CSS.escape(category)}"]`)?.click()
     })
   })
 </script>

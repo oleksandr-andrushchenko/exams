@@ -3,7 +3,12 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from basic_dtos import BaseDTO, UNSET
+from form_options import EXAM_DIFFICULTIES, EXAM_LANGUAGES
 from query_dtos import ExamStatus
+
+
+EXAM_DIFFICULTY_VALUES = {value for value, _ in EXAM_DIFFICULTIES}
+EXAM_LANGUAGE_VALUES = {value for value, _ in EXAM_LANGUAGES}
 
 
 def _validate_tags(values):
@@ -42,7 +47,7 @@ class ExamDTO(BaseDTO):
     category: str = "other"
     certification_id: str | None = None
     image_filename: str | None = None
-    difficulty: str = "medium"
+    difficulty: str = "intermediate"
     language: str = "en"
 
     def __post_init__(self):
@@ -52,9 +57,9 @@ class ExamDTO(BaseDTO):
         self.tags = _validate_tags(self.tags)
         self.difficulty = self.difficulty.strip().lower()
         self.language = self.language.strip().lower()
-        if self.difficulty not in {"beginner", "intermediate", "advanced", "professional", "medium"}:
+        if self.difficulty not in EXAM_DIFFICULTY_VALUES:
             raise ValueError("invalid difficulty")
-        if not self.language or len(self.language) > 10:
+        if self.language not in EXAM_LANGUAGE_VALUES:
             raise ValueError("invalid language")
 
 
@@ -87,10 +92,10 @@ class UpdateExamDTO(BaseDTO):
             from validation import validate_category_slug
             self.category = validate_category_slug(self.category)
         if self.difficulty is not UNSET:
-            if self.difficulty not in {"beginner", "intermediate", "advanced", "professional", "medium"}:
+            if self.difficulty not in EXAM_DIFFICULTY_VALUES:
                 raise ValueError("invalid difficulty")
         if self.language is not UNSET:
-            if not isinstance(self.language, str) or not 2 <= len(self.language) <= 10:
+            if self.language not in EXAM_LANGUAGE_VALUES:
                 raise ValueError("invalid language")
 
 

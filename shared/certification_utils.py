@@ -3,8 +3,8 @@ from typing import Any
 from uuid import uuid4
 
 from certification_dtos import CertificationDTO
-from shared_utils import (Key, Permission, User, get_dynamodb_item, get_dynamodb_table, to_kebab_case, utc_now,
-                          verify_authorization)
+from shared_utils import (Key, Permission, User, add_dynamodb_update_transact, dynamodb_transact_write, get_category,
+                          get_dynamodb_item, get_dynamodb_table, to_kebab_case, utc_now, verify_authorization)
 
 
 @dataclass(slots=True)
@@ -59,7 +59,8 @@ def get_certifications() -> list[Certification]:
 
 
 def create_certification(dto: CertificationDTO, user: User) -> Certification:
-    verify_authorization(user, Permission.ROOT)
+    verify_authorization(user, Permission.CREATE_CERTIFICATION)
+    get_category(dto.category)
     now = utc_now()
     slug = to_kebab_case(dto.name)
     certification = Certification(str(uuid4()), slug, dto.name, dto.provider,
@@ -68,3 +69,17 @@ def create_certification(dto: CertificationDTO, user: User) -> Certification:
     item = {"pk": "CERTIFICATION", "sk": slug, **asdict(certification), "certification": True}
     get_dynamodb_table().put_item(Item=item, ConditionExpression="attribute_not_exists(pk)")
     return certification
+
+
+def update_certification(certification: Certification, dto: CertificationDTO, user: User) -> None:
+    verify_authorization(user, Permission.UPDATE_CERTIFICATION)
+    get_category(dto.category)
+    changes = dto.get_changes(certification)
+    if not changes:
+        return
+    changes["updated_at"] = utc_now()
+    transacts = []
+    add_dynamodb_update_transact(transacts, ("CERTIFICATION", certification.slug), changes)
+    dynamodb_transact_write(transacts)
+    for key, value in changes.items():
+        setattr(certification, key, value)
