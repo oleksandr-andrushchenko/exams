@@ -15,6 +15,10 @@
 
 {% block content %}
     <h1>{{ title }}</h1>
+    <p class="small text-secondary">
+        {{ "Add a question and identify the correct answer." if is_new
+           else "Update the question, choices, and correct answer." }}
+    </p>
     <form id="question-form" class="vstack gap-3" novalidate
           data-question-url="{{ url('create-question', exam_id=exam.id, absolute=True) if is_new else url('update-question', exam_id=exam.id, question_id=question.id, absolute=True) }}"
           data-success-url="{{ url('question-by-id', question_id=question.id, absolute=True) if question else exam_url(exam) ~ '#questions' }}"

@@ -8,7 +8,7 @@
 {% block content %}
     <h1>{{ title }}</h1>
     {% if session.status == 'in_progress' %}
-        <p class="text-secondary">Answer all {{ session.total_questions }} questions to receive your result.</p>
+        <p class="small text-secondary">Answer all {{ session.total_questions }} questions to receive your result.</p>
     {% else %}
         <div class="alert {% if session.status == 'passed' %}alert-success{% else %}alert-danger{% endif %}" role="status">
             <h2 class="h5">You {{ session.status }} this exam</h2>

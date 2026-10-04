@@ -2,8 +2,9 @@
 {% set layout_assets = {"validation": true, "tagify": true} %}
 
 
+{% set title = "New exam" %}
 {% set meta_robots = "noindex, nofollow" %}
-{% set meta_title = "New exam | " ~ site_name %}
+{% set meta_title = title ~ " | " ~ site_name %}
 {% set meta_canonical_url = url("create-exam", absolute=True) %}
 
 {% block breadcrumbs %}
@@ -13,5 +14,7 @@
 {% endblock %}
 
 {% block content %}
+    <h1>{{ title }}</h1>
+    <p class="small text-secondary">Create a practice exam and define how learners will discover and use it.</p>
     {% include "fragments/exam-form.html" %}
 {% endblock %}

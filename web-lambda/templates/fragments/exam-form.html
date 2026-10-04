@@ -1,102 +1,154 @@
-<form class="row" id="exam-form" novalidate>
+<form class="vstack gap-4" id="exam-form" novalidate>
     <div>
-        <label class="w-100">
-            <textarea class="form-control h1 border-0" id="title" name="title" placeholder="Title"
-                      required rows="1" autofocus>{{ exam.title if exam else "" }}</textarea>
+        <label class="form-label" for="title">
+            Title <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> (required)</span>
         </label>
+        <div class="input-group">
+            <span class="input-group-text align-items-start pt-3" aria-hidden="true"><i class="bi bi-card-heading"></i></span>
+            <textarea class="form-control form-control-lg" id="title" name="title"
+                      placeholder="e.g., AWS Solutions Architect Associate Practice Exam"
+                      required rows="2" maxlength="500" autofocus
+                      aria-describedby="exam-title-help">{{ exam.title if exam else "" }}</textarea>
+        </div>
+        <div class="form-text" id="exam-title-help">Use a concise title that clearly identifies the exam.</div>
     </div>
 
     <div>
-        <label class="w-100">
-            <textarea class="form-control" id="description" name="description" placeholder="Description" rows="4"
-                      required minlength="10" maxlength="500">{{ exam.description if exam else "" }}</textarea>
+        <label class="form-label" for="description">
+            Description <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> (required)</span>
         </label>
+        <div class="input-group">
+            <span class="input-group-text align-items-start pt-2" aria-hidden="true"><i class="bi bi-text-paragraph"></i></span>
+            <textarea class="form-control" id="description" name="description"
+                      placeholder="Describe the topics, audience, and learning goals" rows="5"
+                      required minlength="10" maxlength="500"
+                      aria-describedby="exam-description-help">{{ exam.description if exam else "" }}</textarea>
+        </div>
+        <div class="form-text" id="exam-description-help">Use 10–500 characters to help learners understand what to expect.</div>
     </div>
 
     <div>
-        <label class="small text-secondary" for="image_file">Cover image:</label>
-        <input class="form-control" id="image_file" name="image_file" type="file"
-               accept="image/jpeg,image/png" data-public-file>
+        <label class="form-label" for="image_file">
+            Cover image <span class="text-body-secondary fw-normal">(optional)</span>
+        </label>
+        <div class="input-group">
+            <span class="input-group-text" aria-hidden="true"><i class="bi bi-image"></i></span>
+            <input class="form-control" id="image_file" name="image_file" type="file"
+                   accept="image/jpeg,image/png" data-public-file aria-describedby="exam-image-help">
+        </div>
+        <div class="form-text" id="exam-image-help">Upload a JPEG or PNG that remains clear at thumbnail size.</div>
         {% if exam and exam.image_filename %}
-            <img class="img-fluid rounded mt-2" src="{{ static_url(exam.image_filename) }}" alt="{{ exam.title }}">
+            <img class="img-fluid img-thumbnail d-block mt-3" src="{{ static_url(exam.image_filename) }}"
+                 alt="{{ exam.title }}">
         {% endif %}
     </div>
 
-    <fieldset>
-        <legend class="fs-6 mb-2">Category</legend>
-        <div class="d-flex flex-wrap gap-3">
+    <fieldset class="border rounded-3 p-3" aria-describedby="exam-category-help">
+        <legend class="float-none w-auto px-2 fs-6 fw-semibold">
+            Category <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> (required)</span>
+        </legend>
+        <div class="row g-2">
             {% for category in categories %}
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="category" id="exam-category-{{ category.slug }}"
-                           value="{{ category.slug }}" required
-                           {% if (exam and exam.category == category.slug) or (not exam and category.slug == 'other') %}checked{% endif %}>
-                    <label class="form-check-label" for="exam-category-{{ category.slug }}">{{ category.name }}</label>
+                <div class="col-12 col-sm-6 col-lg-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="category"
+                               id="exam-category-{{ category.slug }}" value="{{ category.slug }}" required
+                               {% if (exam and exam.category == category.slug) or (not exam and category.slug == 'other') %}checked{% endif %}>
+                        <label class="form-check-label"
+                               for="exam-category-{{ category.slug }}">{{ category.name }}</label>
+                    </div>
                 </div>
             {% endfor %}
         </div>
-        <div class="form-text">Category missing? <a href="{{ url('contacts') }}">Ask us to add it</a>.</div>
+        <div class="form-text" id="exam-category-help">Category missing? <a href="{{ url('contacts') }}">Ask us to add it</a>.</div>
     </fieldset>
     <div>
-        <label class="small text-secondary" for="certification_id">Certification:</label>
-        <select class="form-select" id="certification_id" name="certification_id">
-            <option value="">Custom exam / certification not listed</option>
-            {% for certification in certifications %}
-                <option value="{{ certification.id }}"
-                        data-category="{{ certification.category }}"
-                        {% if exam and exam.certification_id == certification.id %}selected{% endif %}>{{ certification.name }}</option>
-            {% endfor %}
-        </select>
-        <div class="form-text">
+        <label class="form-label" for="certification_id">
+            Certification <span class="text-body-secondary fw-normal">(optional)</span>
+        </label>
+        <div class="input-group">
+            <span class="input-group-text" aria-hidden="true"><i class="bi bi-patch-check"></i></span>
+            <select class="form-select" id="certification_id" name="certification_id"
+                    aria-describedby="exam-certification-help">
+                <option value="">Custom exam / certification not listed</option>
+                {% for certification in certifications %}
+                    <option value="{{ certification.id }}"
+                            data-category="{{ certification.category }}"
+                            {% if exam and exam.certification_id == certification.id %}selected{% endif %}>{{ certification.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-text" id="exam-certification-help">
             You can create a custom exam now or <a href="{{ url('contacts') }}">request a certification</a>.
             {% if cur_user and check_auth(cur_user, Permission.CREATE_CERTIFICATION) %}
                 You can also <a href="{{ url('new-certification') }}">add the certification</a> first.
             {% endif %}
         </div>
     </div>
-    <fieldset>
-        <legend class="fs-6 mb-2">Practice exam difficulty</legend>
-        <div class="d-flex flex-wrap gap-3">
+    <fieldset class="border rounded-3 p-3" aria-describedby="exam-difficulty-help">
+        <legend class="float-none w-auto px-2 fs-6 fw-semibold">
+            Practice exam difficulty <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> (required)</span>
+        </legend>
+        <div class="row g-2">
             {% for value, label in exam_difficulties %}
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="difficulty" id="exam-difficulty-{{ value }}"
-                           value="{{ value }}" required
-                           {% if (exam and ((exam.difficulty == value) or (value == 'intermediate' and exam.difficulty == 'medium') or (value == 'advanced' and exam.difficulty == 'professional'))) or (not exam and value == 'intermediate') %}checked{% endif %}>
-                    <label class="form-check-label" for="exam-difficulty-{{ value }}">{{ label }}</label>
+                <div class="col-12 col-sm-6 col-lg-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="difficulty"
+                               id="exam-difficulty-{{ value }}" value="{{ value }}" required
+                               {% if (exam and ((exam.difficulty == value) or (value == 'intermediate' and exam.difficulty == 'medium') or (value == 'advanced' and exam.difficulty == 'professional'))) or (not exam and value == 'intermediate') %}checked{% endif %}>
+                        <label class="form-check-label" for="exam-difficulty-{{ value }}">{{ label }}</label>
+                    </div>
                 </div>
             {% endfor %}
         </div>
-        <div class="form-text">This rates the challenge of this practice exam, not the certification's credential level.</div>
+        <div class="form-text" id="exam-difficulty-help">This rates the challenge of this practice exam, not the certification's credential level.</div>
     </fieldset>
-    <fieldset>
-        <legend class="fs-6 mb-2">Language</legend>
-        <div class="d-flex flex-wrap gap-3">
+    <fieldset class="border rounded-3 p-3" aria-describedby="exam-language-help">
+        <legend class="float-none w-auto px-2 fs-6 fw-semibold">
+            Language <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> (required)</span>
+        </legend>
+        <div class="row g-2">
             {% for value, label in exam_languages %}
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="language" id="exam-language-{{ value }}"
-                           value="{{ value }}" required
-                           {% if (exam and exam.language == value) or (not exam and value == 'en') %}checked{% endif %}>
-                    <label class="form-check-label" for="exam-language-{{ value }}">{{ label }}</label>
+                <div class="col-12 col-sm-6 col-lg-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="language" id="exam-language-{{ value }}"
+                               value="{{ value }}" required
+                               {% if (exam and exam.language == value) or (not exam and value == 'en') %}checked{% endif %}>
+                        <label class="form-check-label" for="exam-language-{{ value }}">{{ label }}</label>
+                    </div>
                 </div>
             {% endfor %}
         </div>
+        <div class="form-text" id="exam-language-help">Choose the language used for questions and answers.</div>
     </fieldset>
-    <small class="text-secondary bi bi-tags"> Tags:</small>
-    {% with url=url("tags", absolute=True), value=exam.tags if exam else [] %}
-        {% include "fragments/tags-input.html" %}
-    {% endwith %}
-
     <div>
-        {% if exam %}<a class="btn btn-outline-secondary" href="{{ url('new-question', exam_id=exam.id) }}">Add
-            question</a>{% endif %}
-        <p class="small text-body-secondary mb-2">
+        <label class="form-label" for="tags-input">
+            <i class="bi bi-tags" aria-hidden="true"></i> Tags
+            <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> (required)</span>
+        </label>
+        {% with url=url("tags", absolute=True), value=exam.tags if exam else [] %}
+            {% include "fragments/tags-input.html" %}
+        {% endwith %}
+        <div class="form-text">Add one to three focused tags that help learners find this exam.</div>
+    </div>
+
+    <div class="border-top pt-3">
+        <p class="small text-body-secondary mb-3">
             By submitting an exam, you agree to our
             <a href="{{ url('terms') }}" class="link-body-emphasis" target="_blank" rel="noopener noreferrer">Terms of
                 Service <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i><span class="visually-hidden"> (opens in a new tab)</span></a>.
         </p>
-        <button type="submit" class="btn btn-light">
-            <i class="bi {% if exam %}bi-arrow-clockwise{% else %}bi-plus-lg{% endif %}"></i>
-            {% if exam %}Update{% else %}Create{% endif %} exam
-        </button>
+        <div class="d-flex flex-wrap gap-2">
+            <button type="submit" class="btn btn-dark">
+                <i class="bi {% if exam %}bi-arrow-clockwise{% else %}bi-plus-lg{% endif %}" aria-hidden="true"></i>
+                {% if exam %}Update{% else %}Create{% endif %} exam
+            </button>
+            {% if exam %}
+                <a class="btn btn-outline-secondary" href="{{ url('new-question', exam_id=exam.id) }}">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i> Add question
+                </a>
+            {% endif %}
+        </div>
     </div>
 </form>
 
