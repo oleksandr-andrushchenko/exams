@@ -1,6 +1,7 @@
 """Curated choices shared by validation and page forms."""
 
 CERTIFICATION_LEVELS = (
+    ("business", "Business"),
     ("foundational", "Foundational"),
     ("associate", "Associate"),
     ("professional", "Professional"),

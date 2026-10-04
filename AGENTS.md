@@ -103,6 +103,8 @@
 - Certification categories and levels, plus exam difficulties and languages, are curated choices defined in
   `shared/form_options.py`; forms render them as radio controls. Provider remains normalized text until provider-specific
   pages, filtering, or metadata justify a separate entity.
+- Certification levels include `business` for provider-defined nontechnical business credentials such as AWS Certified
+  AI Business Strategist; do not coerce these credentials into a technical level.
 - Exams expose discovery metadata including `certification_id`, `provider` through the certification, `difficulty`, and
   `language`; categories remain curated taxonomy while tags remain flexible keywords.
 - Run the Python functional suite with `make tests`; its isolated Compose stack uses DynamoDB rather than PostgreSQL.

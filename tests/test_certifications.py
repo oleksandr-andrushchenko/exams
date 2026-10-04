@@ -24,6 +24,7 @@ def certification_dto(**changes):
 
 def test_certification_dto_accepts_curated_level():
     assert certification_dto().level == "associate"
+    assert certification_dto(level="business").level == "business"
 
 
 def test_certification_dto_rejects_unlisted_level():

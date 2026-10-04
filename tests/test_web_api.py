@@ -371,7 +371,7 @@ def test_certification_create_edit_and_permissions(guest_client):
     assert new_page.status_code == 200
     new_doc = pq(new_page.text)
     assert new_doc('input[name="category"][value="other"]').attr("checked") == "checked"
-    assert len(new_doc('input[name="level"]')) == 5
+    assert len(new_doc('input[name="level"]')) == 6
     assert get(regular_client, "/certifications/new").status_code == 403
 
     payload = {
