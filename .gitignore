@@ -32,6 +32,7 @@ bootstrap-5.3.7-dist/
 bootstrap-icons-1.13.1/
 
 shared/data.json
+scripts/import_*
 static/*
 !static/styles.css
 !static/scripts.js

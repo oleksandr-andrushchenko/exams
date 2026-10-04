@@ -108,6 +108,10 @@
 - Exams expose discovery metadata including `certification_id`, `provider` through the certification, `difficulty`, and
   `language`; categories remain curated taxonomy while tags remain flexible keywords.
 - Run the Python functional suite with `make tests`; its isolated Compose stack uses DynamoDB rather than PostgreSQL.
+- Run production maintenance/import commands through the `scripts-production` service in
+  `docker-compose.scripts.production.yml`. These commands must default to a read-only dry run and require an explicit
+  `--apply` for writes; use application services such as `save_public_file` instead of duplicating their behavior or
+  calling the deployed HTTP API.
 - After DynamoDB schema/index changes, run `make recreate-local-dynamodb`; the local table is persistent and cannot be
   migrated in place. Local AWS CLI commands default to `us-west-2`.
 - Exam categories use `CATEGORY` partitions, category/status exam indexes, and the `published_exams_count` counter;
