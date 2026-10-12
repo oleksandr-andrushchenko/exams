@@ -8,14 +8,14 @@
 {% set meta_desc = [exam.title, exam.preview, meta_desc] | select | join('. ') | truncate(155, True, '...') %}
 {% set meta_title = exam.title ~ " | by " ~ author.name ~ " ~ " ~ site_name %}
 {% set meta_robots = "index, follow" %}
-{% set og_type = "exam" %}
+{% set og_type = "article" %}
 {% set meta_canonical_url = exam_canonical_url %}
 {% set og_url = meta_canonical_url %}
 {% set og_img_filename = exam.image_filename %}
-{% set exam_og_author = author_canonical_url %}
-{% set exam_og_published_time = exam.published_at | iso_utc if exam.published_at else None %}
-{% set exam_og_modified_time = exam.updated_at | iso_utc if exam.updated_at and exam.published_at else None %}
-{% set exam_og_tags = exam.tags %}
+{% set article_og_author = author_canonical_url %}
+{% set article_og_published_time = exam.published_at | iso_utc if exam.published_at else None %}
+{% set article_og_modified_time = exam.updated_at | iso_utc if exam.updated_at and exam.published_at else None %}
+{% set article_og_tags = exam.tags %}
 {% block meta_schema %}
     {% set exam_body = html_to_text(exam.description) %}
     {% set exam_image_url = static_url(exam.image_filename, absolute=True) if exam.image_filename else None %}
@@ -180,8 +180,11 @@
                 </div>
 
                 {% if exam.image_filename %}
-                    <img class="img-fluid rounded mb-3" src="{{ static_url(exam.image_filename) }}"
-                         alt="{{ exam.title }}">
+                    {% with filename=exam.image_filename, alt=exam.title,
+                        img_class="img-fluid rounded mb-3", loading="eager", decoding="async", fetchpriority="high",
+                        img_sizes={"1200px": "760px", "992px": "480px", "default": "100vw"} %}
+                        {% include "fragments/image.html" %}
+                    {% endwith %}
                 {% endif %}
 
                 <p class="exam-description">{{ exam.description }}</p>

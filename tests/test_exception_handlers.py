@@ -13,6 +13,7 @@ project_root = Path(os.environ.get("PROJECT_ROOT", Path(__file__).resolve().pare
 for directory in ("shared", "api-lambda", "web-lambda"):
     sys.path.insert(0, str(project_root / directory))
 
+from jinja2 import DictLoader, Environment
 from starlette.exceptions import HTTPException
 from web import Application, Request, Response
 import shared_utils
@@ -73,7 +74,6 @@ class ExceptionHandlerTests(unittest.TestCase):
                 "FUNCTION_TEMPLATES_DIR": str(project_root / "web-lambda/templates"),
             }):
                 templates = shared_utils.get_jinja2_env()
-            templates.globals["request"] = Request(scope)
             with patch.object(shared_utils, "jinja2_env", return_value=templates):
                 try:
                     await app(scope, receive, send)
@@ -94,6 +94,77 @@ class ExceptionHandlerTests(unittest.TestCase):
             self.assertTrue(headers[b"content-type"].startswith(b"text/html"))
             self.assertIn(f"<h1>{status} - ".encode(), body)
             self.assertIn(b"Back home", body)
+
+    def test_concurrent_renders_keep_each_request_and_restore_context(self):
+        env = Environment(loader=DictLoader({"page.html": "{{ request.url.path }}"}))
+
+        def request(path):
+            return Request({"type": "http", "method": "GET", "path": path,
+                            "root_path": "", "scheme": "https", "query_string": b"",
+                            "server": ("example.com", 443), "headers": []})
+
+        for module in self.modules:
+            with self.subTest(module=module.__name__):
+                async def run():
+                    outer_request = request("/outer")
+                    token = shared_utils.template_request.set(outer_request)
+                    ready = asyncio.Event()
+                    started = 0
+
+                    async def render_next(_request):
+                        nonlocal started
+                        started += 1
+                        if started == 2:
+                            ready.set()
+                        await ready.wait()
+                        return shared_utils.get_html_content("page.html")
+
+                    async def render(path):
+                        result = await module.inject_template_global_vars(request(path), render_next)
+                        self.assertIs(shared_utils.template_request.get(), outer_request)
+                        return result
+
+                    try:
+                        return await asyncio.gather(render("/exams"), render("/users"))
+                    finally:
+                        shared_utils.template_request.reset(token)
+
+                with patch.object(shared_utils, "jinja2_env", return_value=env):
+                    self.assertEqual(asyncio.run(run()), ["/exams", "/users"])
+                self.assertIsNone(shared_utils.template_request.get())
+                self.assertNotIn("request", env.globals)
+
+    def test_request_context_is_restored_after_exception(self):
+        for module in self.modules:
+            with self.subTest(module=module.__name__):
+                async def run():
+                    outer_request = object()
+                    token = shared_utils.template_request.set(outer_request)
+
+                    async def fail(request):
+                        self.assertIs(shared_utils.template_request.get(), request)
+                        raise RuntimeError("render failure")
+
+                    try:
+                        with self.assertRaisesRegex(RuntimeError, "render failure"):
+                            await module.inject_template_global_vars(object(), fail)
+                        self.assertIs(shared_utils.template_request.get(), outer_request)
+                    finally:
+                        shared_utils.template_request.reset(token)
+
+                asyncio.run(run())
+                self.assertIsNone(shared_utils.template_request.get())
+
+    def test_explicit_render_request_overrides_ambient_context(self):
+        env = Environment(loader=DictLoader({"page.html": "{{ request }}"}))
+        token = shared_utils.template_request.set("ambient")
+        try:
+            with patch.object(shared_utils, "jinja2_env", return_value=env):
+                self.assertEqual(shared_utils.get_html_content("page.html"), "ambient")
+                self.assertEqual(shared_utils.get_html_content("page.html", {"request": "explicit"}), "explicit")
+        finally:
+            shared_utils.template_request.reset(token)
+        self.assertNotIn("request", env.globals)
 
     def test_http_exceptions_log_access_once_at_status_level(self):
         for module in self.modules:

@@ -31,7 +31,6 @@ from api_utils import (
     get_all_exams,
     get_all_exam_hrefs,
     find_user,
-    jinja2_env,
     update_user,
     update_exam,
     find_exam_impression,
@@ -82,10 +81,12 @@ from session_dtos import AnswerDTO
 from session_utils import (
     ActiveExamSessionError, answer_question, complete_session, create_session, get_session, get_sessions,
 )
+from shared_utils import template_request
 from shared_deps import (
     OptCurUserDep,
     CurUserDep,
     ExamQueryDep,
+    ExamListingQueryDep,
     ExamDep,
     TagQueryDep,
     UserQueryDep,
@@ -165,8 +166,11 @@ async def add_no_robots_to_api(request: Request, call_next):
 
 @app.middleware("http")
 async def inject_template_global_vars(request: Request, call_next):
-    jinja2_env().globals["request"] = request
-    return await call_next(request)
+    token = template_request.set(request)
+    try:
+        return await call_next(request)
+    finally:
+        template_request.reset(token)
 
 
 @app.middleware("http")
@@ -253,7 +257,7 @@ async def _create_exam(exam_dto: ExamDTO, cur_user: CurUserDep, request: Request
 
 
 @route("get", "exams-fragment", response_class=HTMLResponse)
-async def exams_fragment(query_dto: ExamQueryDep, cur_user: OptCurUserDep) -> str:
+async def exams_fragment(query_dto: ExamListingQueryDep, cur_user: OptCurUserDep) -> str:
     return get_html_content("fragments/exams.html", {
         "exams": get_exams(query_dto, cur_user)
     })
@@ -383,8 +387,26 @@ async def _update_tag(update_tag_dto: UpdateTagDTODep, tag: TagDep, cur_user: Cu
     return get_tag_url(request, tag)
 
 
+def _get_nonempty_suggestions(query_dto, fetch_page, count_field):
+    page_query = replace(query_dto)
+    matches = []
+    while len(matches) < query_dto.limit:
+        page_query.limit = query_dto.limit - len(matches)
+        page = fetch_page(page_query)
+        if not page:
+            break
+        matches.extend(item for item in page if getattr(item, count_field) > 0)
+        next_offset = page[-1].offset
+        if not next_offset or next_offset == page_query.offset:
+            break
+        page_query.offset = next_offset
+    return matches
+
+
 @route("get", "api-tags", response_class=JSONResponse)
-async def _get_tags(query_dto: TagQueryDep) -> list[Tag]:
+async def _get_tags(query_dto: TagQueryDep, published_only: bool = False) -> list[Tag]:
+    if published_only:
+        return _get_nonempty_suggestions(query_dto, get_tags, "exams_count")
     return get_tags(query_dto)
 
 

@@ -1,7 +1,9 @@
 {% for exam in exams %}
-    {% if horizontal | default(False) %}
-        {% include "fragments/horizontal-exam.html" %}
-    {% else %}
-        {% include "fragments/exam.html" %}
-    {% endif %}
+    {% with exam_image_loading="eager" if loop.index <= eager_exam_images | default(0) else "lazy" %}
+        {% if horizontal | default(False) %}
+            {% include "fragments/horizontal-exam.html" %}
+        {% else %}
+            {% include "fragments/exam.html" %}
+        {% endif %}
+    {% endwith %}
 {% endfor %}

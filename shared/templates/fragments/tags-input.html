@@ -1,10 +1,15 @@
-<input id="tags-input"
-       name="tags"
+<input id="{{ input_id|default('tags-input') }}"
+       name="{{ field_name|default('tags') }}"
        type="text"
-       class="form-control {{ class_name }}"
-       placeholder="Tags"
-       value='{% if tag_items is defined and tag_items %}{{ tag_items | tojson | safe }}{% else %}{{ ",".join(value) if value else "" }}{% endif %}'
+       class="form-control {{ class_name|default('') }}"
+       placeholder="{{ placeholder|default('Tags') }}"
+       value='{% if tag_items is defined and tag_items %}{{ tag_items | tojson | forceescape }}{% else %}{{ (value or []) | tojson | forceescape }}{% endif %}'
        data-url="{{ url }}"
-       {% if inject_hidden %}data-inject-hidden{% endif %}
-       {% if auto_submit %}data-auto-submit{% endif %}
+       data-catalog-input
+       data-max-items="{{ max_items|default(3) }}"
+       data-min-length="{{ min_length|default(2) }}"
+       data-max-length="{{ max_length|default(40) }}"
+       data-normalize-kebab="{{ 'true' if normalize_kebab|default(true) else 'false' }}"
+       data-inject-hidden="{{ 'true' if inject_hidden else 'false' }}"
+       data-auto-submit="{{ 'true' if auto_submit else 'false' }}"
 />

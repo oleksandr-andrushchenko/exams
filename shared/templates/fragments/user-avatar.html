@@ -6,7 +6,8 @@
             alt=name,
             img_class=avatar_img_class | default("rounded-circle img-fluid d-block"),
             img_style="width:100%; height:100%; object-fit:cover;",
-            img_sizes=user_avatar_img_sizes | default({"default": "120px"}) %}
+            img_sizes=user_avatar_img_sizes | default({"default": "120px"}),
+            loading=avatar_loading | default(None), decoding="async" %}
             {% include "fragments/image.html" %}
         {% endwith %}
     {% else %}

@@ -12,10 +12,12 @@ from query_dtos import (
 )
 from question_utils import get_all_questions, get_question_by_id, get_questions
 from session_utils import get_active_session, get_question_result, get_session, get_session_answers, get_sessions
+from shared_utils import get_indexnow_key, template_request
 from shared_deps import (
     OptCurUserDep,
     CurUserDep,
     ExamQueryDep,
+    ExamListingQueryDep,
     ExamDep,
     UserQueryDep,
     UserDep,
@@ -72,7 +74,6 @@ from web_utils import (
     get_popular_tags,
     get_popular_published_exams,
     find_user,
-    jinja2_env,
     get_popular_active_users,
     Permission,
     verify_authorization,
@@ -121,6 +122,13 @@ async def sitemap_xml(request: Request):
     )
 
 
+indexnow_key = get_indexnow_key()
+if indexnow_key:
+    @app.get(f"/{indexnow_key}.txt", name="indexnow-key")
+    async def indexnow_key_file():
+        return PlainTextResponse(indexnow_key)
+
+
 @app.get("/favicon.ico", name="web-favicon")
 async def favicon_ico(request: Request):
     return RedirectResponse(
@@ -151,7 +159,7 @@ if not is_prod():
     @app.middleware("http")
     async def serve_static(request: Request, call_next):
         path = request.url.path.lstrip("/")
-        if "." in path:  # file-like (e.g. robots.txt, sitemap.xml)
+        if "." in path and path != f"{indexnow_key}.txt":  # file-like (e.g. robots.txt, sitemap.xml)
             static_dir = get_static_files_dir()
             file_path = os.path.join(static_dir, path)
             if os.path.isfile(file_path):
@@ -177,8 +185,11 @@ async def add_no_robots_to_auth_endpoints(request: Request, call_next):
 
 @app.middleware("http")
 async def inject_template_global_vars(request: Request, call_next):
-    jinja2_env().globals["request"] = request
-    return await call_next(request)
+    token = template_request.set(request)
+    try:
+        return await call_next(request)
+    finally:
+        template_request.reset(token)
 
 
 @app.middleware("http")
@@ -194,13 +205,13 @@ async def access_log_middleware(request: Request, call_next):
 
 @app.exception_handler(StarletteHTTPException)
 async def custom_http_exception_handler(_request: Request, exc: StarletteHTTPException):
-    return get_error_response(exc.status_code, exc.detail)
+    return get_error_response(exc.status_code, exc.detail, request=_request)
 
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(_request: Request, exc: Exception):
     logger.error("Unhandled request exception", exc_info=exc)
-    return get_error_response(500)
+    return get_error_response(500, request=_request)
 
 
 @app.exception_handler(RequestValidationError)
@@ -209,12 +220,12 @@ async def validation_exception_handler(_request: Request, exc: RequestValidation
     for error in exc.errors():
         field = error["loc"][-1] if len(error["loc"]) > 1 else error["loc"][0]
         details[field] = error["msg"]
-    return get_error_response(422, details)
+    return get_error_response(422, details, request=_request)
 
 
 @app.exception_handler(NotAuthenticatedError)
 async def not_authenticated_error_handler(_request: Request, _exc: NotAuthenticatedError):
-    return get_error_response(401)
+    return get_error_response(401, request=_request)
 
 
 @app.exception_handler(UserBannedError)
@@ -224,7 +235,7 @@ async def user_banned_error_handler(_request: Request, _exc: UserBannedError):
 
 @app.exception_handler(NotAuthorizedError)
 async def not_authorized_error_handler(_request: Request, exc: NotAuthorizedError):
-    return get_error_response(403, {"permission": exc.permission})
+    return get_error_response(403, {"permission": exc.permission}, request=_request)
 
 
 @app.exception_handler(ExamByOldSlugRequestedError)
@@ -313,7 +324,7 @@ async def _exam_page(exam: ExamDep, cur_user: OptCurUserDep) -> HTMLResponse:
     return HTMLResponse(html_content)
 
 
-async def _exams_page(query_dto: ExamQueryDep, cur_user: OptCurUserDep) -> HTMLResponse:
+async def _exams_page(query_dto: ExamListingQueryDep, cur_user: OptCurUserDep) -> HTMLResponse:
     tag_slug = query_dto.tags[0] if query_dto.tags and len(query_dto.tags) == 1 else None
     (
         exams,
@@ -359,7 +370,7 @@ async def new_exam(cur_user: CurUserDep) -> str:
 
 
 @route("get", "exams", response_class=HTMLResponse)
-async def exams_page(query_dto: ExamQueryDep, cur_user: OptCurUserDep):
+async def exams_page(query_dto: ExamListingQueryDep, cur_user: OptCurUserDep):
     return await _exams_page(query_dto, cur_user)
 
 

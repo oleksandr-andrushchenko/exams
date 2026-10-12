@@ -5,9 +5,12 @@
 {% set users_active = current_route in ["users", "users-by-slugs", "user", "edit-user", "user-by-slug"] %}
 {% set css_filenames = [
     "https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css",
+    "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css",
     "https://fonts.googleapis.com/css2?family=Rethink+Sans:wght@400;700&display=swap",
     static_url('styles.css', _=css_cache_counter),
 ] %}
+
+{% set meta_desc = html_to_text(meta_desc or site_desc) | truncate(155, False, "...", 0) %}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -36,7 +39,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <title>{{ meta_title or site_title }}</title>
-    <meta name="description" content="{{ (meta_desc or site_desc) | truncate(155, True, '...') }}"/>
+    <meta name="description" content="{{ meta_desc }}"/>
     <meta name="author" content="{{ meta_author }}"/>
     {% if meta_rating_value is defined %}
         <meta name="ratingValue" content="{{ meta_rating_value }}"/>
@@ -57,16 +60,18 @@
 
     {% set social_url = og_url or meta_canonical_url or url("index", absolute=True) %}
     {% set image_filename = og_img_filename or meta_img_filename or site_img_filename %}
-    {% set social_image_url = static_url(image_filename, absolute=True) if image_filename else None %}
+    {% set social_image_url = image_filename if image_filename and (image_filename.startswith('http://') or image_filename.startswith('https://')) else static_url(image_filename, absolute=True) if image_filename else None %}
+    {% set social_image_alt = og_img_alt or meta_img_alt or (site_img_title or site_name if image_filename == site_img_filename else meta_title or site_title) %}
+    {% set social_description = html_to_text(og_desc) if og_desc else meta_desc %}
     <meta property="og:title" content="{{ og_title or meta_title or site_title }}"/>
-    <meta property="og:description" content="{{ og_desc or meta_desc or site_desc }}"/>
+    <meta property="og:description" content="{{ social_description }}"/>
     <meta property="og:type" content="{{ og_type or "website" }}"/>
     <meta property="og:url" content="{{ social_url }}"/>
     <meta property="og:site_name" content="{{ site_name }}"/>
     {% if social_image_url %}
         <meta property="og:image" content="{{ social_image_url }}"/>
         <meta property="og:image:alt"
-              content="{{ og_img_alt or meta_img_alt or meta_title or site_img_title or site_title }}"/>
+              content="{{ social_image_alt }}"/>
     {% endif %}
     {% set img_width, img_height = img_dims(image_filename) %}
     {% if img_width and img_height %}
@@ -74,22 +79,23 @@
         <meta property="og:image:height" content="{{ img_height }}"/>
     {% endif %}
 
-    <meta name="twitter:card" content="{{ twitter_card or "summary_large_image" }}"/>
+    <meta name="twitter:card" content="{{ twitter_card or ('summary_large_image' if social_image_url else 'summary') }}"/>
     <meta name="twitter:title" content="{{ og_title or meta_title or site_title }}"/>
-    <meta name="twitter:description" content="{{ og_desc or meta_desc or site_desc }}"/>
+    <meta name="twitter:description" content="{{ social_description }}"/>
     {% if social_image_url %}
         <meta name="twitter:image" content="{{ social_image_url }}"/>
+        <meta name="twitter:image:alt" content="{{ social_image_alt }}"/>
     {% endif %}
 
-    {% if og_type == "exam" %}
-        {% if exam_og_author %}
-            <meta property="exam:author" content="{{ exam_og_author }}"/>{% endif %}
-        {% if exam_og_published_time %}
-            <meta property="exam:published_time" content="{{ exam_og_published_time }}"/>{% endif %}
-        {% if exam_og_modified_time %}
-            <meta property="exam:modified_time" content="{{ exam_og_modified_time }}"/>{% endif %}
-        {% for tag in exam_og_tags %}
-            <meta property="exam:tag" content="{{ tag }}"/>{% endfor %}
+    {% if og_type == "article" %}
+        {% if article_og_author %}
+            <meta property="article:author" content="{{ article_og_author }}"/>{% endif %}
+        {% if article_og_published_time %}
+            <meta property="article:published_time" content="{{ article_og_published_time }}"/>{% endif %}
+        {% if article_og_modified_time %}
+            <meta property="article:modified_time" content="{{ article_og_modified_time }}"/>{% endif %}
+        {% for tag in article_og_tags %}
+            <meta property="article:tag" content="{{ tag }}"/>{% endfor %}
     {% endif %}
 
     <script type="application/ld+json">{% block meta_schema %}
@@ -117,6 +123,9 @@
     {% for css_filename in css_filenames %}
         <link rel="stylesheet" href="{{ css_filename }}" crossorigin="anonymous">
     {% endfor %}
+    {% if layout_assets.tagify | default(false) %}
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css">
+    {% endif %}
 </head>
 
 <body class="d-flex flex-column min-vh-100"
@@ -292,11 +301,6 @@
     </div>
 </footer>
 
-<link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
-      as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-</noscript>
 <!--bs-->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q"
@@ -308,12 +312,6 @@
 {% if layout_assets.tagify | default(false) %}
     <!-- tags input -->
     <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.polyfills.min.js" defer></script>
-    <link rel="preload" href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css" as="style"
-          onload="this.onload=null;this.rel='stylesheet'">
-    <noscript>
-        <link href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css" rel="stylesheet" type="text/css">
-    </noscript>
 {% endif %}
 <!--jquery-->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"

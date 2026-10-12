@@ -51,7 +51,7 @@
                     <h2 class="h5 mb-2 text-decoration-underline">Popular tags</h2>
                     {% if popular_tags %}
                         <div class="{{ {"def": 2, "sm": 3, "md": 4} | row_classes }} g-2 mb-2"
-                             data-masonry='{"percentPosition": true }'>
+                             data-masonry-options='{"percentPosition": true }'>
                             {% for tag in popular_tags[:20] %}
                                 {% include "fragments/tag.html" %}
                             {% endfor %}
@@ -82,7 +82,7 @@
                     </h2>
                     {% if popular_users %}
                         <div id="popular-users" class="{{ {"def": 1, "sm": 2} | row_classes }} g-2 mb-2"
-                             data-masonry='{"percentPosition": true }'>
+                             data-masonry-options='{"percentPosition": true }'>
                             {% with users=popular_users[:3] %}
                                 {% include "fragments/popular-users.html" %}
                             {% endwith %}
@@ -167,8 +167,8 @@
             </h2>
             {% if latest_exams %}
                 <div id="exams" class="{{ {"def": 1, "sm": 2, "lg": 3, "xl": 4} | row_classes }} g-3 mb-2"
-                     data-masonry='{"percentPosition": true }'>
-                    {% with exams=latest_exams,
+                     data-masonry-options='{"percentPosition": true }'>
+                    {% with exams=latest_exams, eager_exam_images=1,
                             exam_img_sizes={"1400px": "196px", "1200px": "166px", "992px": "96px", "768px": "156px", "default": "100vw"} %}
                         {% include "fragments/exams.html" %}
                     {% endwith %}
@@ -176,6 +176,7 @@
 
                 {% with limit=latest_exams_query.limit,
                         offset=latest_exams[-1].offset,
+                        next_page_url=exams_url(offset=latest_exams[-1].offset),
                         url=url("exams-fragment", absolute=True, **latest_exams_query.get_dict()),
                         container="#exams",
                         auto_click=True %}

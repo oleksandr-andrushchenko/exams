@@ -18,7 +18,7 @@
 
 {% set exams_icon = val_map[ExamQueryType.LATEST]["icon"] %}
 {% set exams_title = ([val_map[exam_query.type]["title"]] + [val_map[exam_query.status]["title"]] + ["Exams"]) | select | join(" ") | title %}
-{% set meta_robots = "index, follow" %}
+{% set meta_robots = "noindex, nofollow" if user.status == UserStatus.BANNED or exam_query.status != ExamStatus.PUBLISHED else "noindex, follow" if exam_query.offset else "index, follow" %}
 {% set exams_subtitle = ([val_map[exam_query.type]["subtitle"]] + [val_map[exam_query.status]["subtitle"]] + ["Exams"]) | select | join(" ") | title %}
 {% set meta_title = user.name ~ " - " ~ site_name %}
 {% set meta_desc = [
@@ -209,19 +209,19 @@
 
                     <div class="btn-group btn-group-sm" role="group">
                         {% set is_published = exam_query.status == ExamStatus.PUBLISHED %}
-                        <a href="{{ user_url(user, **exam_query.get_dict({"status": None if is_published else ExamStatus.PUBLISHED.value})) }}"
+                        <a href="{{ user_url(user, **exam_query.get_dict({"offset": None, "status": None if is_published else ExamStatus.PUBLISHED.value})) }}"
                            class="btn {% if is_published %}btn-success active{% else %}btn-light{% endif %}">
                             {{ ExamStatus.PUBLISHED | title }} ({{ user.published_exams_count }})
                         </a>
 
                         {% set is_unpublished = exam_query.status == ExamStatus.UNPUBLISHED %}
-                        <a href="{{ user_url(user, **exam_query.get_dict({"status": None if is_unpublished else ExamStatus.UNPUBLISHED.value})) }}"
+                        <a href="{{ user_url(user, **exam_query.get_dict({"offset": None, "status": None if is_unpublished else ExamStatus.UNPUBLISHED.value})) }}"
                            class="btn {% if is_unpublished %}btn-warning active{% else %}btn-light{% endif %}">
                             {{ ExamStatus.UNPUBLISHED | title }} ({{ user.unpublished_exams_count }})
                         </a>
 
                         {% set is_rejected = exam_query.status == ExamStatus.REJECTED %}
-                        <a href="{{ user_url(user, **exam_query.get_dict({"status": None if is_rejected else ExamStatus.REJECTED.value})) }}"
+                        <a href="{{ user_url(user, **exam_query.get_dict({"offset": None, "status": None if is_rejected else ExamStatus.REJECTED.value})) }}"
                            class="btn {% if is_rejected %}btn-danger active{% else %}btn-light{% endif %}">
                             {{ ExamStatus.REJECTED | title }} ({{ user.rejected_exams_count }})
                         </a>
@@ -235,7 +235,7 @@
 
             {% if exams %}
                 <div id="exams" class="{{ {"def": 1, "sm": 2, "lg": 3, "xl": 4} | row_classes }} g-3"
-                     data-masonry='{"percentPosition": true }'>
+                     data-masonry-options='{"percentPosition": true }'>
                     {% with exam_img_sizes={"1400px": "196px", "1200px": "166px", "992px": "96px", "768px": "156px", "default": "100vw"} %}
                         {% include "fragments/exams.html" %}
                     {% endwith %}
@@ -243,6 +243,8 @@
 
                 {% with limit=exam_query.limit,
                         offset=exams[-1].offset,
+            next_page_url=user_url(user, **exam_query.get_dict({"offset": exams[-1].offset})),
+            first_page_url=user_url(user, **exam_query.get_dict({"offset": None})) if exam_query.offset else None,
                         url=url("user-exams-fragment", user_id=user.id, absolute=True, **exam_query.get_dict()),
                         container="#exams" %}
                     {% include "fragments/load-more-button.html" %}

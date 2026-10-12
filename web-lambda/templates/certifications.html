@@ -15,7 +15,7 @@
     </div>
     <p class="text-secondary">Choose a target credential and practice with community-created exams.</p>
     <div id="certifications" class="row row-cols-1 row-cols-md-3 g-3"
-         data-masonry='{"percentPosition": true}'>
+         data-masonry-options='{"percentPosition": true}'>
         {% for certification in certifications %}
             <div class="col">
                 <a class="card card-body h-100 text-decoration-none" href="{{ url('certification', slug=certification.slug) }}">

@@ -10,7 +10,7 @@
 {% set title = ([val_map[tags_query.type]["title"], "Tags"]) | select | join(" ") | title %}
 {% set subtitle = ([val_map[tags_query.type]["subtitle"], "Tags"]) | select | join(" ") | title %}
 {% set meta_title = title ~ " | " ~ site_name %}
-{% set meta_robots = "index, follow" %}
+{% set meta_robots = "noindex, follow" if tags_query.offset or tags_query.prefix else "index, follow" %}
 {% set meta_canonical_url = url("tags", type=None if tags_query.type == TagQueryDTO.DEFAULT_TYPE else tags_query.type, absolute=True) %}
 {% set meta_desc = [title, subtitle, site_desc] | select | join('. ') | truncate(155, True, '...') %}
 
@@ -77,12 +77,12 @@
             <small class="text-secondary bi bi-sort-down"> Show:</small>
             <div class="btn-group btn-group-sm" role="group">
                 {% set is_latest = tags_query.type == TagQueryType.LATEST %}
-                <a href="{{ url("tags", **tags_query.get_dict({"type": None if is_latest else TagQueryType.LATEST})) }}"
+                <a href="{{ url("tags", **tags_query.get_dict({"offset": None, "type": None if is_latest else TagQueryType.LATEST})) }}"
                    class="btn {% if is_latest %}btn-secondary active{% else %}btn-light{% endif %} bi bi-clock{{ "-fill" if is_latest else "" }}">
                     {{ TagQueryType.LATEST | title }} first
                 </a>
                 {% set is_popular = tags_query.type == TagQueryType.POPULAR %}
-                <a href="{{ url("tags", **tags_query.get_dict({"type": None if is_popular else TagQueryType.POPULAR})) }}"
+                <a href="{{ url("tags", **tags_query.get_dict({"offset": None, "type": None if is_popular else TagQueryType.POPULAR})) }}"
                    class="btn {% if is_popular %}btn-primary active{% else %}btn-light{% endif %} bi bi-star{{ "-fill" if is_popular else "" }}">
                     {{ TagQueryType.POPULAR | title }} first
                 </a>
@@ -97,7 +97,7 @@
     </form>
 
     {% if tags %}
-        <div class="{{ {"def": 2, "sm": 3, "md": 4, "lg": 5, "xl": 6} | row_classes }} g-3" id="tags" data-masonry='{"percentPosition": true }'>
+        <div class="{{ {"def": 2, "sm": 3, "md": 4, "lg": 5, "xl": 6} | row_classes }} g-3" id="tags" data-masonry-options='{"percentPosition": true }'>
             {% for tag in tags %}
                 {% include "fragments/tag.html" %}
             {% endfor %}
@@ -105,6 +105,8 @@
 
         {% with limit=tags_query.limit,
                 offset=tags[-1].offset,
+            next_page_url=url("tags", **tags_query.get_dict({"offset": tags[-1].offset})),
+            first_page_url=url("tags", **tags_query.get_dict({"offset": None})) if tags_query.offset or tags_query.prefix else None,
                 url=url("tags-fragment", absolute=True, **tags_query.get_dict()),
                 container="#tags",
                 auto_click=True %}

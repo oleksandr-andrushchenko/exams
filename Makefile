@@ -49,6 +49,12 @@ TELEGRAM_LOG_LEVEL := $(shell sed -n "s/^TELEGRAM_LOG_LEVEL=//p" $(PROD_ENV_FILE
 NOTIFICATION_EMAIL := $(shell sed -n "s/^NOTIFICATION_EMAIL=//p" $(PROD_ENV_FILE) 2>/dev/null)
 NOTIFICATION_PHONE := $(shell sed -n "s/^NOTIFICATION_PHONE=//p" $(PROD_ENV_FILE) 2>/dev/null)
 GOOGLE_ANALYTICS_ID := $(shell sed -n "s/^GOOGLE_ANALYTICS_ID=//p" $(PROD_ENV_FILE) 2>/dev/null)
+INDEXNOW_KEY := $(shell sed -n "s/^INDEXNOW_KEY=//p" $(PROD_ENV_FILE) 2>/dev/null)
+GOOGLE_SEARCH_CONSOLE_SITE_URL := $(shell sed -n "s/^GOOGLE_SEARCH_CONSOLE_SITE_URL=//p" $(PROD_ENV_FILE) 2>/dev/null)
+BING_WEBMASTER_API_KEY := $(shell sed -n "s/^BING_WEBMASTER_API_KEY=//p" $(PROD_ENV_FILE) 2>/dev/null)
+YANDEX_WEBMASTER_OAUTH_TOKEN := $(shell sed -n "s/^YANDEX_WEBMASTER_OAUTH_TOKEN=//p" $(PROD_ENV_FILE) 2>/dev/null)
+YANDEX_WEBMASTER_USER_ID := $(shell sed -n "s/^YANDEX_WEBMASTER_USER_ID=//p" $(PROD_ENV_FILE) 2>/dev/null)
+YANDEX_WEBMASTER_HOST_ID := $(shell sed -n "s/^YANDEX_WEBMASTER_HOST_ID=//p" $(PROD_ENV_FILE) 2>/dev/null)
 GOOGLE_OAUTH_CLIENT_ID := $(shell sed -n "s/^GOOGLE_OAUTH_CLIENT_ID=//p" $(PROD_ENV_FILE) 2>/dev/null)
 GOOGLE_OAUTH_CLIENT_SECRET := $(shell sed -n "s/^GOOGLE_OAUTH_CLIENT_SECRET=//p" $(PROD_ENV_FILE) 2>/dev/null)
 TINYMCE_API_KEY := $(shell sed -n "s/^TINYMCE_API_KEY=//p" $(PROD_ENV_FILE) 2>/dev/null)
@@ -91,7 +97,7 @@ check-aws:
 
 .PHONY: clean
 clean: ## Remove build artifacts
-	@rm -rf $(SITE_BUILD_DIR) $(CODE_BUILD_DIR) .tmp
+	@rm -rf $(SITE_BUILD_DIR) $(CODE_BUILD_DIR) .tmp/web .tmp/api .tmp/img
 	@echo "🧹 Cleaned build artifacts"
 
 .PHONY: deploy-cert-infra
@@ -214,6 +220,12 @@ deploy-infra: check-env check-aws ## Deploy CF stack for the site
 			NotificationEmail="$(NOTIFICATION_EMAIL)" \
 			NotificationPhone="$(NOTIFICATION_PHONE)" \
 			GoogleAnalyticsId="$(GOOGLE_ANALYTICS_ID)" \
+			IndexNowKey="$(INDEXNOW_KEY)" \
+			GoogleSearchConsoleSiteUrl="$(GOOGLE_SEARCH_CONSOLE_SITE_URL)" \
+			BingWebmasterApiKey="$(BING_WEBMASTER_API_KEY)" \
+			YandexWebmasterOauthToken="$(YANDEX_WEBMASTER_OAUTH_TOKEN)" \
+			YandexWebmasterUserId="$(YANDEX_WEBMASTER_USER_ID)" \
+			YandexWebmasterHostId="$(YANDEX_WEBMASTER_HOST_ID)" \
 			GoogleOauthClientId="$(GOOGLE_OAUTH_CLIENT_ID)" \
 			GoogleOauthClientSecret="$(GOOGLE_OAUTH_CLIENT_SECRET)" \
 			TinyMceApiKey="$(TINYMCE_API_KEY)" \
@@ -233,8 +245,8 @@ deploy-infra: check-env check-aws ## Deploy CF stack for the site
 		--stack-name $(AWS_STACK) \
 		--profile $(AWS_PROJECT) \
 		--region $(AWS_REGION) \
-		--query "Stacks[0].Outputs" \
-		--output table
+		--query "Stacks[0].Outputs[].[OutputKey, OutputValue]" \
+		--output text
 
 .PHONY: get-infra
 get-infra: check-env check-aws ## Show CF stack events
@@ -347,7 +359,7 @@ generate-img-lambda-code-files: check-prod-env-file scripts-up ## Build the Imag
 .PHONY: generate-code-files
 generate-code-files: ## Build all Lambda ZIPs
 	@echo "📦 Generating all Lambda code files..."
-	rm -rf $(CODE_BUILD_DIR) .tmp
+	rm -rf $(CODE_BUILD_DIR) .tmp/web .tmp/api .tmp/img
 	mkdir -p $(CODE_BUILD_DIR)
 	$(MAKE) generate-web-lambda-code-files
 	$(MAKE) generate-api-lambda-code-files
@@ -403,7 +415,7 @@ open: ## Show local site URL
 .PHONY: create-local-dynamodb
 create-local-dynamodb: scripts-up ## Create local DynamoDB table
 	@echo "🚀 Creating local DynamoDB table app..."
-	@if aws dynamodb describe-table \
+	@set -e; if aws dynamodb describe-table \
 	    --profile dummy \
 	    --region $(LOCAL_AWS_REGION) \
 		--table-name app \
@@ -422,6 +434,11 @@ create-local-dynamodb: scripts-up ## Create local DynamoDB table
 			--table-name app \
 			--endpoint-url http://localhost:$(DYNAMODB_PORT) \
 			--no-cli-pager; \
+		aws dynamodb wait table-exists \
+		    --profile dummy \
+		    --region $(LOCAL_AWS_REGION) \
+		    --table-name app \
+		    --endpoint-url http://localhost:$(DYNAMODB_PORT); \
 		rm -f /tmp/dynamodb_schema.json; \
 		echo "✅ DynamoDB table app initialized in local DynamoDB"; \
 	fi
@@ -441,7 +458,7 @@ fetch-local-dynamodb: ## Fetch 100 records from local DynamoDB
 .PHONY: drop-local-dynamodb
 drop-local-dynamodb: ## Drop DynamoDB table in local DynamoDB
 	@echo "🗑️ Dropping local DynamoDB table app..."
-	@if aws dynamodb describe-table \
+	@set -e; if aws dynamodb describe-table \
 		--profile dummy \
 		--region $(LOCAL_AWS_REGION) \
 		--table-name app \
@@ -452,6 +469,11 @@ drop-local-dynamodb: ## Drop DynamoDB table in local DynamoDB
 			--table-name app \
 			--endpoint-url http://localhost:$(DYNAMODB_PORT) \
 			--no-cli-pager; \
+		aws dynamodb wait table-not-exists \
+		    --profile dummy \
+		    --region $(LOCAL_AWS_REGION) \
+		    --table-name app \
+		    --endpoint-url http://localhost:$(DYNAMODB_PORT); \
 		echo "✅ Table app deleted from local DynamoDB"; \
 	else \
 		echo "⚠️ Table app does not exist, skipping deletion."; \
@@ -463,7 +485,10 @@ create-local-dynamodb-dummy-fixtures: scripts-up ## Populate local DynamoDB with
 	$(SCRIPTS_DC) exec $(SCRIPTS_CONTAINER) python3 scripts/generate_dummy_fixtures.py
 
 .PHONY: recreate-local-dynamodb
-recreate-local-dynamodb: drop-local-dynamodb create-local-dynamodb create-local-dynamodb-dummy-fixtures ## Recreate DynamoDB table in local DynamoDB & populate dummy data
+recreate-local-dynamodb: scripts-up ## Recreate DynamoDB table in local DynamoDB & populate dummy data
+	@$(MAKE) drop-local-dynamodb
+	@$(MAKE) create-local-dynamodb
+	@$(MAKE) create-local-dynamodb-dummy-fixtures
 
 .PHONY: tests
 tests: ## Run the full test suite in the isolated Docker Compose stack

@@ -11,6 +11,7 @@ import re
 import sys
 import time
 import uuid
+from contextvars import ContextVar
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -478,6 +479,13 @@ def get_live_config():
         "aws_region": os.getenv("AWS_REGION"),
         "dynamodb_endpoint": os.getenv("DYNAMODB_ENDPOINT"),
         "dynamodb_table": os.getenv("DYNAMODB_TABLE"),
+        "google_search_console_credentials_secret_arn": os.getenv("GOOGLE_SEARCH_CONSOLE_CREDENTIALS_SECRET_ARN"),
+        "google_search_console_site_url": os.getenv("GOOGLE_SEARCH_CONSOLE_SITE_URL"),
+        "bing_webmaster_api_key": os.getenv("BING_WEBMASTER_API_KEY"),
+        "yandex_webmaster_oauth_token": os.getenv("YANDEX_WEBMASTER_OAUTH_TOKEN"),
+        "yandex_webmaster_user_id": os.getenv("YANDEX_WEBMASTER_USER_ID"),
+        "yandex_webmaster_host_id": os.getenv("YANDEX_WEBMASTER_HOST_ID"),
+        "indexnow_key": os.getenv("INDEXNOW_KEY"),
         "google_analytics_id": os.getenv("GOOGLE_ANALYTICS_ID"),
         "tinymce_api_key": os.getenv("TINYMCE_API_KEY"),
         "contact_topic_arn": os.getenv("CONTACT_TOPIC_ARN"),
@@ -545,6 +553,37 @@ config = get_live_config()
 
 def is_prod():
     return config.get("app_stage") == "prod"
+
+
+def get_indexnow_key() -> str:
+    key = config.get("indexnow_key") or ""
+    if key and not re.fullmatch(r"[A-Za-z0-9-]{8,128}", key):
+        raise ValueError("INDEXNOW_KEY must contain 8-128 letters, numbers, or dashes")
+    return key
+
+
+def get_google_search_console_credentials_secret_arn() -> str:
+    return config.get("google_search_console_credentials_secret_arn") or ""
+
+
+def get_google_search_console_site_url() -> str:
+    return config.get("google_search_console_site_url") or get_web_base_url().rstrip("/") + "/"
+
+
+def get_bing_webmaster_api_key() -> str:
+    return config.get("bing_webmaster_api_key") or ""
+
+
+def get_yandex_webmaster_oauth_token() -> str:
+    return config.get("yandex_webmaster_oauth_token") or ""
+
+
+def get_yandex_webmaster_user_id() -> str:
+    return config.get("yandex_webmaster_user_id") or ""
+
+
+def get_yandex_webmaster_host_id() -> str:
+    return config.get("yandex_webmaster_host_id") or ""
 
 
 def get_config():
@@ -837,6 +876,10 @@ def get_exams_url(req, query: ExamQueryDTO | None = None, **params) -> str:
     if not query:
         query = ExamQueryDTO()
 
+    if "offset" not in params and any(
+            key in params and params[key] != getattr(query, key) for key in ("type", "status", "tags", "category")
+            if hasattr(query, key)):
+        params["offset"] = None
     params = query.get_dict(params)
 
     slugs: list[str] = []
@@ -849,7 +892,7 @@ def get_exams_url(req, query: ExamQueryDTO | None = None, **params) -> str:
 
     tags = params.pop("tags", None)
     if tags:
-        slugs.extend(str(t) for t in tags if t)
+        slugs.extend(sorted({str(t) for t in tags if t}))
 
     status = params.pop("status", None)
     if status:
@@ -884,6 +927,10 @@ def get_users_url(req, query: UserQueryDTO | None = None, **params) -> str:
     if not query:
         query = UserQueryDTO()
 
+    if "offset" not in params and any(
+            key in params and params[key] != getattr(query, key) for key in ("type", "status", "tags", "category")
+            if hasattr(query, key)):
+        params["offset"] = None
     params = query.get_dict(params)
 
     slugs: list[str] = []
@@ -1152,11 +1199,14 @@ def get_dynamodb_table():
     return get_dynamodb_resource().Table(get_dynamodb_table_name())
 
 
-def get_html_content(template: str, data: dict[str, Any]) -> str:
-    if data is None:
-        data = {}
+template_request = ContextVar("template_request", default=None)
+
+
+def get_html_content(template: str, data: dict[str, Any] | None = None) -> str:
+    # Keep request state in each render, never in the cached Jinja environment.
+    context = {"request": template_request.get(), **(data or {})}
     template = jinja2_env().get_template(template)
-    return template.render(data)
+    return template.render(context)
 
 
 def to_datetime(ts: Any) -> datetime:
@@ -1997,14 +2047,10 @@ def decode_offset(token: str) -> dict | None:
 def get_exams(query_dto: ExamQueryDTO = None, cur_user: User = None) -> list[Exam]:
     if query_dto is None:
         query_dto = ExamQueryDTO()
-    if query_dto.category:
-        exams = (get_popular_exams(query_dto, cur_user)
-                 if query_dto.type == ExamQueryType.POPULAR
-                 else get_latest_exams(query_dto, cur_user))
-        if query_dto.tags:
-            wanted_tags = set(query_dto.tags)
-            exams = [exam for exam in exams if wanted_tags.issubset(set(exam.tags))]
-        return exams
+    if query_dto.category and query_dto.tags:
+        fetch_page = get_popular_exams if query_dto.type == ExamQueryType.POPULAR else get_latest_exams
+        return _get_filtered_exams_by_tags(query_dto, cur_user, fetch_page,
+                                           'rating_sk' if query_dto.type == ExamQueryType.POPULAR else 'created_at')
     if query_dto.type == ExamQueryType.POPULAR:
         if query_dto.tags:
             return get_popular_exams_by_tags(query_dto, cur_user)
@@ -2124,6 +2170,9 @@ def get_latest_exams_by_tags(query_dto: ExamQueryDTO = None, cur_user: User = No
     if not query_dto.tags:
         return get_latest_exams(query_dto, cur_user)
 
+    if query_dto.status != ExamStatus.PUBLISHED:
+        return _get_filtered_exams_by_tags(query_dto, cur_user, get_latest_exams, 'created_at')
+
     table = get_dynamodb_table()
     query_args = {
         "KeyConditionExpression": Key("pk").eq("EXAM_TAG_COMBO#" + "#".join(sorted(query_dto.tags))),
@@ -2138,8 +2187,10 @@ def get_latest_exams_by_tags(query_dto: ExamQueryDTO = None, cur_user: User = No
     if not combo_items:
         return []
 
-    # Batch get post metadata
-    exam_ids = set([item["exam_id"] for item in combo_items])
+    next_offset = encode_offset(resp.get("LastEvaluatedKey"))
+
+    # Preserve the query order when loading exam metadata.
+    exam_ids = list(dict.fromkeys(item["exam_id"] for item in combo_items))
     keys = [{"pk": f"EXAM#{exam_id}", "sk": "META"} for exam_id in exam_ids]
     resp = table.meta.client.batch_get_item(RequestItems={table.name: {"Keys": keys}})
     exam_items = resp["Responses"].get(table.name, [])
@@ -2149,8 +2200,8 @@ def get_latest_exams_by_tags(query_dto: ExamQueryDTO = None, cur_user: User = No
     ordered_exams = [exam_items_map[pid] for pid in exam_ids if pid in exam_items_map]
 
     exams = [exam_from_dynamodb(item) for item in ordered_exams]
-    if len(exams) == query_dto.limit:
-        exams[-1].offset = encode_offset(resp.get("LastEvaluatedKey"))
+    if exams and next_offset:
+        exams[-1].offset = next_offset
     return exams
 
 
@@ -2178,7 +2229,13 @@ def get_popular_exams_by_tags(
     if not query_dto.tags:
         return get_popular_exams(query_dto, cur_user)
 
-    # Popular exams are ordered by a global index, so tag filtering has to
+    return _get_filtered_exams_by_tags(query_dto, cur_user, get_popular_exams, 'rating_sk', or_mode)
+
+
+def _get_filtered_exams_by_tags(query_dto, cur_user, fetch_page, sort_key, or_mode=False):
+    partition_key = "exam_category_status_pk" if query_dto.category else "exam_status_pk"
+    partition = f"EXAM#{query_dto.category}#{query_dto.status}" if query_dto.category else f"EXAM#{query_dto.status}"
+    # These exams are ordered by a status index, so tag filtering has to
     # happen after each query. Keep following DynamoDB's continuation cursor:
     # a response can stop at the 1 MB page-size limit before any matching
     # exam is encountered.
@@ -2189,7 +2246,7 @@ def get_popular_exams_by_tags(
     filtered_exams = []
 
     while len(filtered_exams) < query_dto.limit:
-        exams = get_popular_exams(page_query, cur_user)
+        exams = fetch_page(page_query, cur_user)
         if not exams:
             break
 
@@ -2205,8 +2262,8 @@ def get_popular_exams_by_tags(
                 exam.offset = encode_offset({
                     "pk": f"EXAM#{exam.id}",
                     "sk": "META",
-                    "exam_status_pk": f"EXAM#{exam.status}",
-                    "rating_sk": exam.rating,
+                    partition_key: partition,
+                    sort_key: exam.rating if sort_key == "rating_sk" else exam.created_at,
                 })
                 return filtered_exams
 

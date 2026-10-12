@@ -1,8 +1,10 @@
 starlette
 Jinja2>=3.1.3
 httpx
+google-auth
+requests
 python-jose
 python-multipart
 filetype
 nh3
-Pillow
+Pillow>=11.3.0

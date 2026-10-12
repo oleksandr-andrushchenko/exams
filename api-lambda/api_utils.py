@@ -1,9 +1,10 @@
 from dataclasses import replace
 from html.parser import HTMLParser
 from urllib.parse import unquote, urlparse
+from xml.etree.ElementTree import Element, SubElement, tostring
 
 from basic_dtos import ContactMessageDTO, FileDTO, ImageFileDTO
-from certification_utils import get_certification_by_id
+from certification_utils import get_certification_by_id, get_certifications
 from exam_dtos import (
     ExamCommentDTO, ExamDTO, UpdateCategoryDTO, UpdateExamCommentDTO, UpdateExamDTO, UpdateExamImpressionDTO,
     UpdateExamStatusDTO, UpdateTagDTO,
@@ -11,6 +12,7 @@ from exam_dtos import (
 from form_options import CERTIFICATION_LEVEL_DIFFICULTIES
 from question_dtos import QuestionDTO
 from question_utils import create_question
+from search_engine_submissions import notify_search_engines, submit_sitemap_to_search_engines
 from shared_utils import *
 from shared_utils import (
     Category, User, find_exam, find_exam_by_slug_follow_redirects, find_user_by_username_follow_redirects,
@@ -248,98 +250,118 @@ def safe_execute(label: str, func, *args, **kwargs):
         return None
 
 
+SITEMAP_MAX_URLS = 50_000
+SITEMAP_MAX_BYTES = 50 * 1024 * 1024
+SITEMAP_NAMESPACE = "http://www.sitemaps.org/schemas/sitemap/0.9"
+
+
+def _save_sitemap(entries, req) -> tuple[int, str]:
+    """Write bounded URL sets, using a sitemap index only when needed."""
+    header = f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="{SITEMAP_NAMESPACE}">'.encode()
+    footer = b"</urlset>"
+    parts, sitemap_files = [], []
+    size = len(header) + len(footer)
+    total = 0
+
+    def save(filename):
+        return save_public_file(
+            FileDTO(content=header + b"".join(parts) + footer, filename=filename),
+            filename=filename,
+        )
+
+    for loc, modified in entries:
+        node = Element("url")
+        SubElement(node, "loc").text = loc
+        if modified:
+            SubElement(node, "lastmod").text = modified
+        entry = tostring(node, encoding="utf-8")
+        if len(header) + len(entry) + len(footer) > SITEMAP_MAX_BYTES:
+            raise ValueError("A sitemap entry exceeds the sitemap size limit")
+        if parts and (len(parts) >= SITEMAP_MAX_URLS or size + len(entry) > SITEMAP_MAX_BYTES):
+            sitemap_files.append(save(f"sitemap-{len(sitemap_files) + 1}.xml"))
+            parts = []
+            size = len(header) + len(footer)
+        parts.append(entry)
+        size += len(entry)
+        total += 1
+
+    if not sitemap_files:
+        filename = save("sitemap.xml")
+    else:
+        if parts:
+            sitemap_files.append(save(f"sitemap-{len(sitemap_files) + 1}.xml"))
+        index = Element("sitemapindex", xmlns=SITEMAP_NAMESPACE)
+        for filename in sitemap_files:
+            node = SubElement(index, "sitemap")
+            SubElement(node, "loc").text = get_static_url(req, filename, absolute=True)
+        filename = save_public_file(
+            FileDTO(content=tostring(index, encoding="utf-8", xml_declaration=True), filename="sitemap.xml"),
+            filename="sitemap.xml",
+        )
+    return total, get_static_url(req, filename, absolute=True)
+
+
 def generate_sitemap(user: User, req) -> tuple[int, str]:
     verify_authorization(user, Permission.GENERATE_SITEMAP)
-
-    today = datetime.utcnow().date().isoformat()
 
     def lastmod(ts_ms, fallback_ts_ms=None):
         ts_ms = ts_ms or fallback_ts_ms
         if not ts_ms:
-            return today
+            return None
         return datetime.fromtimestamp(
             float(ts_ms) / 1000,
             tz=timezone.utc
         ).date().isoformat()
 
-    urls = []
+    def entries():
+        for route in ("index", "tags", "certifications", "categories", "contacts", "policy", "rules", "terms", "earn"):
+            yield get_url(req, route, True), None
+        for certification in get_certifications():
+            yield get_url(req, "certification", True, slug=certification.slug), None
+        for type_ in ExamQueryType:
+            yield get_exams_url(req, type=type_, absolute=True), None
+        for category in get_categories():
+            if category.published_exams_count > 0:
+                for type_ in ExamQueryType:
+                    yield get_exams_url(req, type=type_, category=category.slug, absolute=True), None
 
-    # Static
-    def url(route: str) -> str:
-        return get_url(req, route, True)
+        offset = None
+        while tags := get_tags(TagQueryDTO(limit=1000, offset=offset)):
+            for tag in tags:
+                if tag.exams_count > 0:
+                    for type_ in ExamQueryType:
+                        yield get_exams_url(req, type=type_, tags=[tag.slug], absolute=True), None
+            offset = tags[-1].offset
+            if not offset:
+                break
 
-    urls.extend([
-        (url("index"), today),
-        (url("certifications"), today),
-        (url("categories"), today),
-        (url("tags"), today),
-        (url("contacts"), today),
-        (url("rules"), today),
-        (url("terms"), today),
-        (url("earn"), today),
-    ])
+        offset = None
+        while exams := get_latest_exams(ExamQueryDTO(status=ExamStatus.PUBLISHED, limit=1000, offset=offset)):
+            for exam in exams:
+                yield get_exam_url(req, exam, absolute=True), lastmod(exam.updated_at, exam.published_at or exam.created_at)
+            offset = exams[-1].offset
+            if not offset:
+                break
 
-    # Post lists
-    def exams_url(tp: ExamQueryType, tg: Tag | None = None) -> str:
-        return get_exams_url(req, type=tp, tags=[tg.slug] if tg else [], absolute=True)
+        for type_ in UserQueryType:
+            yield get_users_url(req, type=type_, absolute=True), None
+        offset = None
+        while users := get_latest_users(UserQueryDTO(status=UserStatus.ACTIVE, limit=1000, offset=offset)):
+            for creator in users:
+                yield get_user_url(req, creator, absolute=True), lastmod(creator.updated_at, creator.created_at)
+            offset = users[-1].offset
+            if not offset:
+                break
 
-    for type_ in ExamQueryType:
-        urls.append((exams_url(type_), today))
-        for tag in get_tags(TagQueryDTO(limit=1000)):
-            if tag.exams_count > 0:
-                urls.append((exams_url(type_, tag), today))
-
-    # Posts
-    def exam_url(exam: Exam) -> str:
-        return get_exam_url(req, exam, absolute=True)
-
-    offset = None
-    while exams := get_latest_exams(ExamQueryDTO(status=ExamStatus.PUBLISHED, limit=1000, offset=offset)):
-        urls.extend([(exam_url(exam), lastmod(exam.updated_at, exam.created_at)) for exam in exams])
-        offset = exams[-1].offset
-        if not offset:
-            break
-
-    # User lists
-    def users_url(tp: UserQueryType) -> str:
-        return get_users_url(req, type=tp, absolute=True)
-
-    for type_ in UserQueryType:
-        urls.append((users_url(type_), today))
-
-    # Users
-    def user_url(user_: User) -> str:
-        return get_user_url(req, user_, absolute=True)
-
-    offset = None
-    while users := get_latest_users(
-            UserQueryDTO(status=UserStatus.ACTIVE, limit=1000, offset=offset)):
-        urls.extend([(user_url(user), lastmod(user.updated_at, user.created_at)) for user in users])
-        offset = users[-1].offset
-        if not offset:
-            break
-
-    # Save
-    sitemap_xml = f"""<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{''.join([f"""<url><loc>{loc}</loc><lastmod>{lastmod}</lastmod></url>""" for (loc, lastmod) in urls])}</urlset>"""
-
-    sitemap_filename = save_public_file(
-        FileDTO(content=sitemap_xml.encode("utf-8"), filename="sitemap.xml"),
-        filename="sitemap.xml",
-    )
-    sitemap_url = get_static_url(req, sitemap_filename, absolute=True)
+    urls_count, sitemap_url = _save_sitemap(entries(), req)
 
     # Invalidate CDN cache
     if is_prod():
-        safe_execute("CF invalidation", _drop_cdn_cache, ["/sitemap.xml"])
+        safe_execute("CF invalidation", _drop_cdn_cache, ["/sitemap*"])
 
-    # Notify engines
-    if is_prod():
-        import httpx
-        with httpx.Client(timeout=5.0) as client:
-            safe_execute("Google SM notify", client.get, "https://www.google.com/ping", params={"sitemap": sitemap_url})
-            safe_execute("Bing SM notify", client.get, "https://www.bing.com/ping", params={"sitemap": sitemap_url})
+    safe_execute("Sitemap submission", submit_sitemap_to_search_engines, sitemap_url)
 
-    return len(urls), sitemap_url
+    return urls_count, sitemap_url
 
 
 def create_tag_subscription(dto: TagSubscriptionDTO, user: User) -> TagSubscription:
@@ -1283,10 +1305,23 @@ def save_email_to_disk(sender: str, recipient: str, subject: str, text_body: str
     logger.info("Saved development email to %s", email_path)
 
 
+def _notify_exam_search_engines(exam: Exam) -> None:
+    if not is_prod():
+        return
+    from starlette.routing import Route
+    from web_route_metadata import WEB_URL_ROUTES
+
+    name = "exam-by-slugs" if exam.user_slug else "exam"
+    params = {"user_slug": exam.user_slug, "exam_slug": exam.slug} if exam.user_slug else {"exam_id": exam.id}
+    path = Route(WEB_URL_ROUTES[name], name=name).url_path_for(name, **params)
+    notify_search_engines(f"{get_web_base_url().rstrip('/')}{path}")
+
+
 def handle_exam_published_event(event: ExamPublishedEvent) -> None:
     from itertools import combinations
 
     exam = event.exam
+    safe_execute("IndexNow notification", _notify_exam_search_engines, exam)
     matching_subscription_tags = {}
 
     for size in range(1, len(exam.tags) + 1):
@@ -1399,7 +1434,7 @@ def get_ses_client():
 
 
 def get_image_dimensions(data: bytes) -> tuple[int, int]:
-    """Return (width, height) for JPEG, PNG, GIF images from raw bytes."""
+    """Return (width, height) for supported upload images from raw bytes."""
 
     import struct
 
@@ -1442,6 +1477,19 @@ def get_image_dimensions(data: bytes) -> tuple[int, int]:
                 offset += 2 + seg_len
 
         raise ValueError("No SOF marker found in JPEG")
+
+    # Modern formats have more complex containers; use the installed codecs.
+    import filetype
+    kind = filetype.guess(data)
+    if kind and kind.extension in {"webp", "avif"}:
+        from io import BytesIO
+        from PIL import Image
+
+        try:
+            with Image.open(BytesIO(data)) as image:
+                return image.size
+        except (OSError, ValueError) as error:
+            raise ValueError("Invalid image data") from error
 
     raise ValueError("Unsupported image type")
 

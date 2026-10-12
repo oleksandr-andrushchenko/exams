@@ -1,6 +1,6 @@
 {% set image = tag.image_filename %}
 {% set image_style = image_style | default("height: auto;") %}
-{% set tag_img_sizes = tag_img_sizes | default({"768px": "25vw", "default": "100vw"}) %}
+{% set tag_img_sizes = tag_img_sizes | default({"1400px": "250px", "992px": "220px", "768px": "160px", "576px": "160px", "default": "calc((100vw - 44px) / 2)"}) %}
 {% set h_tag_size = h_tag_size | default(3) %}
 {% set h_display_size = h_display_size | default(5) %}
 
@@ -13,6 +13,8 @@
                 img_class="card-img-top w-100 h-auto",
                 img_style=image_style,
                 img_sizes=tag_img_sizes,
+                loading="eager" if loop is defined and loop.index <= 4 else "lazy",
+                decoding="async",
                 figure=False %}
                 {% include "fragments/image.html" %}
             {% endwith %}

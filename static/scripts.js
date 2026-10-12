@@ -40,15 +40,59 @@ document.querySelectorAll("img[data-fallback-src]").forEach(image => {
   if (image.complete && image.naturalWidth === 0) useImageFallback(image)
 })
 
+const masonryContainers = new WeakMap()
+
+function observeMasonryItems(container, masonry) {
+  let state = masonryContainers.get(container)
+  if (!state) {
+    let pendingLayout = false
+    const scheduleLayout = () => {
+      if (pendingLayout) return
+      pendingLayout = true
+      requestAnimationFrame(() => {
+        pendingLayout = false
+        if (container.isConnected) masonry.layout()
+      })
+    }
+    // Listen during capture: media load/error events do not bubble. This also
+    // handles lazy images, responsive sources, fallbacks, and appended cards.
+    for (const event of ["load", "error", "loadedmetadata"]) {
+      container.addEventListener(event, scheduleLayout, true)
+    }
+    const sizes = new WeakMap()
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(entries => {
+      for (const {target} of entries) {
+        const {width, height} = target.getBoundingClientRect()
+        const previous = sizes.get(target)
+        sizes.set(target, {width, height})
+        if (previous && (width !== previous.width || height !== previous.height)) scheduleLayout()
+      }
+    })
+    state = {observer, sizes}
+    masonryContainers.set(container, state)
+    // Moving cards must keep pace with changing media heights, without a
+    // transition that temporarily leaves them overlapping.
+    masonry.option({transitionDuration: 0})
+  }
+  for (const item of masonry.getItemElements()) {
+    if (state.sizes.has(item)) continue
+    const {width, height} = item.getBoundingClientRect()
+    state.sizes.set(item, {width, height})
+    // Observe cards rather than the grid, whose height is changed by layout().
+    state.observer?.observe(item)
+  }
+}
+
 function getMasonryInstance(container) {
-  if (typeof Masonry === "undefined" || !container.matches("[data-masonry]")) return null
+  if (typeof Masonry === "undefined" || !container.matches("[data-masonry-options]")) return null
 
   let masonry = Masonry.data(container)
-  if (masonry) return masonry
-
   try {
-    const options = JSON.parse(container.dataset.masonry || "{}")
-    masonry = new Masonry(container, options)
+    if (!masonry) {
+      const options = JSON.parse(container.dataset.masonryOptions || "{}")
+      masonry = new Masonry(container, {...options, transitionDuration: 0})
+    }
+    observeMasonryItems(container, masonry)
   } catch (err) {
     console.error("Unable to initialize Masonry:", err)
   }
@@ -57,7 +101,7 @@ function getMasonryInstance(container) {
 
 function initializeMasonryContainers() {
   if (typeof Masonry === "undefined") return
-  document.querySelectorAll("[data-masonry]").forEach(getMasonryInstance)
+  document.querySelectorAll("[data-masonry-options]").forEach(getMasonryInstance)
 }
 
 if (document.readyState === "loading") {
@@ -116,6 +160,8 @@ function handleFormSubmit(formSelector, submitUrl, options = {}) {
     prepareData = data => data,
     onSuccess = () => {
     },
+    beforeSubmit = async () => {
+    },
     loadingText = "Submitting...",
     authRequired = true
   } = options
@@ -133,7 +179,7 @@ function handleFormSubmit(formSelector, submitUrl, options = {}) {
   let originalBtnContent = submitBtn.innerHTML
 
   let validator = null
-  let hasTags = false
+  const tagFields = new Set()
 
   if (typeof window.JustValidate !== "undefined") {
     validator = new window.JustValidate(formSelector, {
@@ -152,13 +198,22 @@ function handleFormSubmit(formSelector, submitUrl, options = {}) {
           fieldRules[fieldRuleId] = {
             validator: (value) => {
               if (!value) return true
-              const values = JSON.parse(value)
+              let values
+              try {
+                values = JSON.parse(value)
+              } catch (error) {
+                return false
+              }
               if (!Array.isArray(values)) return true
-              const items = values.map(item => toKebabCase(item.value)).filter(Boolean)
+              const normalizeKebab = form.elements[field].dataset.normalizeKebab === "true"
+              const items = values
+                .map(item => typeof item === "string" ? item : item.value)
+                .map(item => normalizeKebab ? toKebabCase(item) : String(item || "").trim())
+                .filter(Boolean)
               return items.length >= minCnt && items.length <= maxCnt && items.every(t => t.length >= minLen && t.length <= maxLen)
-            }, errorMessage: `Tags must be ${minCnt}–${maxCnt} items, ${minLen}–${maxLen} chars each`
+            }, errorMessage: `Values must be ${minCnt}–${maxCnt} items, ${minLen}–${maxLen} chars each`
           }
-          hasTags = true
+          tagFields.add(field)
         }
       }
 
@@ -183,14 +238,22 @@ function handleFormSubmit(formSelector, submitUrl, options = {}) {
     statusDiv.textContent = ""
 
     let data = {}
-    form.querySelectorAll("input[name], select[name], textarea[name]").forEach(input => {
+    form.querySelectorAll("input[name]:not([data-form-ignore]), select[name]:not([data-form-ignore]), textarea[name]:not([data-form-ignore])").forEach(input => {
       if (input.disabled) return
 
       // handle radio buttons separately
       if (input.type === "radio") {
         if (input.checked) data[input.name] = input.value
       } else if (input.type === "checkbox") {
-        data[input.name] = input.checked
+        const sameNameCheckboxes = form.querySelectorAll(`input[type="checkbox"][name="${input.name}"]`)
+        if (sameNameCheckboxes.length > 1) {
+          if (!Array.isArray(data[input.name])) data[input.name] = []
+          if (input.checked) data[input.name].push(input.value)
+        } else {
+          data[input.name] = input.checked
+        }
+      } else if (input.multiple) {
+        data[input.name] = Array.from(input.selectedOptions).map(option => option.value)
       } else {
         const value = input.value.trim()
         data[input.name] = value === "" ? null : value
@@ -198,9 +261,19 @@ function handleFormSubmit(formSelector, submitUrl, options = {}) {
       input.classList.remove("is-invalid") // reset invalid states
     })
 
-    if (hasTags) {
-      const values = JSON.parse(form.tags.value)
-      data.tags = values.map(item => toKebabCase(item.value)).filter(Boolean)
+    for (const field of tagFields) {
+      let values = []
+      try {
+        values = JSON.parse(form.elements[field].value || "[]")
+      } catch (error) {
+        values = []
+      }
+      const normalizeKebab = form.elements[field].dataset.normalizeKebab === "true"
+      data[field] = Array.isArray(values)
+        ? values.map(item => typeof item === "string" ? item : item.value)
+          .map(value => normalizeKebab ? toKebabCase(value) : String(value || "").trim())
+          .filter(Boolean)
+        : []
     }
 
     data = prepareData(data)
@@ -245,7 +318,9 @@ function handleFormSubmit(formSelector, submitUrl, options = {}) {
       }
 
       // Upload all file inputs separately
-      const fileInputs = form.querySelectorAll("input[type=\"file\"]")
+      await beforeSubmit(data)
+
+      const fileInputs = form.querySelectorAll("input[type=\"file\"]:not([data-form-ignore])")
       for (const input of fileInputs) {
         if (input.files.length === 0) continue
 
@@ -369,8 +444,10 @@ document.querySelectorAll(".start-exam").forEach(button => {
 
 // Load more
 ;(() => {
-  $(document).on("click", ".btn-load-more", async function () {
+  $(document).on("click", ".btn-load-more", async function (event) {
     const btn = this
+    if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button > 0) return
+    event.preventDefault()
     if (btn.disabled) return
 
     const container = document.querySelector(btn.dataset.container)
@@ -402,16 +479,12 @@ document.querySelectorAll(".start-exam").forEach(button => {
 
       const fragment = document.createRange().createContextualFragment(content)
       const newElements = Array.from(fragment.children)
+      const masonry = getMasonryInstance(container)
       container.append(fragment)
 
-      const masonry = getMasonryInstance(container)
       if (masonry && newElements.length) {
         masonry.appended(newElements)
-        const images = newElements.flatMap(element => Array.from(element.querySelectorAll("img")))
-        Promise.all(images.map(image => image.complete ? Promise.resolve() : new Promise(resolve => {
-          image.addEventListener("load", resolve, {once: true})
-          image.addEventListener("error", resolve, {once: true})
-        }))).then(() => masonry.layout())
+        observeMasonryItems(container, masonry)
       }
 
       const lastElement = container.lastElementChild
@@ -423,6 +496,11 @@ document.querySelectorAll(".start-exam").forEach(button => {
       }
 
       btn.dataset.offset = newOffset
+      if (btn.hasAttribute("href")) {
+        const nextPageUrl = new URL(btn.href)
+        nextPageUrl.searchParams.set("offset", newOffset)
+        btn.href = nextPageUrl.toString()
+      }
     } catch (err) {
       console.error(err)
     } finally {
@@ -441,171 +519,194 @@ document.querySelectorAll(".start-exam").forEach(button => {
     rootMargin: "200px" // start loading earlier than fully visible
   })
 
-  // Attach observer only to buttons with data-auto-load
+// Attach observer only to buttons with data-auto-load
   $(".btn-load-more[data-auto-click]").each(function () {
     observer.observe(this)
   })
 })();
 
 
-// Tags input
+// Tag-style catalog inputs
 (() => {
-  const input = document.getElementById("tags-input")
-  if (!input || typeof Tagify === "undefined") return
-  const url = input.dataset.url
-  const injectHidden = input.dataset.hasOwnProperty("injectHidden")
-  const autoSubmit = input.dataset.hasOwnProperty("autoSubmit")
-  const form = input.closest("form")
-  const escapeHtml = value => String(value || "").replace(/[&<>"']/g, char => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    "\"": "&quot;",
-    "'": "&#39;"
-  })[char])
+  const inputs = document.querySelectorAll("[data-catalog-input]")
+  if (!inputs.length || typeof Tagify === "undefined") return
+  inputs.forEach(input => {
+    try {
+      const url = input.dataset.url
+      const fieldName = input.name
+      const normalizeKebab = input.dataset.normalizeKebab === "true"
+      const injectHidden = input.dataset.injectHidden === "true"
+      const autoSubmit = input.dataset.autoSubmit === "true"
+      const form = input.closest("form")
+      const escapeHtml = value => String(value || "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;"
+      })[char])
 
-  const tagify = new Tagify(input, {
-    whitelist: [], // maxTags: 3,
-    tagTextProp: "name",
-    enforceWhitelist: false, // validate: tag => /^[0-9A-Za-z-.#]{2,20}$/.test(tag.value) || "Invalid tag",
-    transformTag(tagData) {
-      // Keep an existing tag's slug/name pair intact. Only normalize free-form
-      // values; replacing tags from the `add` event makes Tagify briefly see the
-      // selected value twice and reject/remove it as a duplicate.
-      if (!tagData.name || tagData.name === tagData.value) {
-        tagData.value = toKebabCase(tagData.value)
-        tagData.name = tagData.value
+      const tagify = new Tagify(input, {
+        whitelist: [],
+        maxTags: Number(input.dataset.maxItems || 3),
+        tagTextProp: "name",
+        enforceWhitelist: false, // validate: tag => /^[0-9A-Za-z-.#]{2,20}$/.test(tag.value) || "Invalid tag",
+        transformTag(tagData) {
+          // Keep an existing tag's slug/name pair intact. Only normalize free-form
+          // values; replacing tags from the `add` event makes Tagify briefly see the
+          // selected value twice and reject/remove it as a duplicate.
+          if (normalizeKebab && (!tagData.name || tagData.name === tagData.value)) {
+            tagData.value = toKebabCase(tagData.value)
+            tagData.name = tagData.value
+          }
+        },
+        templates: {
+          dropdownItem(tagData) {
+            const className = tagData.class ? ` ${tagData.class}` : ""
+            return `<div ${this.getAttributes(tagData)} class="tagify__dropdown__item${className}" tabindex="0" role="option">${escapeHtml(tagData.name || tagData.value)}</div>`
+          }
+        },
+        dropdown: {
+          // enabled: 1,
+          // maxItems: 10,
+          closeOnSelect: true
+        }
+      })
+
+      let controller // for aborting the previous fetch
+      let currentSuggestions = []
+
+      const toTagItem = d => {
+        if (typeof d === "string") return {value: d, name: d}
+        const value = d.slug || d.value || d.name
+        const name = d.name || d.slug || d.value
+        return value ? {value, name} : null
       }
-    },
-    templates: {
-      dropdownItem(tagData) {
-        const className = tagData.class ? ` ${tagData.class}` : ""
-        return `<div ${this.getAttributes(tagData)} class="tagify__dropdown__item${className}" tabindex="0" role="option">${escapeHtml(tagData.name || tagData.value)}</div>`
+
+      if (injectHidden) {
+        input.removeAttribute("name")
+        // container for hidden inputs
+        let hiddenContainer = document.createElement("div")
+        hiddenContainer.style.display = "none"
+        form.appendChild(hiddenContainer)
+
+        // rebuild hidden inputs on change
+        function syncHiddenInputs() {
+          hiddenContainer.innerHTML = ""
+          tagify.value.forEach(tag => {
+            const hidden = document.createElement("input")
+            hidden.type = "hidden"
+            hidden.name = fieldName
+            hidden.value = tag.value
+            hiddenContainer.appendChild(hidden)
+          })
+        }
+
+        tagify.on("change", syncHiddenInputs)
+
+        // Immediately sync hidden inputs for any preloaded tags
+        if (tagify.value.length) {
+          syncHiddenInputs()
+        }
       }
-    },
-    dropdown: {
-      // enabled: 1,
-      // maxItems: 10,
-      closeOnSelect: true
+
+      // event fired when user types
+      tagify.on("input", onInput)
+
+      function onInput(e) {
+        const value = e.detail.value
+        const prefix = normalizeKebab ? toKebabCase(value) : value.trim()
+        tagify.whitelist = []
+        currentSuggestions = []
+        tagify.dropdown.hide()
+
+        controller && controller.abort()
+
+        if (!prefix) {
+          tagify.loading(false)
+          return
+        }
+
+        controller = new AbortController()
+
+        tagify.loading(true)
+
+        const u = new URL(url, window.location.origin)
+        u.searchParams.set("prefix", prefix)
+        ajaxResponse({
+          url: u.toString(),
+          method: "GET",
+          dataType: "json",
+          signal: controller.signal
+        })
+          .then(async res => {
+            if (!res.ok) {
+              if ([409, 422].includes(res.status)) {
+                const json = await res.json().catch(() => null)
+                if (json?.details) {
+                  Object.entries(json.details).forEach(([field, msg]) => {
+                    input.classList.add("is-invalid")
+                    let feedback = input.nextElementSibling
+                    if (!feedback || !feedback.classList.contains("invalid-feedback")) {
+                      feedback = document.createElement("div")
+                      feedback.className = "invalid-feedback"
+                      input.insertAdjacentElement("afterend", feedback)
+                    }
+                    feedback.textContent = msg
+                  })
+                }
+              } else {
+                console.error(`Catalog fetch failed with status ${res.status}`)
+              }
+              tagify.loading(false)
+              return null
+            }
+
+            // success: clear any previous error state
+            input.classList.remove("is-invalid")
+            const feedback = input.nextElementSibling
+            if (feedback && feedback.classList.contains("invalid-feedback")) {
+              feedback.remove()
+            }
+
+            // parse JSON
+            return await res.json()
+          })
+          .then(data => {
+            if (!data) return
+            currentSuggestions = data.map(toTagItem).filter(Boolean)
+            tagify.whitelist = currentSuggestions
+            tagify.loading(false)
+            tagify.dropdown.show(value)
+          })
+          .catch(err => {
+            if (err.name !== "AbortError") console.error(err)
+            tagify.loading(false)
+          })
+      }
+
+
+      if (autoSubmit) {
+        tagify.on("change", () => form.requestSubmit())
+      }
+
+      // A value that is still being typed has not been added to tagify.value yet.
+      // Commit it when the containing form is submitted so users do not have to
+      // press Enter before submitting a form with a single new tag.
+      if (form && !autoSubmit) {
+        form.addEventListener("submit", () => {
+          const pendingValue = tagify.DOM.input.textContent.trim()
+          if (!pendingValue) return
+
+          tagify.addTags(pendingValue)
+          tagify.DOM.input.textContent = ""
+          tagify.updateValueByDOMTags()
+        }, true)
+      }
+    } catch (err) {
+      console.error(`Failed to initialize catalog input #${input.id}`, err)
     }
   })
-
-  let controller // for aborting the previous fetch
-  let currentSuggestions = []
-
-  const toTagItem = d => {
-    if (typeof d === "string") return {value: d, name: d}
-    const value = d.slug || d.value || d.name
-    const name = d.name || d.slug || d.value
-    return value ? {value, name} : null
-  }
-
-  if (injectHidden) {
-    input.removeAttribute("name")
-    // container for hidden inputs
-    let hiddenContainer = document.createElement("div")
-    hiddenContainer.style.display = "none"
-    form.appendChild(hiddenContainer)
-
-    // rebuild hidden inputs on change
-    function syncHiddenInputs() {
-      hiddenContainer.innerHTML = ""
-      tagify.value.forEach(tag => {
-        const hidden = document.createElement("input")
-        hidden.type = "hidden"
-        hidden.name = "tags"  // use "tags" so backend maps correctly
-        hidden.value = tag.value
-        hiddenContainer.appendChild(hidden)
-      })
-    }
-
-    tagify.on("change", syncHiddenInputs)
-
-    // Immediately sync hidden inputs for any preloaded tags
-    if (tagify.value.length) {
-      syncHiddenInputs()
-    }
-  }
-
-  // event fired when user types
-  tagify.on("input", onInput)
-
-  function onInput(e) {
-    const value = e.detail.value
-    const prefix = toKebabCase(value)
-    tagify.whitelist = []
-    currentSuggestions = []
-    tagify.dropdown.hide()
-
-    controller && controller.abort()
-
-    if (!prefix) {
-      tagify.loading(false)
-      return
-    }
-
-    controller = new AbortController()
-
-    tagify.loading(true)
-
-    const u = new URL(url, window.location.origin)
-    u.searchParams.set("prefix", prefix)
-    ajaxResponse({
-      url: u.toString(),
-      method: "GET",
-      dataType: "json",
-      signal: controller.signal
-    })
-      .then(async res => {
-        if (!res.ok) {
-          if ([409, 422].includes(res.status)) {
-            const json = await res.json().catch(() => null)
-            if (json?.details) {
-              Object.entries(json.details).forEach(([field, msg]) => {
-                input.classList.add("is-invalid")
-                let feedback = input.nextElementSibling
-                if (!feedback || !feedback.classList.contains("invalid-feedback")) {
-                  feedback = document.createElement("div")
-                  feedback.className = "invalid-feedback"
-                  input.insertAdjacentElement("afterend", feedback)
-                }
-                feedback.textContent = msg
-              })
-            }
-          } else {
-            console.error(`Tags fetch failed with status ${res.status}`)
-          }
-          tagify.loading(false)
-          return null
-        }
-
-        // success: clear any previous error state
-        input.classList.remove("is-invalid")
-        const feedback = input.nextElementSibling
-        if (feedback && feedback.classList.contains("invalid-feedback")) {
-          feedback.remove()
-        }
-
-        // parse JSON
-        return await res.json()
-      })
-      .then(data => {
-        if (!data) return
-        currentSuggestions = data.map(toTagItem).filter(Boolean)
-        tagify.whitelist = currentSuggestions
-        tagify.loading(false)
-        tagify.dropdown.show(value)
-      })
-      .catch(err => {
-        if (err.name !== "AbortError") console.error(err)
-        tagify.loading(false)
-      })
-  }
-
-
-  if (autoSubmit) {
-    tagify.on("change", () => form.requestSubmit())
-  }
 })()
 
 // Enable bootstrap tooltip

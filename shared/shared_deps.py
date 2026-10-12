@@ -1,5 +1,7 @@
 from typing import Annotated, Optional
 
+from query_dtos import ExamListingQueryDTO
+
 from shared_utils import (
     User,
     ExamQueryDTO,
@@ -55,6 +57,13 @@ def get_opt_cur_user(request: Request) -> User | None:
     return user
 
 
+def get_exam_listing_query(request: Request, tags: list[str] = Query([])) -> ExamListingQueryDTO:
+    data = dict(request.query_params)
+    data.update({"tags": tags})
+    return parse_dto(ExamListingQueryDTO, data)
+
+
+ExamListingQueryDep = Annotated[ExamListingQueryDTO, Depends(get_exam_listing_query)]
 CurUserDep = Annotated[User, Depends(get_cur_user)]
 OptCurUserDep = Annotated[Optional[User], Depends(get_opt_cur_user)]
 

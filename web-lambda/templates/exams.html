@@ -11,10 +11,10 @@
 } %}
 
 {% set title = ([val_map[exam_query.type]["title"]] + (exam_query.tags if exam_query.tags else [site_about]) + [val_map[exam_query.status]["title"]] + ["Exams"]) | select | join(" ") | title %}
-{% set meta_robots = "noindex, follow" if exam_query.status != ExamStatus.PUBLISHED else "index, follow" %}
+{% set meta_robots = "noindex, follow" if exam_query.offset or exam_query.status != ExamStatus.PUBLISHED else "index, follow" %}
 {% set subtitle = ([val_map[exam_query.type]["subtitle"]]  + exam_query.tags + [val_map[exam_query.status]["subtitle"]] + ["Exams"]) | select | join(" ") | title %}
 {% set meta_title = title ~ " | " ~ site_name %}
-{% set meta_canonical_url = exams_url(query=exam_query, tags=exam_query.tags|sort, absolute=True) %}
+{% set meta_canonical_url = exams_url(query=exam_query, tags=exam_query.tags|sort, offset=None, absolute=True) %}
 {% set meta_desc = [title, subtitle, site_desc] | select | join('. ') | truncate(155, True, '...') %}
 {% block meta_schema %}
     {% set items = namespace(values=[]) %}
@@ -117,12 +117,12 @@
             <small class="text-secondary bi bi-sort-down"> Show:</small>
             <div class="btn-group btn-group-sm" role="group">
                 {% set is_latest = exam_query.type == ExamQueryType.LATEST %}
-                <a href="{{ exams_url(**exam_query.get_dict({"type": None if is_latest else ExamQueryType.LATEST})) }}"
+                <a href="{{ exams_url(**exam_query.get_dict({"offset": None, "type": None if is_latest else ExamQueryType.LATEST})) }}"
                    class="btn {% if is_latest %}btn-secondary active{% else %}btn-light{% endif %} bi bi-clock{{ "-fill" if is_latest else "" }}">
                     {{ ExamQueryType.LATEST | title }} first
                 </a>
                 {% set is_popular = exam_query.type == ExamQueryType.POPULAR %}
-                <a href="{{ exams_url(**exam_query.get_dict({"type": None if is_popular else ExamQueryType.POPULAR})) }}"
+                <a href="{{ exams_url(**exam_query.get_dict({"offset": None, "type": None if is_popular else ExamQueryType.POPULAR})) }}"
                    class="btn {% if is_popular %}btn-primary active{% else %}btn-light{% endif %} bi bi-star{{ "-fill" if is_popular else "" }}">
                     {{ ExamQueryType.POPULAR | title }} first
                 </a>
@@ -148,19 +148,19 @@
                 <small class="text-secondary bi bi-toggle2-on"> Filter by status:</small>
                 <div class="btn-group btn-group-sm" role="group">
                     {% set is_published = exam_query.status == ExamStatus.PUBLISHED %}
-                    <a href="{{ exams_url(**exam_query.get_dict({"status": None if is_published else ExamStatus.PUBLISHED})) }}"
+                    <a href="{{ exams_url(**exam_query.get_dict({"offset": None, "status": None if is_published else ExamStatus.PUBLISHED})) }}"
                        class="btn {% if is_published %}btn-success active{% else %}btn-light{% endif %}">
                         {{ ExamStatus.PUBLISHED | title }}
                     </a>
 
                     {% set is_unpublished = exam_query.status == ExamStatus.UNPUBLISHED %}
-                    <a href="{{ exams_url(**exam_query.get_dict({"status": None if is_unpublished else ExamStatus.UNPUBLISHED})) }}"
+                    <a href="{{ exams_url(**exam_query.get_dict({"offset": None, "status": None if is_unpublished else ExamStatus.UNPUBLISHED})) }}"
                        class="btn {% if is_unpublished %}btn-warning active{% else %}btn-light{% endif %}">
                         {{ ExamStatus.UNPUBLISHED | title }}
                     </a>
 
                     {% set is_rejected = exam_query.status == ExamStatus.REJECTED %}
-                    <a href="{{ exams_url(**exam_query.get_dict({"status": None if is_rejected else ExamStatus.REJECTED})) }}"
+                    <a href="{{ exams_url(**exam_query.get_dict({"offset": None, "status": None if is_rejected else ExamStatus.REJECTED})) }}"
                        class="btn {% if is_rejected %}btn-danger active{% else %}btn-light{% endif %}">
                         {{ ExamStatus.REJECTED | title }}
                     </a>
@@ -184,12 +184,12 @@
 
     {% if exams %}
         <section id="exams" class="{{ {"def": 1, "sm": 2, "lg": 3, "xl": 4} | row_classes }} g-3"
-                 data-masonry='{"percentPosition": true }'>
+                 data-masonry-options='{"percentPosition": true }'>
             {% with tags=exam_query.tags %}
                 {% include "fragments/tag-subscription.html" %}
             {% endwith %}
 
-            {% with h_tag_size=2,
+            {% with eager_exam_images=1, h_tag_size=2,
                 exam_img_sizes={"1400px": "196px", "1200px": "166px", "992px": "96px", "768px": "156px", "default": "100vw"} %}
                 {% include "fragments/exams.html" %}
             {% endwith %}
@@ -197,6 +197,8 @@
 
         {% with limit=exam_query.limit,
             offset=exams[-1].offset,
+            next_page_url=exams_url(query=exam_query, offset=exams[-1].offset),
+            first_page_url=exams_url(query=exam_query, offset=None) if exam_query.offset else None,
             url=url("exams-fragment", absolute=True, **exam_query.get_dict()),
             container="#exams",
             auto_click=True %}

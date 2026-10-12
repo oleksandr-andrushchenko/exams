@@ -3,7 +3,7 @@
         <div class="row g-0 h-100">
             <a href="{{ exams_url(category=category.slug) }}" class="col-4 text-decoration-none d-flex bg-secondary-subtle">
                 {% if category.image_filename %}
-                    <img src="{{ static_url(category.image_filename) }}" alt="{{ category.name }}" class="w-100 h-100 object-fit-cover">
+                    <img src="{{ static_url(category.image_filename) }}" alt="{{ category.name }}" class="w-100 h-100 object-fit-cover" loading="{{ category_image_loading | default("lazy") }}" decoding="async">
                 {% else %}
                     <span class="m-auto display-6 text-secondary bi bi-collection" aria-hidden="true"></span>
                 {% endif %}

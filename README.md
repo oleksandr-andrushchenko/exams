@@ -210,3 +210,15 @@ Run offline logging checks with:
 `python3 -m unittest discover -s tests -p test_notifications.py`.
 Exception-handler routing checks are in `tests/test_exception_handlers.py` and
 run with the normal test suite (they require the application dependencies).
+
+### Search engine submissions
+
+Search engine submissions are optional. Set `INDEXNOW_KEY` in `.env.prod` to enable notifications for newly published
+exams; the web Lambda serves the matching `/<key>.txt` verification endpoint. Sitemap generation includes public exams,
+certifications, category/tag filters, user profiles, and static pages, splitting large catalogs into sitemap files.
+
+For Google sitemap submission, populate the CloudFormation output `GoogleSearchConsoleCredentialsSecretArn` with the
+service account JSON and grant that account access to the Search Console property. `GOOGLE_SEARCH_CONSOLE_SITE_URL`
+selects the property and defaults to the web base URL. Bing uses `BING_WEBMASTER_API_KEY`; Yandex uses
+`YANDEX_WEBMASTER_OAUTH_TOKEN`, `YANDEX_WEBMASTER_USER_ID`, and `YANDEX_WEBMASTER_HOST_ID`. Configure only the engines you
+need. Deployment passes these settings to the Lambdas; no deployment or external submission is required to run tests.

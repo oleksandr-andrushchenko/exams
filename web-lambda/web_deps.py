@@ -5,13 +5,13 @@ from http import HTTPStatus
 from starlette.responses import HTMLResponse
 
 from shared_deps import OptCurUserDep
-from query_dtos import ExamQueryDTO, UserQueryDTO
+from query_dtos import ExamListingQueryDTO, ExamQueryDTO, UserQueryDTO
 from shared_utils import Exam, User, ExamNotFoundError, UserNotFoundError, get_html_content
 from web import Depends, HTTPException, Request, parse_dto
 from web_utils import get_exam_by_slugs, get_user_by_slug, parse_exams_url_slugs_path
 
 
-def get_error_response(status_code: int, details: dict | str = None):
+def get_error_response(status_code: int, details: dict | str = None, request: Request | None = None):
     status_enum = HTTPStatus(status_code)
     public_data = {
         "code": status_code,
@@ -22,6 +22,7 @@ def get_error_response(status_code: int, details: dict | str = None):
 
     content = get_html_content("error.html", {
         **public_data,
+        **({"request": request} if request is not None else {}),
     })
 
     return HTMLResponse(
@@ -40,7 +41,7 @@ def get_user_query_by_slugs(request: Request, type: str) -> UserQueryDTO:
 def get_exam_query_by_slugs(request: Request, slugs_path: str) -> ExamQueryDTO:
     data = dict(request.query_params)
     data.update(parse_exams_url_slugs_path(slugs_path))
-    return parse_dto(ExamQueryDTO, data)
+    return parse_dto(ExamListingQueryDTO, data)
 
 
 

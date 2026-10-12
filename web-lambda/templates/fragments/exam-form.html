@@ -31,9 +31,9 @@
         <div class="input-group">
             <span class="input-group-text" aria-hidden="true"><i class="bi bi-image"></i></span>
             <input class="form-control" id="image_file" name="image_file" type="file"
-                   accept="image/jpeg,image/png" data-public-file aria-describedby="exam-image-help">
+                   accept="image/jpeg,image/png,image/gif,image/webp,image/avif" data-public-file aria-describedby="exam-image-help">
         </div>
-        <div class="form-text" id="exam-image-help">Upload a JPEG or PNG that remains clear at thumbnail size.</div>
+        <div class="form-text" id="exam-image-help">Upload a JPEG, PNG, GIF, WebP or AVIF that remains clear at thumbnail size.</div>
         {% if exam and exam.image_filename %}
             <img class="img-fluid img-thumbnail d-block mt-3" src="{{ static_url(exam.image_filename) }}"
                  alt="{{ exam.title }}">

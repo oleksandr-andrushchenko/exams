@@ -1001,7 +1001,7 @@ def test_exam_read_edit_update_status_endpoints_success_and_failure(guest_client
     assert exam_schema["@type"] == "Exam"
     assert exam_schema["inLanguage"] == "en"
     assert exam_schema["author"]["url"].endswith("/@root-functional")
-    assert read_doc('meta[property="og:type"]').attr("content") == "exam"
+    assert read_doc('meta[property="og:type"]').attr("content") == "article"
     assert read_doc('meta[property="og:url"]').attr("content").endswith(
         f"/@root-functional/{functional_state['exam_slug']}")
     assert not read_doc('meta[name="keywords"]')

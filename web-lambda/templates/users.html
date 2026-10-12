@@ -10,10 +10,10 @@
 } %}
 
 {% set title = ([val_map[user_query.type]["title"]] + [val_map[user_query.status]["title"]] + ["Users"]) | select | join(" ") | title %}
-{% set meta_robots = "noindex, follow" if user_query.status != UserStatus.ACTIVE else "index, follow" %}
+{% set meta_robots = "noindex, follow" if user_query.offset or user_query.status != UserStatus.ACTIVE else "index, follow" %}
 {% set subtitle = ([val_map[user_query.type]["subtitle"]] + [val_map[user_query.status]["subtitle"]] + ["Users"]) | select | join(" ") | title %}
 {% set meta_title = title ~ " | " ~ site_name %}
-{% set meta_canonical_url = users_url(query=user_query, absolute=True) %}
+{% set meta_canonical_url = users_url(query=user_query, offset=None, absolute=True) %}
 {% set meta_desc = [title, subtitle, site_desc] | select | join('. ') | truncate(155, True, '...') %}
 {% block meta_schema %}
     {% set items = namespace(values=[]) %}
@@ -79,12 +79,12 @@
             <small class="text-secondary bi bi-sort-down"> Show:</small>
             <div class="btn-group btn-group-sm" role="group">
                 {% set is_latest = user_query.type == UserQueryType.LATEST %}
-                <a href="{{ users_url(**user_query.get_dict({"type": None if is_latest else UserQueryType.LATEST})) }}"
+                <a href="{{ users_url(**user_query.get_dict({"offset": None, "type": None if is_latest else UserQueryType.LATEST})) }}"
                    class="btn {% if is_latest %}btn-secondary active{% else %}btn-light{% endif %} bi bi-clock{{ "-fill" if is_latest else "" }}">
                     {{ UserQueryType.LATEST | title }} first
                 </a>
                 {% set is_popular = user_query.type == UserQueryType.POPULAR %}
-                <a href="{{ users_url(**user_query.get_dict({"type": None if is_popular else UserQueryType.POPULAR})) }}"
+                <a href="{{ users_url(**user_query.get_dict({"offset": None, "type": None if is_popular else UserQueryType.POPULAR})) }}"
                    class="btn btn-sm {% if is_popular %}btn-primary active{% else %}btn-light{% endif %} bi bi-heart{{ "-fill" if is_popular else "" }}">
                     {{ UserQueryType.POPULAR | title }} first
                 </a>
@@ -96,13 +96,13 @@
                 <small class="text-secondary bi bi-toggle2-on"> Filter by status:</small>
                 <div class="btn-group btn-group-sm" role="group">
                     {% set is_active = user_query.status == UserStatus.ACTIVE %}
-                    <a href="{{ users_url(**user_query.get_dict({"status": None if is_active else UserStatus.ACTIVE})) }}"
+                    <a href="{{ users_url(**user_query.get_dict({"offset": None, "status": None if is_active else UserStatus.ACTIVE})) }}"
                        class="btn {% if is_active %}btn-success active{% else %}btn-light{% endif %}">
                         {{ UserStatus.ACTIVE | title }}
                     </a>
 
                     {% set is_banned = user_query.status == UserStatus.BANNED %}
-                    <a href="{{ users_url(**user_query.get_dict({"status": None if is_banned else UserStatus.BANNED})) }}"
+                    <a href="{{ users_url(**user_query.get_dict({"offset": None, "status": None if is_banned else UserStatus.BANNED})) }}"
                        class="btn {% if is_banned %}btn-danger active{% else %}btn-light{% endif %}">
                         {{ UserStatus.BANNED | title }}
                     </a>
@@ -119,7 +119,7 @@
 
     {% if users %}
         <div class="{{ {"def": 1, "sm": 2, "lg": 3, "xl": 4} | row_classes }} g-3" id="users"
-             data-masonry='{"percentPosition": true }'>
+             data-masonry-options='{"percentPosition": true }'>
             {% with user_avatar_img_sizes={"1200px": "127px", "992px": "80px", "768px": "120px", "default": "25vw"} %}
                 {% include "fragments/users.html" %}
             {% endwith %}
@@ -127,6 +127,8 @@
 
         {% with limit=user_query.limit,
             offset=users[-1].offset,
+            next_page_url=users_url(**user_query.get_dict({"offset": users[-1].offset})),
+            first_page_url=users_url(**user_query.get_dict({"offset": None})) if user_query.offset else None,
             url=url("users-fragment", absolute=True, **user_query.get_dict()),
             container="#users",
             auto_click=True %}

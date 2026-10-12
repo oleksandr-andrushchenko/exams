@@ -144,3 +144,18 @@
 - Public question API responses must omit choice correctness and explanations for learners. Owners may receive the full
   authoring representation.
 - Exam pages show the total question count and links to every question.
+
+## Shared platform updates
+
+- Template request state belongs in `template_request` (a `ContextVar`), never in cached Jinja environment globals.
+  Web error handlers pass their request explicitly because exception handling may occur after middleware resets context.
+- Global exam feeds validate cursors with `ExamListingQueryDTO`; user profile feeds retain `ExamQueryDTO` because their
+  DynamoDB index keys differ. Reset the cursor when changing listing filters, and keep pagination links crawlable.
+- Initialize Masonry through `data-masonry-options`, not the library's `data-masonry` auto-initialization. Shared client
+  code observes card sizes and media events to relayout both initial and dynamically appended cards.
+- Uploaded images accept JPEG, PNG, GIF, WebP, and AVIF. Pillow 11.3 or newer supplies AVIF support; AVIF uploads generate
+  responsive WebP variants through the image Lambda and its S3 event rule.
+- Search engine submissions are optional and configured centrally. IndexNow handles newly published exam URLs; sitemap
+  submissions use configured Google, Bing, and Yandex APIs. Google service account JSON belongs in the retained Secrets
+  Manager secret created by CloudFormation, never in tracked files. Keep the web Lambda free of Google auth dependencies.
+- Sitemaps paginate all catalog records, escape XML through ElementTree, and split at protocol size/count limits.
