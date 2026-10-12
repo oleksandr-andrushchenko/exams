@@ -1,6 +1,6 @@
 <div class="card-body">
     <a class="link-body-emphasis text-decoration-none" href="{{ exam_url(exam) }}">
-        <h{{ h_tag_size }} class="h{{ h_display_size | default(3) }} mb-1 card-title">
+        <h{{ h_tag_size }} class="h{{ h_display_size | default(3) }} mb-2 card-title">
             {{ exam.title }}
         </h{{ h_tag_size }}>
 
@@ -11,10 +11,16 @@
         {% endif %}
     </a>
 
+    <div class="small text-body-secondary mb-2">
+        <i class="bi bi-list-check me-1" aria-hidden="true"></i>
+        {{ exam.questions_count }} {{ "question" if exam.questions_count == 1 else "questions" }}
+        <span class="badge rounded-pill text-bg-light border ms-1">Free practice</span>
+    </div>
+
     {% include "fragments/exam-rating.html" %}
 
     {% if exam_user %}
-        <a href="{{ user_url(exam_user) }}" class="small link-secondary bi bi-person me-2" title="Exam">
+        <a href="{{ user_url(exam_user) }}" class="small link-secondary bi bi-person me-2" title="Author">
             {{ exam_user.name }}
         </a>
     {% endif %}

@@ -7,7 +7,7 @@
 {% set exam_img_sizes = exam_img_sizes | default({"768px": "25vw", "default": "100vw"}) %}
 
 <div class="exam col"{% if exam.offset %} data-offset="{{ exam.offset }}"{% endif %}>
-    <div class="card">
+    <div class="card exam-card h-100 overflow-hidden">
         {% if image %}
             {% include "fragments/exam-link-image.html" %}
         {% endif %}

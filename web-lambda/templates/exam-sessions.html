@@ -7,14 +7,28 @@
 {% endblock %}
 {% block content %}
     <h1>{{ title }}</h1>
+    <p class="text-body-secondary mb-4">Continue a practice session or revisit your results and explanations.</p>
     {% if sessions %}
         <div class="list-group">
             {% for session in sessions %}
-                <a class="list-group-item list-group-item-action" href="{{ url('exam-session', session_id=session.id) }}">
-                    Exam {{ session.exam_id }} · {{ session.status|replace('_', ' ')|title }}
-                    {% if session.score is not none %} · {{ session.score }}%{% endif %}
+                <a class="list-group-item list-group-item-action d-flex flex-wrap justify-content-between align-items-center gap-3 p-3" href="{{ url('exam-session', session_id=session.id) }}">
+                    <span>Exam {{ session.exam_id }}</span>
+                    <span class="d-flex align-items-center gap-2">
+                        {% if session.score is not none %}<strong>{{ session.score }}%</strong>{% endif %}
+                        <span class="badge rounded-pill {{ 'text-bg-primary' if session.status == 'in_progress' else 'text-bg-success' if session.status == 'passed' else 'text-bg-danger' }}">
+                            {{ session.status|replace('_', ' ')|title }}
+                        </span>
+                        <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                    </span>
                 </a>
             {% endfor %}
         </div>
-    {% else %}<p class="text-secondary">You have not tried an exam yet.</p>{% endif %}
+    {% else %}
+        <div class="card card-body text-center py-5">
+            <i class="bi bi-clock-history fs-1 text-body-secondary mb-3" aria-hidden="true"></i>
+            <h2 class="h4">Your practice journey starts here</h2>
+            <p class="text-body-secondary">You have not tried an exam yet. Find a topic and take your first step.</p>
+            <a class="btn btn-primary align-self-center" href="{{ exams_url() }}">Find a practice exam</a>
+        </div>
+    {% endif %}
 {% endblock %}

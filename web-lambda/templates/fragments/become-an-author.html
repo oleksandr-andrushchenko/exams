@@ -1,7 +1,7 @@
-<section class="card shadow-sm text-bg-warning">
+<section class="card border-primary-subtle bg-primary-subtle">
     <div class="card-body">
-        <h2 class="h4 card-title">
-            <i class="bi bi-star-fill"></i>
+        <h2 class="h5 card-title text-primary-emphasis">
+            <i class="bi bi-pencil-square"></i>
             Become an author
         </h2>
 
@@ -10,10 +10,10 @@
         </p>
 
         <a href="{{ url('new-exam') if cur_user else url('login', redirect_url=url('new-exam')) }}"
-           class="btn btn-dark bi bi-pencil-fill"{% if not cur_user %} rel="nofollow"{% endif %}>
+           class="btn btn-primary btn-sm bi bi-pencil-fill"{% if not cur_user %} rel="nofollow"{% endif %}>
             Write an exam
         </a>
-        <a href="{{ url("earn") }}" class="btn btn-dark btn-sm bi bi-currency-dollar">
+        <a href="{{ url("earn") }}" class="btn btn-outline-primary btn-sm bi bi-currency-dollar">
             Earn with us
         </a>
     </div>

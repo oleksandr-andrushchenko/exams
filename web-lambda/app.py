@@ -270,16 +270,22 @@ async def index(cur_user: OptCurUserDep) -> str:
         popular_exams,
         latest_exam_comments,
         popular_users,
+        categories,
+        certifications,
     ) = await asyncio.gather(
         to_thread(get_popular_tags, TagQueryDTO(limit=40)),
         to_thread(get_latest_published_exams, limit=latest_exams_query.limit),
         to_thread(get_popular_published_exams, limit=8),
         to_thread(get_latest_exam_comments, latest_exam_comments_query),
         to_thread(get_popular_active_users, limit=8),
+        to_thread(get_categories),
+        to_thread(get_certifications),
     )
     return get_html_content("index.html", {
         "cur_user": cur_user,
         "popular_tags": popular_tags,
+        "categories": categories,
+        "certifications": certifications,
         "latest_exams_query": latest_exams_query,
         "latest_exams": latest_exams,
         "popular_exams": popular_exams,

@@ -1,7 +1,7 @@
 {% set index_url = url("index") %}
 {% set current_route = request.scope.get("route_name") %}
 {% set layout_assets = layout_assets | default({}) %}
-{% set exams_active = current_route in ["exams", "exam", "edit-exam", "exams-by-slugs", "exam-by-slugs", "edit-tag"] %}
+{% set exams_active = current_route in ["exams", "exam", "edit-exam", "exams-by-slugs", "exam-by-slugs", "edit-tag", "new-exam", "questions", "question", "new-question", "edit-question", "exam-session"] %}
 {% set users_active = current_route in ["users", "users-by-slugs", "user", "edit-user", "user-by-slug"] %}
 {% set css_filenames = [
     "https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css",
@@ -143,10 +143,13 @@
           'upload_public_file_url': url('upload-public-file', absolute=True)
       } | tojson | forceescape }}">
 
-<header>
-    <nav class="navbar navbar-expand-lg bg-dark" data-bs-theme="dark">
+<a class="visually-hidden-focusable position-absolute top-0 start-0 m-2 p-3 bg-white rounded shadow z-3"
+   href="{{ url(current_route, **request.path_params) if current_route else url("index") }}{% if request.url.query %}?{{ request.url.query }}{% endif %}#main-content">Skip to content</a>
+
+<header class="border-bottom bg-white">
+    <nav class="navbar navbar-expand-lg py-3" aria-label="Main navigation">
         <div class="container">
-            <a class="navbar-brand" style="outline:none" href="{{ index_url }}">
+            <a class="navbar-brand fw-bold text-primary" href="{{ index_url }}">
                 {{ site_name }} <i class="bi bi-{{ site_icon }}"></i>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar"
@@ -154,20 +157,23 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbar">
-                <ul class="navbar-nav me-auto">
+                <ul class="navbar-nav me-auto gap-lg-1">
                     <li class="nav-item">
                         <a class="nav-link{% if exams_active %} active{% endif %}" href="{{ exams_url() }}"
                                 {% if exams_active %} aria-current="page"{% endif %}>Exams</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link bi bi-currency-dollar{% if current_route == "earn" %} active{% endif %}"
-                           href="{{ url("earn") }}"{% if current_route == "earn" %} aria-current="page"{% endif %}>
-                            Earn</a>
+                        <a class="nav-link{% if current_route in ["certifications", "certification"] %} active{% endif %}"
+                           href="{{ url("certifications") }}"{% if current_route in ["certifications", "certification"] %} aria-current="page"{% endif %}>Certifications</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link{% if current_route == "contacts" %} active{% endif %}"
-                           href="{{ url("contacts") }}"{% if current_route == "contacts" %}
-                           aria-current="page"{% endif %}>Contacts</a>
+                        <a class="nav-link{% if users_active %} active{% endif %}"
+                           href="{{ users_url() }}"{% if users_active %}
+                           aria-current="page"{% endif %}>Community</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link{% if current_route == 'contacts' %} active{% endif %}"
+                           href="{{ url('contacts') }}"{% if current_route == 'contacts' %} aria-current="page"{% endif %}>Contacts</a>
                     </li>
                     {% if cur_user and check_auth(cur_user, Permission.UTILS) %}
                         <li class="nav-item">
@@ -178,7 +184,7 @@
                     {% endif %}
                 </ul>
 
-                <ul class="navbar-nav">
+                <ul class="navbar-nav align-items-lg-center gap-lg-2">
                     {% if cur_user %}
                         {% if check_auth(cur_user, Permission.CREATE_EXAM) %}
                             <li class="nav-item">
@@ -188,8 +194,9 @@
                                 </a>
                             </li>
                         {% endif %}
-                        <li class="nav-item">
-                            <a class="nav-link bi bi-person-circle" href="{{ user_url(cur_user) }}">
+                        <li class="nav-item dropdown">
+                            <button class="nav-link dropdown-toggle bi bi-person-circle" type="button"
+                                    data-bs-toggle="dropdown" aria-expanded="false">
                                 {{ cur_user.name }}
                                 {% if check_auth(cur_user, Permission.ROOT) %}
                                     <span class="badge text-bg-success">root</span>
@@ -197,17 +204,16 @@
                                 {% if cur_user.status == UserStatus.BANNED %}
                                     <span class="badge text-bg-danger" title="{{ cur_user.comment }}">banned</span>
                                 {% endif %}
-                            </a>
-                        </li>
-                        {% if cur_user %}
-                            <li class="nav-item"><a
-                                    class="nav-link{% if current_route == "exam-sessions" %} active{% endif %}"
-                                    href="{{ url("exam-sessions") }}">History</a></li>
-                        {% endif %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url("logout") }}" rel="nofollow">
-                                Sign out <i class="bi bi-box-arrow-right"></i>
-                            </a>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                <li><a class="dropdown-item" href="{{ user_url(cur_user) }}">My profile</a></li>
+                                <li><a class="dropdown-item{% if current_route == 'exam-sessions' %} active{% endif %}"
+                                       href="{{ url('exam-sessions') }}"{% if current_route == 'exam-sessions' %} aria-current="page"{% endif %}>Exam history</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url('logout') }}" rel="nofollow">
+                                    Sign out <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                                </a></li>
+                            </ul>
                         </li>
                     {% else %}
                         <li class="nav-item">
@@ -217,7 +223,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link bi bi-box-arrow-in-right" href="{{ url('login') }}" rel="nofollow">
+                            <a class="btn btn-primary bi bi-box-arrow-in-right" href="{{ url('login') }}" rel="nofollow">
                                 Sign in
                             </a>
                         </li>
@@ -228,12 +234,12 @@
     </nav>
 </header>
 
-<main class="pb-3 {{ main_class | default("container") }}">
+<main id="main-content" tabindex="-1" class="{% if current_route != 'index' %}pt-4{% endif %} pb-4 pb-lg-5 {{ main_class | default("container") }}">
     {% block breadcrumbs %}{% endblock %}
 
     <!-- Cookie alert -->
     <div class="alert alert-secondary alert-dismissible fade fixed-bottom m-0" role="alert" id="cookie-alert">
-        <div class="container d-flex justify-content-between align-items-center">
+        <div class="container d-flex flex-wrap justify-content-between align-items-center gap-3">
             <div>
                 This website uses cookies to ensure you get the best experience.
                 <a href="{{ url('policy') }}" class="alert-link">Learn more</a>.
@@ -245,8 +251,8 @@
     {% block content %}{% endblock %}
 </main>
 
-<footer class="mt-auto bg-light">
-    <div class="container py-1 d-flex flex-column flex-md-row justify-content-between align-items-center text-center text-md-start">
+<footer class="mt-auto bg-white border-top">
+    <div class="container py-4 d-flex flex-column justify-content-between align-items-center gap-3 text-center">
         <ul class="nav justify-content-center mb-2 mb-md-0">
             <li class="nav-item"><a
                     class="nav-link px-2 text-muted{% if current_route == "certifications" %} active{% endif %}"
@@ -290,7 +296,7 @@
             <div class="d-flex justify-content-center justify-content-md-end gap-3">
                 {% for contact_social in contact_socials %}
                     <a href="{{ contact_social.url }}" class="link-dark fs-4 bi bi-{{ contact_social.icon }}"
-                       target="_blank" rel="noopener noreferrer"></a>
+                       target="_blank" rel="noopener noreferrer" aria-label="{{ contact_social.icon | replace('-', ' ') | title }}"></a>
                 {% endfor %}
             </div>
         {% endif %}

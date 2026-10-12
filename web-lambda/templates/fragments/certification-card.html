@@ -1,0 +1,13 @@
+<div class="col">
+    <a class="card card-body h-100 text-decoration-none" href="{{ url('certification', slug=certification.slug) }}">
+        {% if certification.image_filename %}
+            <img class="card-img-top rounded mb-2" src="{{ static_url(certification.image_filename) }}"
+                 alt="{{ certification.name }}" loading="lazy" decoding="async">
+        {% endif %}
+        <small class="text-secondary">{{ certification.provider }} · {{ certification.level|title }}</small>
+        <h{{ certification_heading_level | default(2) }} class="h5">
+            {{ certification.name }}
+        </h{{ certification_heading_level | default(2) }}>
+        <p class="mb-0 text-body-secondary">{{ certification.description }}</p>
+    </a>
+</div>

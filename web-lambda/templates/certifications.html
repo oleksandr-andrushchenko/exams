@@ -17,16 +17,7 @@
     <div id="certifications" class="row row-cols-1 row-cols-md-3 g-3"
          data-masonry-options='{"percentPosition": true}'>
         {% for certification in certifications %}
-            <div class="col">
-                <a class="card card-body h-100 text-decoration-none" href="{{ url('certification', slug=certification.slug) }}">
-                    {% if certification.image_filename %}
-                        <img class="card-img-top rounded mb-2" src="{{ static_url(certification.image_filename) }}" alt="{{ certification.name }}">
-                    {% endif %}
-                    <small class="text-secondary">{{ certification.provider }} · {{ certification.level|title }}</small>
-                    <h2 class="h5">{{ certification.name }}</h2>
-                    <p class="mb-0 text-body-secondary">{{ certification.description }}</p>
-                </a>
-            </div>
+            {% include "fragments/certification-card.html" %}
         {% else %}
             <p class="text-secondary">No certifications have been added yet.</p>
         {% endfor %}

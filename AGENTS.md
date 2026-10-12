@@ -42,6 +42,9 @@
 
 - Prefer Bootstrap 5 components and utility classes for presentation changes before adding custom rules to
   `static/styles.css`.
+- Bootstrap and Bootstrap Icons are loaded centrally in `web-lambda/templates/layout.html`. Exam cards live in
+  `shared/templates/fragments` and are also returned by lazy-loading endpoints; keep their styles and markup consistent
+  for initial page renders and appended results.
 
 ## Repository knowledge
 

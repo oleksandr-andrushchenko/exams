@@ -156,6 +156,8 @@ def check_header(doc, user_alias: str | None):
     assert header_el('a[href$="/"]')
     assert header_el('a[href$="/exams"]')
     assert header_el('a[href$="/contacts"]')
+    assert header_el('a[href$="/certifications"]')
+    assert header_el('a[href$="/users"]')
     if user_alias:
         assert header_el('a[href$="/exams/new"]')
         assert header_el('a[href$="/logout"][rel~="nofollow"]')
@@ -164,7 +166,7 @@ def check_header(doc, user_alias: str | None):
     else:
         assert header_el('a[href$="/login"][rel~="nofollow"]')
         assert not header_el('a[href*="/login"]:not([rel~="nofollow"])')
-        assert not header_el('a[href*="/users"]')
+        assert not header_el('a[href*="/users/"]')
 
 
 def check_auth_links_are_nofollow(doc):
@@ -367,6 +369,12 @@ def test_certification_create_edit_and_permissions(guest_client):
         "created_at": 1,
     })
 
+    homepage = get_index(guest_client)
+    category_cards = homepage("#homepage-categories")
+    assert category_cards('a[href="/exams?category=other"]')
+    assert "Other" in category_cards("h3").text()
+    assert "0 published exams" in category_cards.text()
+
     new_page = get(root_client, "/certifications/new")
     assert new_page.status_code == 200
     new_doc = pq(new_page.text)
@@ -387,6 +395,12 @@ def test_certification_create_edit_and_permissions(guest_client):
     create_response = post(root_client, "/certifications", json=payload)
     assert create_response.status_code == 201, create_response.text
     assert post(regular_client, "/certifications", json=payload).status_code == 403
+
+    homepage = get_index(guest_client)
+    certification_cards = homepage("#homepage-certifications")
+    assert certification_cards('a[href="/certifications/functional-certification"]')
+    assert "Functional Certification" in certification_cards("h3").text()
+    assert "AWS" in certification_cards.text()
 
     root_page = get(root_client, "/certifications/functional-certification")
     assert root_page.status_code == 200

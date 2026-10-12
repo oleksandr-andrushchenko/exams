@@ -8,7 +8,7 @@
 {% set exam_img_sizes = exam_img_sizes | default({"768px": "25vw", "default": "100vw"}) %}
 
 <div class="exam col"{% if exam.offset %} data-offset="{{ exam.offset }}"{% endif %}>
-    <div class="card">
+    <div class="card exam-card overflow-hidden">
         {% if image %}
             <div class="row g-0">
                 <div class="{{ image_column_size | col_classes }} d-flex align-items-center">

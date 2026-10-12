@@ -1,4 +1,4 @@
-<form class="vstack gap-4" id="exam-form" novalidate>
+<form class="card card-body p-3 p-md-4 vstack gap-4" id="exam-form" novalidate>
     <div>
         <label class="form-label" for="title">
             Title <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> (required)</span>
@@ -82,7 +82,7 @@
                 Service <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i><span class="visually-hidden"> (opens in a new tab)</span></a>.
         </p>
         <div class="d-flex flex-wrap gap-2">
-            <button type="submit" class="btn btn-dark">
+            <button type="submit" class="btn btn-primary">
                 <i class="bi {% if exam %}bi-arrow-clockwise{% else %}bi-plus-lg{% endif %}" aria-hidden="true"></i>
                 {% if exam %}Update{% else %}Create{% endif %} exam
             </button>
