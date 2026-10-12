@@ -22,6 +22,16 @@
                         Edit certification</a>
                 {% endif %}
             </div>
+            {% if certification.duration_minutes or certification.question_count %}
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    {% if certification.question_count %}
+                        <span class="badge text-bg-light">{{ certification.question_count }} questions</span>
+                    {% endif %}
+                    {% if certification.duration_minutes %}
+                        <span class="badge text-bg-light">{{ certification.duration_minutes }} minutes</span>
+                    {% endif %}
+                </div>
+            {% endif %}
             <p>{{ certification.description }}</p>
             {% if certification.official_url %}
                 <a href="{{ certification.official_url }}" rel="noopener noreferrer">Official certification page</a>

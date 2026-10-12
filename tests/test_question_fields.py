@@ -34,6 +34,7 @@ def test_learner_question_projection_omits_answer_keys_and_explanations():
         "exam_id": "exam-id",
         "owner_id": "owner-id",
         "title": "Choose an answer",
+        "reference_urls": ["https://example.com/answer-guide"],
         "choices": [{
             "title": "First",
             "explanation": "This is correct.",
@@ -45,6 +46,7 @@ def test_learner_question_projection_omits_answer_keys_and_explanations():
     result = question_without_answers(question)
 
     assert result["choices"] == [{"title": "First"}]
+    assert "reference_urls" not in result
 
 
 def test_question_dto_does_not_accept_legacy_prompt():
@@ -126,6 +128,7 @@ def test_exam_question_query_uses_sort_key_and_reads_all_pages(monkeypatch):
                 "exam_id": "exam-id",
                 "owner_id": "owner-id",
                 "title": "Choose an answer",
+        "reference_urls": ["https://example.com/answer-guide"],
                 "choices": [],
                 "created_at": 1,
             }
@@ -147,3 +150,13 @@ def test_exam_question_query_uses_sort_key_and_reads_all_pages(monkeypatch):
         assert set(expression.attribute_name_placeholders.values()) == {"pk", "sk"}
         assert set(expression.attribute_value_placeholders.values()) == {"EXAM#exam-id", "QUESTION#"}
         assert "begins_with" in expression.condition_expression
+
+
+@pytest.mark.parametrize("urls", [
+    ["javascript:alert(1)"], ["not-a-url"], [""], "https://example.com", ["https://example.com"] * 11,
+])
+def test_question_references_reject_invalid_urls(urls):
+    from question_dtos import UpdateQuestionDTO
+
+    with pytest.raises(ValueError):
+        UpdateQuestionDTO(reference_urls=urls)

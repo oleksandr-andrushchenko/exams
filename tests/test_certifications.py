@@ -39,3 +39,18 @@ def test_certification_dto_accepts_only_curated_providers():
 
     with pytest.raises(ValueError, match="invalid certification provider"):
         certification_dto(provider="Unknown Provider")
+
+
+@pytest.mark.parametrize("value", [0, -1, 1.5, True, "1.5", "abc", 1441])
+def test_duration_rejects_invalid_values(value):
+    from exam_dtos import UpdateExamDTO
+
+    with pytest.raises(ValueError, match="duration_minutes"):
+        certification_dto(duration_minutes=value)
+    with pytest.raises(ValueError, match="duration_minutes"):
+        UpdateExamDTO(duration_minutes=value)
+
+
+def test_official_question_count_rejects_invalid_value():
+    with pytest.raises(ValueError, match="question_count"):
+        certification_dto(question_count=0)

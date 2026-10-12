@@ -1,12 +1,30 @@
 from dataclasses import dataclass, field
 
 from basic_dtos import BaseDTO, UNSET
+from validation import validate_http_url
 
 
 def _text(value: str, field_name: str, minimum: int, maximum: int) -> str:
     if not isinstance(value, str) or not minimum <= len(value.strip()) <= maximum:
         raise ValueError(f"{field_name} must contain between {minimum} and {maximum} characters")
     return value.strip()
+
+
+def _reference_urls(values) -> list[str]:
+    if values is None:
+        return []
+    if not isinstance(values, list) or len(values) > 10:
+        raise ValueError("reference_urls must be a list of at most 10 URLs")
+    result = []
+    for value in values:
+        if not isinstance(value, str) or not 1 <= len(value.strip()) <= 2000:
+            raise ValueError("each reference URL must contain between 1 and 2000 characters")
+        url = validate_http_url(value)
+        if not url:
+            raise ValueError("reference URLs must not be blank")
+        if url not in result:
+            result.append(url)
+    return result
 
 
 def _choices(values: list[dict]) -> list[dict]:
@@ -41,18 +59,23 @@ def _choices(values: list[dict]) -> list[dict]:
 class QuestionDTO(BaseDTO):
     title: str
     choices: list[dict] = field(default_factory=list)
+    reference_urls: list[str] = field(default_factory=list)
 
     def __post_init__(self):
         self.title = _text(self.title, "title", 3, 500)
         self.choices = _choices(self.choices)
+        self.reference_urls = _reference_urls(self.reference_urls)
 
 
 @dataclass(slots=True)
 class UpdateQuestionDTO(BaseDTO):
     title: str | None | object = UNSET
     choices: list[dict] | None | object = UNSET
+    reference_urls: list[str] | None | object = UNSET
 
     def __post_init__(self):
+        if self.reference_urls is not UNSET:
+            self.reference_urls = _reference_urls(self.reference_urls)
         if self.title is not UNSET:
             if self.title is None:
                 raise ValueError("title is required")

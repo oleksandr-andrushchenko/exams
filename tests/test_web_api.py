@@ -391,6 +391,8 @@ def test_certification_create_edit_and_permissions(guest_client):
         "category": "other",
         "level": "associate",
         "official_url": "https://example.com/certification",
+        "duration_minutes": "130",
+        "question_count": "65",
     }
     create_response = post(root_client, "/certifications", json=payload)
     assert create_response.status_code == 201, create_response.text
@@ -413,11 +415,19 @@ def test_certification_create_edit_and_permissions(guest_client):
     assert edit_page.status_code == 200
     assert pq(edit_page.text)('input[name="provider"][value="AWS"]').attr("checked") == "checked"
 
+    assert pq(edit_page.text)('input[name="duration_minutes"]').attr("value") == "130"
+    assert pq(edit_page.text)('input[name="question_count"]').attr("value") == "65"
+    assert "130 minutes" in pq(guest_page.text).text()
+    assert "65 questions" in pq(guest_page.text).text()
+    payload["duration_minutes"] = 120
+    payload["question_count"] = None
     payload["provider"] = "Google Cloud"
     update_response = patch(root_client, "/certifications/functional-certification", json=payload)
     assert update_response.status_code == 200, update_response.text
     item = dynamodb_table.get_item(Key={"pk": "CERTIFICATION", "sk": "functional-certification"})["Item"]
     assert item["provider"] == "Google Cloud"
+    assert item["duration_minutes"] == 120
+    assert item.get("question_count") is None
 
 
 def test_guest_user_get_index(guest_client):
@@ -859,6 +869,7 @@ def test_exam_create_and_new_page_endpoints_success_and_failure(guest_client):
     create_success = post(root_client, "/exams", json={
         "title": "Functional endpoint coverage exam",
         "exam_code": " saa-c03 ",
+        "duration_minutes": "130",
         "description": EXAM_CONTENT,
         "image_filename": EXAM_IMAGE_FILENAME,
         "tags": ["functional-tag", "coverage-tag"],
@@ -872,6 +883,7 @@ def test_exam_create_and_new_page_endpoints_success_and_failure(guest_client):
     functional_state["exam_id"] = exam_item["id"]
     functional_state["exam_slug"] = exam_item["exam_slug"]
     assert exam_item["exam_code"] == "SAA-C03"
+    assert exam_item["duration_minutes"] == 130
     assert exam_item["description"] == EXAM_CONTENT
     assert exam_item["image_filename"] == EXAM_IMAGE_FILENAME
     assert exam_item["category"] == "other"
@@ -893,6 +905,7 @@ def test_exam_create_and_new_page_endpoints_success_and_failure(guest_client):
 
     create_question = post(root_client, f"/exams/{exam_item['id']}/questions", json={
         "title": "Which option is correct?",
+        "reference_urls": ["https://example.com/architecture-reference"],
         "choices": [
             {
                 "title": "The correct option",
@@ -907,6 +920,20 @@ def test_exam_create_and_new_page_endpoints_success_and_failure(guest_client):
         ],
     })
     assert create_question.status_code == 200, create_question.text
+    saved_question = create_question.json()
+    assert saved_question["reference_urls"] == ["https://example.com/architecture-reference"]
+    question_edit = get(root_client, f"/questions/{saved_question['id']}/edit")
+    assert question_edit.status_code == 200, question_edit.text
+    assert pq(question_edit.text)('textarea[name="reference_urls"]').text() == "https://example.com/architecture-reference"
+    question_endpoint = f"/exams/{exam_item['id']}/questions/{saved_question['id']}"
+    changed = patch(root_client, question_endpoint, json={"reference_urls": ["https://example.com/updated-reference"]})
+    assert changed.status_code == 200, changed.text
+    assert changed.json()["reference_urls"] == ["https://example.com/updated-reference"]
+    cleared = patch(root_client, question_endpoint, json={"reference_urls": []})
+    assert cleared.status_code == 200, cleared.text
+    assert cleared.json()["reference_urls"] == []
+    restored = patch(root_client, question_endpoint, json={"reference_urls": saved_question["reference_urls"]})
+    assert restored.status_code == 200, restored.text
 
     create_second_question = post(root_client, f"/exams/{exam_item['id']}/questions", json={
         "title": "Additional architecture scenario",
@@ -954,6 +981,7 @@ def test_exam_session_page_persists_answers_and_shows_finalized_results():
     assert page.status_code == 200, page.text
     session_doc = pq(page.text)
     assert len(session_doc(".question-result")) == 0
+    assert "https://example.com/architecture-reference" not in page.text
     assert len(session_doc(".session-open-review")) == session["total_questions"]
     assert len(session_doc(".session-review-question")) == session["total_questions"]
     assert len(session_doc(".review-question-status")) == session["total_questions"]
@@ -987,6 +1015,7 @@ def test_exam_session_page_persists_answers_and_shows_finalized_results():
     finalized_doc = pq(finalized_page.text)
     assert len(finalized_doc(".question-result")) == session["total_questions"]
     assert finalized_doc("#exam-results-heading").text().strip() == "Question results"
+    assert finalized_doc('.question-result a[href="https://example.com/architecture-reference"]')
     assert "Correct answer" in finalized_doc(".question-result").text()
     assert "Your selection" in finalized_doc(".question-result").text()
     retry = finalized_doc("#try-exam")
@@ -1056,6 +1085,14 @@ def test_exam_read_edit_update_status_endpoints_success_and_failure(guest_client
     edit_doc = pq(edit_success.text)
     assert edit_doc("textarea[name='description']").text() == EXAM_CONTENT
     assert edit_doc('input[name="exam_code"]').attr("value") == "SAA-C03"
+    assert edit_doc('input[name="duration_minutes"]').attr("value") == "130"
+    assert "Suggested duration: 130 minutes" in read_doc.text()
+    duration_updated = patch(root_client, f"/exams/{exam_id}", json={"duration_minutes": "90"})
+    assert duration_updated.status_code == 200, duration_updated.text
+    assert pq(get(root_client, f"/exams/{exam_id}/edit").text)('input[name="duration_minutes"]').attr("value") == "90"
+    duration_cleared = patch(root_client, f"/exams/{exam_id}", json={"duration_minutes": None})
+    assert duration_cleared.status_code == 200, duration_cleared.text
+    assert dynamodb_table.get_item(Key={"pk": f"EXAM#{exam_id}", "sk": "META"})["Item"].get("duration_minutes") is None
     edit_failure = get(regular_client, f"/exams/{exam_id}/edit")
     assert edit_failure.status_code == 403
 

@@ -103,6 +103,10 @@
 - The application now follows the ExamMe Python/Starlette two-Lambda layout: shared modules live in `shared`, and
   Lambda-specific code stays in `api-lambda` or `web-lambda`.
 - DynamoDB exam records use `EXAM#<id>` partitions; questions are stored beneath an exam as `QUESTION#<id>` sort keys.
+- Certification `duration_minutes` and `question_count` describe the official exam. Practice-exam `duration_minutes`
+  is an optional suggested time, not an enforced session deadline; actual exam question counts remain derived.
+- Question `reference_urls` are optional HTTP(S) review links. Keep them out of learner API projections and in-progress
+  sessions; show them to authors and in finalized session reviews.
 - Questions are validated in `shared/question_dtos.py` and exposed by the API under `/exams/{exam_id}/questions`.
 - Certifications represent official provider credentials; user-owned practice exams may reference a certification but
   remain separate content. Certification records use the `CERTIFICATION` partition and certification slugs as sort keys.

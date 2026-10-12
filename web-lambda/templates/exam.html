@@ -120,6 +120,9 @@
                         </p>
                     {% endif %}
 
+                    {% if exam.duration_minutes %}
+                        <p class="mb-2 text-body-secondary">Suggested duration: {{ exam.duration_minutes }} minutes</p>
+                    {% endif %}
                     {% if exam.exam_code %}
                         <p class="mb-2"><span class="badge text-bg-primary">Exam code: {{ exam.exam_code }}</span></p>
                     {% endif %}

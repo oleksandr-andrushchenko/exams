@@ -80,6 +80,16 @@
     </div>
 
     <div>
+        <label class="form-label" for="exam-duration">
+            Suggested duration (minutes) <span class="text-body-secondary fw-normal">(optional)</span>
+        </label>
+        <input class="form-control" id="exam-duration" name="duration_minutes" type="number"
+               min="1" max="1440" step="1" placeholder="e.g., 130"
+               value="{{ exam.duration_minutes or '' if exam else '' }}" aria-describedby="exam-duration-help">
+        <div class="form-text" id="exam-duration-help">Suggested time for this practice exam.</div>
+    </div>
+
+    <div>
         <label class="form-label" for="tags-input">
             <i class="bi bi-tags" aria-hidden="true"></i> Tags
             <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> (required)</span>

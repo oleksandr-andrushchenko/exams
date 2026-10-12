@@ -5,6 +5,7 @@ from enum import StrEnum
 from basic_dtos import BaseDTO, UNSET
 from form_options import EXAM_DIFFICULTIES, EXAM_LANGUAGES
 from query_dtos import ExamStatus
+from validation import validate_optional_positive_int
 
 
 EXAM_DIFFICULTY_VALUES = {value for value, _ in EXAM_DIFFICULTIES}
@@ -60,11 +61,13 @@ class ExamDTO(BaseDTO):
     category: str = "other"
     certification_id: str | None = None
     exam_code: str | None = None
+    duration_minutes: int | None = None
     image_filename: str | None = None
     difficulty: str = "intermediate"
     language: str = "en"
 
     def __post_init__(self):
+        self.duration_minutes = validate_optional_positive_int(self.duration_minutes, "duration_minutes", 1440)
         _validate_title(self.title)
         self.exam_code = _normalize_exam_code(self.exam_code)
         self.description = self.description.strip()
@@ -86,11 +89,14 @@ class UpdateExamDTO(BaseDTO):
     category: str | None | object = UNSET
     certification_id: str | None | object = UNSET
     exam_code: str | None | object = UNSET
+    duration_minutes: int | None | object = UNSET
     difficulty: str | object = UNSET
     language: str | object = UNSET
     image_filename: str | None | object = UNSET
 
     def __post_init__(self):
+        if self.duration_minutes is not UNSET:
+            self.duration_minutes = validate_optional_positive_int(self.duration_minutes, "duration_minutes", 1440)
         if self.exam_code is not UNSET:
             self.exam_code = _normalize_exam_code(self.exam_code)
         if self.title is not UNSET:

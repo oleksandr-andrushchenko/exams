@@ -100,6 +100,18 @@
             </button>
         </div>
 
+        <div>
+            <label class="form-label" for="question-references">
+                Reference links <span class="text-body-secondary fw-normal">(optional)</span>
+            </label>
+            <textarea class="form-control" id="question-references" name="reference_urls" rows="3"
+                      aria-describedby="question-references-help"
+                      placeholder="https://docs.example.com/topic">{{ question.reference_urls | join('\n') if question else '' }}</textarea>
+            <div class="form-text" id="question-references-help">
+                Add up to 10 HTTP or HTTPS links, one per line. Learners see them after submitting the exam.
+            </div>
+        </div>
+
         <div class="border-top pt-3 d-flex flex-wrap gap-2">
             <button class="btn btn-dark" type="submit">
                 <i class="bi {{ 'bi-plus-lg' if is_new else 'bi-arrow-clockwise' }}" aria-hidden="true"></i>
@@ -210,6 +222,7 @@
           headers: {"Content-Type": "application/json"},
           body: JSON.stringify({
             title: form.get("title"),
+            reference_urls: String(form.get("reference_urls") || "").split(/\r?\n/).map(url => url.trim()).filter(Boolean),
             choices
           })
         })

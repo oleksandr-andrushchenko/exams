@@ -1,4 +1,4 @@
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from typing import Any
 from uuid import uuid4
 
@@ -29,6 +29,7 @@ class Question:
     choices: list[dict]
     created_at: int
     updated_at: int | None
+    reference_urls: list[str] = field(default_factory=list)
 
 
 def question_from_dynamodb(item: dict[str, Any]) -> Question:
@@ -47,6 +48,7 @@ def question_from_dynamodb(item: dict[str, Any]) -> Question:
         title=item["title"],
         slug=item.get("slug") or to_kebab_case(item["title"]),
         choices=choices,
+        reference_urls=item.get("reference_urls") or [],
         created_at=int(item["created_at"]),
         updated_at=item.get("updated_at"),
     )
@@ -104,6 +106,7 @@ def get_all_questions(limit: int = 100) -> list[Question]:
 
 def question_without_answers(question: Question) -> dict[str, Any]:
     result = asdict(question)
+    result.pop("reference_urls", None)
     result["choices"] = [
         {"title": choice["title"]}
         for choice in question.choices
@@ -117,12 +120,12 @@ def create_question(exam, dto, user: User) -> Question:
         raise PermissionError("BANNED")
     now = utc_now()
     question = Question(str(uuid4()), exam.id, user.id, to_kebab_case(dto.title), dto.title,
-                        dto.choices, now, None)
+                        dto.choices, now, None, dto.reference_urls)
     item = {
         **asdict(question),
         "question": True,
     }
-    list_item = {key: value for key, value in asdict(question).items() if key != "choices"}
+    list_item = {key: value for key, value in asdict(question).items() if key not in {"choices", "reference_urls"}}
     transacts = []
     add_dynamodb_put_transact(transacts, (f"EXAM#{exam.id}", f"QUESTION#{question.id}"), item, new_pk_only=True)
     add_dynamodb_put_transact(transacts, (f"QUESTION#{question.id}", "META"), {

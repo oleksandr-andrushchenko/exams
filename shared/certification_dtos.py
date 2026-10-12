@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from basic_dtos import BaseDTO
 from form_options import CERTIFICATION_LEVELS, CERTIFICATION_PROVIDERS
+from validation import validate_optional_positive_int
 
 
 CERTIFICATION_LEVEL_VALUES = {value for value, _ in CERTIFICATION_LEVELS}
@@ -23,8 +24,12 @@ class CertificationDTO(BaseDTO):
     level: str = "professional"
     official_url: str | None = None
     image_filename: str | None = None
+    duration_minutes: int | None = None
+    question_count: int | None = None
 
     def __post_init__(self):
+        self.duration_minutes = validate_optional_positive_int(self.duration_minutes, "duration_minutes", 1440)
+        self.question_count = validate_optional_positive_int(self.question_count, "question_count", 10000)
         self.name = _text(self.name, "name", 3, 200)
         self.provider = _text(self.provider, "provider", 2, 100)
         self.description = _text(self.description, "description", 10, 5_000)

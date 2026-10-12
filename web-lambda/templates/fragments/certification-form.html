@@ -80,6 +80,22 @@
         </div>
         <div class="form-text" id="certification-level-help">Choose the provider's official tier, or Other when it does not use one of these levels.</div>
     </fieldset>
+    <div class="{{ {"def": 1, "md": 2} | row_classes }} g-3">
+        <div class="col">
+            <label class="form-label" for="certification-duration">Official exam duration (minutes)</label>
+            <input class="form-control" id="certification-duration" name="duration_minutes" type="number"
+                   min="1" max="1440" step="1" placeholder="e.g., 130"
+                   value="{{ certification.duration_minutes or '' if certification else '' }}">
+            <div class="form-text">Optional. Time allowed by the certification provider.</div>
+        </div>
+        <div class="col">
+            <label class="form-label" for="certification-question-count">Official exam question count</label>
+            <input class="form-control" id="certification-question-count" name="question_count" type="number"
+                   min="1" max="10000" step="1" placeholder="e.g., 65"
+                   value="{{ certification.question_count or '' if certification else '' }}">
+            <div class="form-text">Optional. Total questions, including any unscored questions.</div>
+        </div>
+    </div>
     <div>
         <label class="form-label" for="certification-official-url">
             Official URL <span class="text-body-secondary fw-normal">(optional)</span>
