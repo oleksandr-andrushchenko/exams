@@ -110,6 +110,8 @@
 - Exams expose discovery metadata including `certification_id`, provider through the certification, derived difficulty,
   and language; categories remain curated taxonomy while tags remain flexible keywords. New and edited exam forms do
   not expose category, difficulty, or language controls.
+- Practice exams may have an optional `exam_code` for the provider exam version (for example, `SAA-C03`). Codes are
+  trimmed and uppercased on writes; blank values clear the code, and legacy exams without the field remain valid.
 - A linked certification is authoritative for an exam's category and difficulty. Exam records retain denormalized values
   for discovery indexes; unlisted certifications use `other`, and exam language defaults to English.
 - Run the Python functional suite with `make tests`; its isolated Compose stack uses DynamoDB rather than PostgreSQL.

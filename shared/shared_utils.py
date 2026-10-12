@@ -274,6 +274,7 @@ class Exam:
     published_at: int | None
     questions_count: int
     offset: str | None
+    exam_code: str | None = None
 
 
 @dataclass(slots=True)
@@ -1462,6 +1463,7 @@ def exam_from_dynamodb(d_item: dict[str, Any]) -> Exam:
         user_slug=d_item.get("user_slug"),
         user_name=d_item.get("user_name"),
         certification_id=d_item.get("certification_id"),
+        exam_code=d_item.get("exam_code"),
         certification_slug=d_item.get("certification_slug"),
         certification_name=d_item.get("certification_name"),
         difficulty=d_item.get("difficulty", "intermediate"),

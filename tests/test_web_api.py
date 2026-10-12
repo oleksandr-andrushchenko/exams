@@ -851,12 +851,14 @@ def test_exam_create_and_new_page_endpoints_success_and_failure(guest_client):
     assert not new_doc('[name="difficulty"]')
     assert not new_doc('[name="language"]')
     assert not new_doc('[name="is_premium"]')
+    assert new_doc('input[name="exam_code"]').attr("maxlength") == "50"
     new_failure = get(guest_client, "/exams/new")
     assert new_failure.status_code == 401
     check_auth_links_are_nofollow(pq(new_failure.text))
 
     create_success = post(root_client, "/exams", json={
         "title": "Functional endpoint coverage exam",
+        "exam_code": " saa-c03 ",
         "description": EXAM_CONTENT,
         "image_filename": EXAM_IMAGE_FILENAME,
         "tags": ["functional-tag", "coverage-tag"],
@@ -869,6 +871,7 @@ def test_exam_create_and_new_page_endpoints_success_and_failure(guest_client):
     )
     functional_state["exam_id"] = exam_item["id"]
     functional_state["exam_slug"] = exam_item["exam_slug"]
+    assert exam_item["exam_code"] == "SAA-C03"
     assert exam_item["description"] == EXAM_CONTENT
     assert exam_item["image_filename"] == EXAM_IMAGE_FILENAME
     assert exam_item["category"] == "other"
@@ -1015,6 +1018,7 @@ def test_exam_read_edit_update_status_endpoints_success_and_failure(guest_client
     assert exam_schema["@type"] == "Exam"
     assert exam_schema["inLanguage"] == "en"
     assert exam_schema["author"]["url"].endswith("/@root-functional")
+    assert "Exam code: SAA-C03" in read_doc("article header").text()
     assert read_doc('meta[property="og:type"]').attr("content") == "article"
     assert read_doc('meta[property="og:url"]').attr("content").endswith(
         f"/@root-functional/{functional_state['exam_slug']}")
@@ -1051,6 +1055,7 @@ def test_exam_read_edit_update_status_endpoints_success_and_failure(guest_client
     assert edit_success.status_code == 200
     edit_doc = pq(edit_success.text)
     assert edit_doc("textarea[name='description']").text() == EXAM_CONTENT
+    assert edit_doc('input[name="exam_code"]').attr("value") == "SAA-C03"
     edit_failure = get(regular_client, f"/exams/{exam_id}/edit")
     assert edit_failure.status_code == 403
 
@@ -1475,3 +1480,36 @@ def test_query_endpoints_ignore_undeclared_parameters(guest_client, path):
 def test_query_endpoints_validate_declared_parameters_with_unknown_parameters(guest_client, path):
     response = get(guest_client, f"{path}?asdasd=13sd&limit=invalid")
     assert response.status_code == 422, (path, response.status_code, response.text)
+
+
+def test_exam_code_update_clear_validation_and_legacy_read(guest_client):
+    root_client = get_logged_in_client(root_user)
+    exam_id = functional_state["exam_id"]
+    path = f"/exams/{exam_id}"
+    assert get_dynamodb_exam(exam_id)["exam_code"] == "SAA-C03"
+
+    response = patch(root_client, path, json={"exam_code": " saa-c02 "})
+    assert response.status_code == 200, response.text
+    assert get_dynamodb_exam(exam_id)["exam_code"] == "SAA-C02"
+    assert "Exam code: SAA-C02" in pq(get(guest_client, path).text)("article header").text()
+    assert pq(get(guest_client, "/exams").text)('[aria-label="Exam code SAA-C02"]')
+
+    invalid = patch(root_client, path, json={"exam_code": "X" * 51})
+    assert invalid.status_code == 422, invalid.text
+    assert "exam_code" in invalid.json()["details"]
+    assert get_dynamodb_exam(exam_id)["exam_code"] == "SAA-C02"
+
+    for value in ("", None):
+        response = patch(root_client, path, json={"exam_code": value})
+        assert response.status_code == 200, response.text
+        assert get_dynamodb_exam(exam_id).get("exam_code") is None
+        assert "Exam code:" not in pq(get(guest_client, path).text)("article header").text()
+
+    dynamodb_table.update_item(
+        Key={"pk": f"EXAM#{exam_id}", "sk": "META"},
+        UpdateExpression="REMOVE exam_code",
+    )
+    legacy = get(guest_client, path)
+    assert legacy.status_code == 200, legacy.text
+    assert "Exam code:" not in pq(legacy.text)("article header").text()
+    assert pq(get(root_client, path + "/edit").text)('input[name="exam_code"]').attr("value") == ""

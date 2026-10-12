@@ -65,6 +65,21 @@
         </div>
     </div>
     <div>
+        <label class="form-label" for="exam_code">
+            Exam code <span class="text-body-secondary fw-normal">(optional)</span>
+        </label>
+        <div class="input-group">
+            <span class="input-group-text" aria-hidden="true"><i class="bi bi-upc"></i></span>
+            <input class="form-control" id="exam_code" name="exam_code" type="text" maxlength="50"
+                   placeholder="e.g., SAA-C03" value="{{ exam.exam_code or '' if exam else '' }}"
+                   aria-describedby="exam-code-help" autocapitalize="characters" spellcheck="false">
+        </div>
+        <div class="form-text" id="exam-code-help">
+            Enter the provider's exam version, such as SAA-C03 or AZ-104. Leave blank for general practice.
+        </div>
+    </div>
+
+    <div>
         <label class="form-label" for="tags-input">
             <i class="bi bi-tags" aria-hidden="true"></i> Tags
             <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> (required)</span>
@@ -103,6 +118,7 @@
       rules: {
         title: [{rule: "required"}, {rule: "minLength", value: 2}, {rule: "maxLength", value: 500}],
         description: [{rule: "required"}, {rule: "minLength", value: 10}, {rule: "maxLength", value: 500}],
+        exam_code: [{rule: "maxLength", value: 50}],
         tags: [{rule: "required"}, {rule: "tags", minCnt: 1, maxCnt: 3, minLen: 2, maxLen: 40}]
       },
       onSuccess: (res) => res && (window.location.href = res),

@@ -15,6 +15,10 @@
         <i class="bi bi-list-check me-1" aria-hidden="true"></i>
         {{ exam.questions_count }} {{ "question" if exam.questions_count == 1 else "questions" }}
         <span class="badge rounded-pill text-bg-light border ms-1">Free practice</span>
+        {% if exam.exam_code %}
+            <span class="badge rounded-pill text-primary-emphasis bg-primary-subtle ms-1"
+                  aria-label="Exam code {{ exam.exam_code }}">{{ exam.exam_code }}</span>
+        {% endif %}
     </div>
 
     {% include "fragments/exam-rating.html" %}

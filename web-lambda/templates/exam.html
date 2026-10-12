@@ -120,6 +120,10 @@
                         </p>
                     {% endif %}
 
+                    {% if exam.exam_code %}
+                        <p class="mb-2"><span class="badge text-bg-primary">Exam code: {{ exam.exam_code }}</span></p>
+                    {% endif %}
+
                     {% with rating_size="fs-3", rating_extended=True %}
                         {% include "fragments/exam-rating.html" %}
                     {% endwith %}

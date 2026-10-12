@@ -641,6 +641,7 @@ def create_exam(exam_dto: ExamDTO, cur_user: User) -> Exam:
         "content": description,
         "category": category,
         "certification_id": certification.id if certification else None,
+        "exam_code": exam_dto.exam_code,
         "certification_slug": certification.slug if certification else None,
         "certification_name": certification.name if certification else None,
         "difficulty": difficulty,

@@ -34,6 +34,19 @@ def _validate_description(value):
         raise ValueError("description must be plain text")
 
 
+def _normalize_exam_code(value):
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError("exam_code must be text")
+    value = value.strip().upper()
+    if not value:
+        return None
+    if not re.fullmatch(r"[A-Z0-9][A-Z0-9._/-]{0,49}", value):
+        raise ValueError("exam_code must contain 1–50 letters, numbers, hyphens, dots, underscores, or slashes")
+    return value
+
+
 def _validate_comment_text(value):
     if not 1 <= len(value) <= 5_000:
         raise ValueError("text must contain between 1 and 5000 characters")
@@ -46,12 +59,14 @@ class ExamDTO(BaseDTO):
     tags: list[str]
     category: str = "other"
     certification_id: str | None = None
+    exam_code: str | None = None
     image_filename: str | None = None
     difficulty: str = "intermediate"
     language: str = "en"
 
     def __post_init__(self):
         _validate_title(self.title)
+        self.exam_code = _normalize_exam_code(self.exam_code)
         self.description = self.description.strip()
         _validate_description(self.description)
         self.tags = _validate_tags(self.tags)
@@ -70,11 +85,14 @@ class UpdateExamDTO(BaseDTO):
     tags: list[str] | None | object = UNSET
     category: str | None | object = UNSET
     certification_id: str | None | object = UNSET
+    exam_code: str | None | object = UNSET
     difficulty: str | object = UNSET
     language: str | object = UNSET
     image_filename: str | None | object = UNSET
 
     def __post_init__(self):
+        if self.exam_code is not UNSET:
+            self.exam_code = _normalize_exam_code(self.exam_code)
         if self.title is not UNSET:
             if self.title is None:
                 raise ValueError("title must contain between 10 and 500 characters")
