@@ -40,6 +40,9 @@
 
 ## UI styling
 
+- External HTTP(S) links must include `rel="nofollow"`; preserve `noopener noreferrer` when present. Apply this to
+  user links, certification and question references, configured social links, and social-sharing controls.
+
 - Prefer Bootstrap 5 components and utility classes for presentation changes before adding custom rules to
   `static/styles.css`.
 - Generate Bootstrap grid sizes with the Jinja `row_classes` and `col_classes` filters instead of hardcoding

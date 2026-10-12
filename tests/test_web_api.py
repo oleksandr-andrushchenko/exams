@@ -7,7 +7,7 @@ import uuid
 from email import policy
 from email.parser import BytesParser
 from pathlib import Path
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 
 import pytest
 from pyquery import PyQuery as pq
@@ -151,7 +151,19 @@ def get_exam_href(exam: dict, user: dict | None = None) -> str:
     return f"/users/{user['id']}"
 
 
+def check_external_links_are_nofollow(doc):
+    site_host = urlsplit(WEB_TEST_BASE_URL).netloc
+    for link in doc("a[href]").items():
+        href = link.attr("href")
+        parsed = urlsplit(href)
+        if parsed.scheme in {"http", "https"} and parsed.netloc != site_host:
+            assert "nofollow" in (link.attr("rel") or "").split(), href
+    for link in doc(".share-btn:not(.email)").items():
+        assert {"nofollow", "noopener", "noreferrer"} <= set((link.attr("rel") or "").split())
+
+
 def check_header(doc, user_alias: str | None):
+    check_external_links_are_nofollow(doc)
     header_el = doc("header")
     assert header_el('a[href$="/"]')
     assert header_el('a[href$="/exams"]')
@@ -419,6 +431,7 @@ def test_certification_create_edit_and_permissions(guest_client):
     assert pq(edit_page.text)('input[name="question_count"]').attr("value") == "65"
     assert "130 minutes" in pq(guest_page.text).text()
     assert "65 questions" in pq(guest_page.text).text()
+    check_external_links_are_nofollow(pq(guest_page.text))
     payload["duration_minutes"] = 120
     payload["question_count"] = None
     payload["provider"] = "Google Cloud"
@@ -679,6 +692,7 @@ def test_public_page_seo_schema_and_metadata(guest_client, path, schema_type):
     assert doc('meta[name="robots"]').attr("content") in {"index, follow", "noindex, follow", "noindex, nofollow"}
     assert all(value is not None for value in schema.values())
     check_auth_links_are_nofollow(doc)
+    check_external_links_are_nofollow(doc)
     if schema_type in {"CollectionPage", "ContactPage", "WebPage"}:
         assert schema.get("breadcrumb", {}).get("itemListElement")
 
@@ -1016,6 +1030,7 @@ def test_exam_session_page_persists_answers_and_shows_finalized_results():
     assert len(finalized_doc(".question-result")) == session["total_questions"]
     assert finalized_doc("#exam-results-heading").text().strip() == "Question results"
     assert finalized_doc('.question-result a[href="https://example.com/architecture-reference"]')
+    check_external_links_are_nofollow(finalized_doc)
     assert "Correct answer" in finalized_doc(".question-result").text()
     assert "Your selection" in finalized_doc(".question-result").text()
     retry = finalized_doc("#try-exam")

@@ -3,7 +3,7 @@
         <h4 class="h6">References</h4>
         <ul class="mb-0">
             {% for reference_url in question.reference_urls %}
-                <li><a href="{{ reference_url }}" rel="noopener noreferrer">{{ reference_url }}</a></li>
+                <li><a href="{{ reference_url }}" rel="nofollow noopener noreferrer">{{ reference_url }}</a></li>
             {% endfor %}
         </ul>
     </div>
