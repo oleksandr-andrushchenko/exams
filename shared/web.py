@@ -66,7 +66,8 @@ def parse_dto(dto_type, data):
             if isinstance(data.get("choices"), list) and data["choices"] and isinstance(data["choices"][0], str):
                 correct = data.get("correct_choice", 0)
                 data["choices"] = [
-                    {"title": value, "description": "", "is_correct": index == correct}
+                    {"title": value, "description": "", "explanation": "Review this answer choice.",
+                     "is_correct": index == correct}
                     for index, value in enumerate(data["choices"])
                 ]
         allowed = {field.name for field in fields(dto_type) if field.init}

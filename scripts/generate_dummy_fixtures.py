@@ -42,16 +42,53 @@ def create_dummy_fixtures() -> None:
     created_exams = []
     created_users = []
 
-    def add_default_question(exam, owner):
-        return create_question(exam, QuestionDTO(
-            title="What is the primary design constraint?",
-            description="Choose the constraint that best matches the scenario.",
-            choices=[
-                {"title": "Reliability", "description": "The system must keep working.", "is_correct": True},
-                {"title": "Color", "description": "A visual presentation detail.", "is_correct": False},
-                {"title": "Branding", "description": "A product identity detail.", "is_correct": False},
-            ],
-        ), owner)
+    question_templates = [
+        ("Which metric measures the proportion of successful requests?", [
+            ("Availability", "Availability measures the proportion of requests that succeed.", True),
+            ("Latency", "Latency measures how long a request takes, not its success rate.", False),
+            ("Throughput", "Throughput measures requests processed per unit of time.", False),
+        ]),
+        ("Which practices help protect stored credentials? Select all that apply.", [
+            ("Encrypt secrets at rest", "Encryption protects stored secrets from unauthorized reads.", True),
+            ("Limit access using least privilege", "Least privilege restricts who can retrieve credentials.", True),
+            ("Include secrets in application logs", "Logs can expose credentials to unintended readers.", False),
+            ("Commit credentials to source control", "Repository history can retain and expose credentials.", False),
+        ]),
+        ("What should a client use before retrying a temporarily unavailable service?", [
+            ("Exponential backoff with jitter", "Increasing randomized delays reduce synchronized retry traffic.", True),
+            ("Immediate retries without a limit", "Unbounded immediate retries can overload the service.", False),
+            ("A new account for every request", "Changing accounts does not resolve service availability.", False),
+        ]),
+        ("Which signals help investigate a slow request? Select all that apply.", [
+            ("Distributed traces", "Traces show time spent across services within a request.", True),
+            ("Latency metrics", "Latency metrics reveal trends and the extent of slow responses.", True),
+            ("Correlated application logs", "Request identifiers connect log events to the slow request.", True),
+            ("The application's logo", "Visual branding provides no evidence about request execution.", False),
+        ]),
+        ("Why should a frequently queried database field have an appropriate index?", [
+            ("To locate matching records efficiently", "An index can avoid reading every record for a lookup.", True),
+            ("To eliminate all storage costs", "Indexes consume additional storage and can add write costs.", False),
+            ("To guarantee every query is faster", "Index usefulness depends on the query and its access pattern.", False),
+        ]),
+        ("Which properties make a deployment easier to recover from? Select all that apply.", [
+            ("A tested rollback procedure", "A tested rollback restores a known working release.", True),
+            ("Health checks after rollout", "Health checks help detect deployment failures early.", True),
+            ("Deleting every previous release", "Removing previous releases makes rollback harder.", False),
+            ("Disabling all monitoring", "Without monitoring, deployment problems are harder to detect.", False),
+        ]),
+    ]
+
+    def add_exam_questions(exam, owner):
+        for title, choices in random.sample(question_templates, random.randint(4, len(question_templates))):
+            shuffled_choices = random.sample(choices, len(choices))
+            create_question(exam, QuestionDTO(
+                title=title,
+                choices=[
+                    {"title": choice_title, "explanation": explanation, "is_correct": is_correct}
+                    for choice_title, explanation, is_correct in shuffled_choices
+                ],
+            ), owner)
+
     generated_image_filenames = [
         "3d7af01f-819e-4c2f-bc69-eb7245b76a74_1809x1247.png",
         "45e97e68-a321-4657-9956-e942d9d757a7_1279x518.png",
@@ -231,7 +268,7 @@ def create_dummy_fixtures() -> None:
     for index, exam in enumerate(exams):
         link_certification(exam, index)
         created_exam = create_exam(exam, root_user)
-        add_default_question(created_exam, root_user)
+        add_exam_questions(created_exam, root_user)
         update_exam_status(created_exam, UpdateExamStatusDTO(status=ExamStatus.PUBLISHED), root_user)
         created_exams.append(created_exam)
     user_token2 = get_dummy_user_token(sub="p2", email="test2@example.com", name=unique_user_name())
@@ -264,7 +301,7 @@ def create_dummy_fixtures() -> None:
     for index, exam in enumerate(exams, start=3):
         link_certification(exam, index)
         created_exam = create_exam(exam, user2)
-        add_default_question(created_exam, user2)
+        add_exam_questions(created_exam, user2)
         update_exam_status(created_exam, UpdateExamStatusDTO(status=ExamStatus.PUBLISHED), root_user)
         created_exams.append(created_exam)
 
@@ -277,7 +314,7 @@ def create_dummy_fixtures() -> None:
             tags=random_exam_tags(),
         ), exam_index)
         generated_exam = create_exam(generated_exam_dto, root_user)
-        add_default_question(generated_exam, root_user)
+        add_exam_questions(generated_exam, root_user)
         update_exam_status(
             generated_exam,
             UpdateExamStatusDTO(status=ExamStatus.PUBLISHED),
@@ -346,7 +383,7 @@ def create_dummy_fixtures() -> None:
     for index, exam in enumerate(unpublished_exams, start=75):
         link_certification(exam, index)
         created_exam = create_exam(exam, user2)
-        add_default_question(created_exam, user2)
+        add_exam_questions(created_exam, user2)
     rejected_exams = [
         ExamDTO(
             title=unique_exam_title(),
@@ -370,7 +407,7 @@ def create_dummy_fixtures() -> None:
     for index, exam in enumerate(rejected_exams, start=78):
         link_certification(exam, index)
         created_exam = create_exam(exam, user3)
-        add_default_question(created_exam, user3)
+        add_exam_questions(created_exam, user3)
         update_exam_status(created_exam,
                               UpdateExamStatusDTO(status=ExamStatus.REJECTED, comment="Some rejection reason"),
                               root_user)

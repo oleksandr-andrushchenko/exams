@@ -27,6 +27,10 @@ def test_exam_dto_uses_standard_curated_defaults():
     assert dto.language == "en"
 
 
+def test_exam_dto_accepts_other_difficulty():
+    assert exam_dto(difficulty="other").difficulty == "other"
+
+
 @pytest.mark.parametrize(("field", "value"), [("difficulty", "professional"), ("language", "xx")])
 def test_exam_dto_rejects_unlisted_form_option(field, value):
     with pytest.raises(ValueError, match=f"invalid {field}"):

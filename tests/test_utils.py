@@ -119,17 +119,23 @@ def _is_api_request(method: str, url: str) -> bool:
             path.endswith(suffix) for suffix in ("/comments-fragment", "/exams-fragment")):
         return True
     if method == "GET":
-        return path in {"/tag-subscriptions", "/tags"}
+        return path in {"/tag-subscriptions", "/tags"} or bool(
+            re.fullmatch(r"/exams/[^/]+/questions(?:/[^/]+)?", path)
+        ) and not path.endswith("/questions/new")
     if method == "POST":
         return path in {
             "/public-file", "/certifications", "/exams", "/contacts/message",
             "/tag-subscriptions",
             "/generate-sitemap", "/drop-cdn-cache",
-        } or bool(re.fullmatch(r"/exams/[^/]+/(status|impression|comment)", path)) or bool(
+        } or bool(re.fullmatch(
+            r"/exams/[^/]+/(status|impression|comment|questions|sessions)", path
+        )) or bool(
+            re.fullmatch(r"/exam-sessions/[^/]+/(answers|complete)", path)
+        ) or bool(
             re.fullmatch(r"/users/[^/]+/(status|impression)", path)
         )
     if method == "PATCH":
-        return path.startswith(("/certifications/", "/exams/", "/users/", "/tags/"))
+        return path.startswith(("/certifications/", "/exam-sessions/", "/exams/", "/users/", "/tags/"))
     return method == "DELETE" and path.startswith("/tag-subscriptions/")
 
 

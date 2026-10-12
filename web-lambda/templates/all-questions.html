@@ -17,8 +17,7 @@
                     {% set question_url = url('question-by-id', question_id=question.id) %}
                 {% endif %}
                 <a class="list-group-item list-group-item-action" href="{{ question_url }}">
-                    <strong>{{ question.title }}</strong><br>
-                    <span class="text-secondary">{{ question.description }}</span>
+                    <strong>{{ question.title }}</strong>
                     <small class="d-block mt-2">Exam: {{ exam.title }} · Category: {{ exam.category }} · Tags: {{ exam.tags | join(', ') }}</small>
                 </a>
             {% endfor %}

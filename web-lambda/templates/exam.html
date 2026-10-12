@@ -77,7 +77,7 @@
                        + ([author.website] if author.website else [])
         },
         "mainEntityOfPage": meta_canonical_url,
-        "isAccessibleForFree": not exam.is_premium,
+        "isAccessibleForFree": true,
         "breadcrumb": {
             "@type": "BreadcrumbList",
             "itemListElement": [
@@ -189,7 +189,7 @@
 
             <section id="questions" class="mb-4">
                 <div class="d-flex align-items-center gap-2 mb-2">
-                    <h2 class="h5 mb-2 text-decoration-underline">Questions &mdash; {{ questions|length }}</h2>
+                    <h2 class="h5 mb-2 text-decoration-underline">Questions &mdash; {{ questions_count }}</h2>
                     {% if cur_user and check_auth(cur_user, Permission.CREATE_QUESTION, exam) %}
                         <a class="btn btn-dark btn-sm" href="{{ url('new-question', exam_id=exam.id) }}">Add
                             question</a>
@@ -212,7 +212,9 @@
                         {% endfor %}
                     </ol>
                 {% else %}
-                    <p class="text-secondary">This exam has no questions yet.</p>
+                    <p class="text-secondary">
+                        {% if questions_count %}No preview questions are available.{% else %}This exam has no questions yet.{% endif %}
+                    </p>
                 {% endif %}
             </section>
 
@@ -268,11 +270,27 @@
                     {% include "fragments/share.html" %}
                 {% endwith %}
 
-                {% if cur_user and questions %}
-                    <button class="btn btn-dark" id="try-exam"
-                            data-create-session-url="{{ url('create-exam-session', exam_id=exam.id, absolute=True) }}"
-                            data-session-url-template="{{ url('exam-session', session_id='SESSION_ID', absolute=True) }}">Try exam
-                    </button>
+                {% if questions_count %}
+                    <p class="small text-secondary mb-2">
+                        {{ questions_count }} question{{ "s" if questions_count != 1 }} · Free
+                    </p>
+                {% endif %}
+                <div class="d-flex flex-wrap gap-2">
+                    {% if active_session %}
+                        <a class="btn btn-dark" id="continue-exam"
+                           href="{{ url('exam-session', session_id=active_session.id) }}">Continue exam</a>
+                    {% elif cur_user and questions %}
+                        <button class="btn btn-dark start-exam" id="try-exam"
+                                data-create-session-url="{{ url('create-exam-session', exam_id=exam.id, absolute=True) }}"
+                                data-session-url-template="{{ url('exam-session', session_id='SESSION_ID', absolute=True) }}">
+                            Start exam
+                        </button>
+                    {% endif %}
+                </div>
+                {% if active_session %}
+                    <p class="small text-secondary mt-2 mb-0">
+                        Complete your active exam before starting another one.
+                    </p>
                 {% endif %}
             </aside>
         </div>

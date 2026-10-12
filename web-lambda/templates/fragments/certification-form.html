@@ -12,19 +12,24 @@
         </div>
         <div class="form-text" id="certification-name-help">Use the official credential name.</div>
     </div>
-    <div>
-        <label class="form-label" for="certification-provider">
+    <fieldset class="border rounded-3 p-3" aria-describedby="certification-provider-help">
+        <legend class="float-none w-auto px-2 fs-6 fw-semibold">
             Provider <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> (required)</span>
-        </label>
-        <div class="input-group">
-            <span class="input-group-text" aria-hidden="true"><i class="bi bi-building"></i></span>
-            <input class="form-control" id="certification-provider" name="provider"
-                   placeholder="e.g., Amazon Web Services (AWS)" autocomplete="organization"
-                   value="{{ certification.provider if certification else '' }}" required maxlength="100"
-                   aria-describedby="certification-provider-help">
+        </legend>
+        <div class="row g-2">
+            {% for value, label in certification_providers %}
+                <div class="col-12 col-sm-6 col-lg-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="provider"
+                               id="certification-provider-{{ loop.index }}" value="{{ value }}" required
+                               {% if certification and certification.provider == value %}checked{% endif %}>
+                        <label class="form-check-label" for="certification-provider-{{ loop.index }}">{{ label }}</label>
+                    </div>
+                </div>
+            {% endfor %}
         </div>
-        <div class="form-text" id="certification-provider-help">Use the official organization name, such as AWS, Cisco, or CompTIA.</div>
-    </div>
+        <div class="form-text" id="certification-provider-help">Choose the credential's issuing organization.</div>
+    </fieldset>
     <div>
         <label class="form-label" for="certification-description">
             Description <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> (required)</span>
@@ -73,7 +78,7 @@
                 </div>
             {% endfor %}
         </div>
-        <div class="form-text" id="certification-level-help">Choose the provider's official tier. If none fits, <a href="{{ url('contacts') }}">request a level</a>.</div>
+        <div class="form-text" id="certification-level-help">Choose the provider's official tier, or Other when it does not use one of these levels.</div>
     </fieldset>
     <div>
         <label class="form-label" for="certification-official-url">
@@ -118,7 +123,7 @@
       method: "{{ 'PATCH' if certification else 'POST' }}",
       rules: {
         name: [{rule: "required"}, {rule: "minLength", value: 3}, {rule: "maxLength", value: 200}],
-        provider: [{rule: "required"}, {rule: "minLength", value: 2}, {rule: "maxLength", value: 100}],
+        provider: [{rule: "required"}],
         description: [{rule: "required"}, {rule: "minLength", value: 10}, {rule: "maxLength", value: 5000}]
       },
       onSuccess: (res) => res && (window.location.href = res),

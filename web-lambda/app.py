@@ -5,13 +5,13 @@ from starlette.responses import PlainTextResponse
 from starlette.routing import Match
 
 from certification_utils import get_certification, get_certifications
-from form_options import CERTIFICATION_LEVELS, EXAM_DIFFICULTIES, EXAM_LANGUAGES
+from form_options import CERTIFICATION_LEVELS, CERTIFICATION_PROVIDERS
 from notifications import get_access_log
 from query_dtos import (
     TagQueryDTO,
 )
 from question_utils import get_all_questions, get_question_by_id, get_questions
-from session_utils import get_session, get_sessions
+from session_utils import get_active_session, get_question_result, get_session, get_session_answers, get_sessions
 from shared_deps import (
     OptCurUserDep,
     CurUserDep,
@@ -287,6 +287,7 @@ async def _exam_page(exam: ExamDep, cur_user: OptCurUserDep) -> HTMLResponse:
         comments,
         category,
         questions,
+        active_session,
     ) = await asyncio.gather(
         to_thread(find_user, exam.user_id),
         to_thread(find_exam_impression, exam, cur_user) if cur_user else asyncio.sleep(0, result=None),
@@ -294,8 +295,8 @@ async def _exam_page(exam: ExamDep, cur_user: OptCurUserDep) -> HTMLResponse:
         to_thread(get_exam_comments, exam),
         to_thread(find_category, exam.category),
         to_thread(get_questions, exam.id),
+        to_thread(get_active_session, cur_user.id) if cur_user else asyncio.sleep(0, result=None),
     )
-
     html_content = get_html_content("exam.html", {
         "cur_user": cur_user,
         "exam": exam,
@@ -306,6 +307,8 @@ async def _exam_page(exam: ExamDep, cur_user: OptCurUserDep) -> HTMLResponse:
         "comments_query": ExamCommentQueryDTO(),
         "category": category,
         "questions": questions,
+        "questions_count": exam.questions_count,
+        "active_session": active_session,
     })
     return HTMLResponse(html_content)
 
@@ -351,10 +354,7 @@ async def new_exam(cur_user: CurUserDep) -> str:
         raise UserBannedError
     return get_html_content("new-exam.html", {
         "cur_user": cur_user,
-        "categories": get_categories(),
         "certifications": get_certifications(),
-        "exam_difficulties": EXAM_DIFFICULTIES,
-        "exam_languages": EXAM_LANGUAGES,
     })
 
 
@@ -396,6 +396,7 @@ async def new_certification_page(cur_user: CurUserDep) -> str:
         "cur_user": cur_user,
         "categories": get_categories(),
         "certification_levels": CERTIFICATION_LEVELS,
+        "certification_providers": CERTIFICATION_PROVIDERS,
     })
 
 
@@ -426,6 +427,7 @@ async def edit_certification_page(slug: str, cur_user: CurUserDep) -> str:
         "certification": certification,
         "categories": get_categories(),
         "certification_levels": CERTIFICATION_LEVELS,
+        "certification_providers": CERTIFICATION_PROVIDERS,
     })
 
 
@@ -442,10 +444,7 @@ async def edit_exam(exam: ExamDep, cur_user: CurUserDep) -> str:
     return get_html_content("edit-exam.html", {
         "cur_user": cur_user,
         "exam": exam,
-        "categories": get_categories(),
         "certifications": get_certifications(),
-        "exam_difficulties": EXAM_DIFFICULTIES,
-        "exam_languages": EXAM_LANGUAGES,
     })
 
 
@@ -662,10 +661,11 @@ async def new_question_page(exam_id: str, cur_user: CurUserDep) -> str:
 @route("get", "questions-all", response_class=HTMLResponse)
 async def all_questions_page(cur_user: OptCurUserDep) -> str:
     questions = get_all_questions()
+    exams = {question.exam_id: get_exam(question.exam_id, cur_user) for question in questions}
     return get_html_content("all-questions.html", {
         "cur_user": cur_user,
         "questions": questions,
-        "exams": {question.exam_id: get_exam(question.exam_id, cur_user) for question in questions},
+        "exams": exams,
     })
 
 
@@ -684,11 +684,22 @@ async def exam_session_page(session_id: str, cur_user: CurUserDep) -> str:
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     exam = get_exam(session.exam_id, cur_user)
+    available_questions = get_questions(session.exam_id)
+    questions = [question for question in available_questions
+                 if not session.question_ids or question.id in session.question_ids]
+    answers = get_session_answers(session.id)
+    results = {
+        question.id: get_question_result(question, answers.get(question.id, []))
+        for question in questions
+    } if session.status != "in_progress" else {}
     return get_html_content("exam-session.html", {
         "cur_user": cur_user,
         "exam": exam,
         "session": session,
-        "questions": get_questions(session.exam_id),
+        "questions": questions,
+        "answers": answers,
+        "results": results,
+        "active_session": get_active_session(cur_user.id),
     })
 
 
@@ -698,6 +709,7 @@ async def _render_question_page(question, cur_user: OptCurUserDep) -> str:
         "cur_user": cur_user,
         "exam": exam,
         "question": question,
+        "active_session": get_active_session(cur_user.id) if cur_user else None,
     })
 
 

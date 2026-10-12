@@ -351,51 +351,7 @@ document.querySelectorAll("input[name='avatar_action']").forEach(radio => {
   })
 })
 
-const questionForm = document.getElementById("question-form")
-questionForm?.addEventListener("submit", async event => {
-  event.preventDefault()
-  const form = new FormData(event.target)
-  const correct = Number(form.get("correct_choice"))
-  const choices = form.getAll("choice_title").map((title, index) => ({
-    title,
-    description: form.getAll("choice_description")[index] || "",
-    is_correct: index === correct
-  }))
-  const response = await fetch(event.target.dataset.questionUrl, {
-    method: event.target.dataset.method,
-    credentials: "include",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({title: form.get("title"), description: form.get("description"), choices})
-  })
-  if (response.ok) {
-    if (event.target.dataset.reloadOnSuccess) window.location.reload()
-    else window.location.href = event.target.dataset.successUrl
-  } else alert((await response.json()).message || "Unable to save question")
-})
-
-const sessionForm = document.getElementById("session-form")
-sessionForm?.addEventListener("submit", async event => {
-  event.preventDefault()
-  const form = new FormData(event.target)
-  const questionIds = [...event.target.querySelectorAll("input[type='radio']")]
-    .map(input => input.name.replace("question-", ""))
-    .filter((id, index, ids) => ids.indexOf(id) === index)
-  for (const questionId of questionIds) {
-    const response = await fetch(event.target.dataset.answerUrl, {
-      method: "POST",
-      credentials: "include",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({question_id: questionId, choice_index: Number(form.get(`question-${questionId}`))})
-    })
-    if (!response.ok) return alert("Unable to save an answer")
-  }
-  const response = await fetch(event.target.dataset.completeUrl, {method: "POST", credentials: "include"})
-  if (response.ok) window.location.reload()
-  else alert((await response.json()).message || "Unable to submit exam")
-})
-
-document.getElementById("try-exam")?.addEventListener("click", async event => {
-  const button = event.currentTarget
+const startExam = async button => {
   button.disabled = true
   const response = await fetch(button.dataset.createSessionUrl, {method: "POST", credentials: "include"})
   if (response.ok) {
@@ -405,87 +361,91 @@ document.getElementById("try-exam")?.addEventListener("click", async event => {
     button.disabled = false
     alert((await response.json()).message || "Unable to start exam")
   }
+}
+
+document.querySelectorAll(".start-exam").forEach(button => {
+  button.addEventListener("click", () => startExam(button))
 })
 
-  // Load more
-  (() => {
-    $(document).on("click", ".btn-load-more", async function () {
-      const btn = this
-      if (btn.disabled) return
+// Load more
+;(() => {
+  $(document).on("click", ".btn-load-more", async function () {
+    const btn = this
+    if (btn.disabled) return
 
-      const container = document.querySelector(btn.dataset.container)
-      if (!container) return console.error("Container not found:", btn.dataset.container)
+    const container = document.querySelector(btn.dataset.container)
+    if (!container) return console.error("Container not found:", btn.dataset.container)
 
-      const limit = btn.dataset.limit
-      const url = btn.dataset.url
-      const offset = btn.dataset.offset
+    const limit = btn.dataset.limit
+    const url = btn.dataset.url
+    const offset = btn.dataset.offset
 
-      const $btn = $(btn)
-      $btn.setButtonLoading()
+    const $btn = $(btn)
+    $btn.setButtonLoading()
 
-      try {
-        const u = new URL(url, window.location.origin)
-        u.searchParams.set("offset", offset)
-        u.searchParams.set("limit", limit)
-        const resp = await ajaxResponse({url: u.toString(), method: "GET", dataType: "text"})
-        if (!resp.ok) {
-          console.log(`Request failed with status ${resp.status}`)
-          btn.remove()
-          return
-        }
-
-        const content = await resp.text()
-        if (content === "") {
-          btn.remove()
-          return
-        }
-
-        const fragment = document.createRange().createContextualFragment(content)
-        const newElements = Array.from(fragment.children)
-        container.append(fragment)
-
-        const masonry = getMasonryInstance(container)
-        if (masonry && newElements.length) {
-          masonry.appended(newElements)
-          const images = newElements.flatMap(element => Array.from(element.querySelectorAll("img")))
-          Promise.all(images.map(image => image.complete ? Promise.resolve() : new Promise(resolve => {
-            image.addEventListener("load", resolve, {once: true})
-            image.addEventListener("error", resolve, {once: true})
-          }))).then(() => masonry.layout())
-        }
-
-        const lastElement = container.lastElementChild
-        const newOffset = lastElement.dataset.offset
-
-        if (!newOffset || newOffset === offset) {
-          btn.remove()
-          return
-        }
-
-        btn.dataset.offset = newOffset
-      } catch (err) {
-        console.error(err)
-      } finally {
-        $btn.clearButtonLoading()
+    try {
+      const u = new URL(url, window.location.origin)
+      u.searchParams.set("offset", offset)
+      u.searchParams.set("limit", limit)
+      const resp = await ajaxResponse({url: u.toString(), method: "GET", dataType: "text"})
+      if (!resp.ok) {
+        console.log(`Request failed with status ${resp.status}`)
+        btn.remove()
+        return
       }
-    })
 
-    // --- Auto-load support only for [data-auto-load] buttons ---
-    const observer = new IntersectionObserver((entries) => {
-      for (const entry of entries) {
-        if (entry.isIntersecting) {
-          entry.target.click() // Trigger the same handler
-        }
+      const content = await resp.text()
+      if (content === "") {
+        btn.remove()
+        return
       }
-    }, {
-      rootMargin: "200px" // start loading earlier than fully visible
-    })
 
-// Attach observer only to buttons with data-auto-load
-    $(".btn-load-more[data-auto-click]").each(function () {
-      observer.observe(this)
-    })
-  })();
+      const fragment = document.createRange().createContextualFragment(content)
+      const newElements = Array.from(fragment.children)
+      container.append(fragment)
+
+      const masonry = getMasonryInstance(container)
+      if (masonry && newElements.length) {
+        masonry.appended(newElements)
+        const images = newElements.flatMap(element => Array.from(element.querySelectorAll("img")))
+        Promise.all(images.map(image => image.complete ? Promise.resolve() : new Promise(resolve => {
+          image.addEventListener("load", resolve, {once: true})
+          image.addEventListener("error", resolve, {once: true})
+        }))).then(() => masonry.layout())
+      }
+
+      const lastElement = container.lastElementChild
+      const newOffset = lastElement.dataset.offset
+
+      if (!newOffset || newOffset === offset) {
+        btn.remove()
+        return
+      }
+
+      btn.dataset.offset = newOffset
+    } catch (err) {
+      console.error(err)
+    } finally {
+      $btn.clearButtonLoading()
+    }
+  })
+
+  // --- Auto-load support only for [data-auto-load] buttons ---
+  const observer = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) {
+        entry.target.click() // Trigger the same handler
+      }
+    }
+  }, {
+    rootMargin: "200px" // start loading earlier than fully visible
+  })
+
+  // Attach observer only to buttons with data-auto-load
+  $(".btn-load-more[data-auto-click]").each(function () {
+    observer.observe(this)
+  })
+})();
 
 
 // Tags input

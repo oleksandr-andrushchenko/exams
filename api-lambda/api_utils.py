@@ -8,6 +8,7 @@ from exam_dtos import (
     ExamCommentDTO, ExamDTO, UpdateCategoryDTO, UpdateExamCommentDTO, UpdateExamDTO, UpdateExamImpressionDTO,
     UpdateExamStatusDTO, UpdateTagDTO,
 )
+from form_options import CERTIFICATION_LEVEL_DIFFICULTIES
 from question_dtos import QuestionDTO
 from question_utils import create_question
 from shared_utils import *
@@ -601,10 +602,9 @@ def create_exam(exam_dto: ExamDTO, cur_user: User) -> Exam:
     preview = description[:300]
     image_filename = exam_dto.image_filename
     tags = sanitize_tags(exam_dto.tags)
-    category = exam_dto.category
     certification = get_certification_by_id(exam_dto.certification_id) if exam_dto.certification_id else None
-    if certification:
-        category = certification.category
+    category = certification.category if certification else "other"
+    difficulty = CERTIFICATION_LEVEL_DIFFICULTIES.get(certification.level, "other") if certification else "other"
     slug = to_kebab_case(title)
 
     transacts = []
@@ -621,8 +621,9 @@ def create_exam(exam_dto: ExamDTO, cur_user: User) -> Exam:
         "certification_id": certification.id if certification else None,
         "certification_slug": certification.slug if certification else None,
         "certification_name": certification.name if certification else None,
-        "difficulty": exam_dto.difficulty,
-        "language": exam_dto.language,
+        "difficulty": difficulty,
+        "language": "en",
+        "questions_count": 0,
         "tags": tags,
         "rating_sk": compute_rating_sk(0, now),
         "status": status,
@@ -655,16 +656,6 @@ def create_exam(exam_dto: ExamDTO, cur_user: User) -> Exam:
         raise
 
     exam = exam_from_dynamodb(exam_item)
-    create_question(exam, QuestionDTO(
-        title="What is the main goal of this exam?",
-        description="Choose the best answer.",
-        choices=[
-            {"title": "Understand the subject", "description": "Build understanding through practice.",
-             "is_correct": True},
-            {"title": "Skip the subject", "description": "Avoid learning the material.", "is_correct": False},
-            {"title": "Avoid practice", "description": "Do not review the material.", "is_correct": False},
-        ],
-    ), cur_user)
     logger.info("New exam created", extra={"context": {"exam_id": exam_id}})
     return exam
 
@@ -685,8 +676,9 @@ def update_exam(exam: Exam, update_exam_dto: UpdateExamDTO, cur_user: User) -> N
         changes["certification_id"] = certification.id if certification else None
         changes["certification_slug"] = certification.slug if certification else None
         changes["certification_name"] = certification.name if certification else None
-        if certification:
-            changes["category"] = certification.category
+        changes["category"] = certification.category if certification else "other"
+        changes["difficulty"] = (CERTIFICATION_LEVEL_DIFFICULTIES.get(certification.level, "other")
+                                 if certification else "other")
     elif "category" in changes and exam.certification_id:
         changes["category"] = get_certification_by_id(exam.certification_id).category
     if "category" in changes:

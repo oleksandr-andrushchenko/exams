@@ -16,32 +16,213 @@
 {% block content %}
     <h1>{{ title }}</h1>
     <p class="small text-secondary">
-        {{ "Add a question and identify the correct answer." if is_new
-           else "Update the question, choices, and correct answer." }}
+        {{ "Add a question, provide at least two choices, and identify every correct answer." if is_new
+           else "Update the question, its choices, and the correct answers." }}
     </p>
-    <form id="question-form" class="vstack gap-3" novalidate
+    <form id="question-form" class="vstack gap-4" novalidate
           data-question-url="{{ url('create-question', exam_id=exam.id, absolute=True) if is_new else url('update-question', exam_id=exam.id, question_id=question.id, absolute=True) }}"
           data-success-url="{{ url('question-by-id', question_id=question.id, absolute=True) if question else exam_url(exam) ~ '#questions' }}"
           data-method="{{ 'POST' if is_new else 'PATCH' }}">
-        <label>Title<input class="form-control" name="title" required value="{{ question.title if question else "" }}"></label>
-        <label>Description<textarea class="form-control" name="description"
-                                    required>{{ question.description if question else "" }}</textarea></label>
+
         <div>
-            <h2 class="h5">Choices</h2>
-            {% for index in range(4) %}
-                {% set choice = question.choices[index] if question and index < question.choices|length else none %}
-                <div class="card card-body mb-2">
-                    <label>Title<input class="form-control" name="choice_title" required
-                                       value="{{ choice.title if choice else "" }}"></label>
-                    <label>Description<input class="form-control" name="choice_description"
-                                             value="{{ choice.description if choice else "" }}"></label>
-                    <label class="mt-2"><input type="radio" name="correct_choice" value="{{ index }}"
-                                               {% if choice and choice.is_correct or not choice and index == 0 %}checked{% endif %}>
-                        Correct choice</label>
-                </div>
-            {% endfor %}
+            <label class="form-label" for="question-title">
+                Question <span class="text-danger" aria-hidden="true">*</span><span
+                    class="visually-hidden"> (required)</span>
+            </label>
+            <textarea class="form-control form-control-lg" id="question-title" name="title" rows="2"
+                      placeholder="e.g., Which services can trigger this function?" required minlength="3"
+                      maxlength="500" autofocus
+                      aria-describedby="question-title-help">{{ question.title if question else "" }}</textarea>
+            <div class="form-text" id="question-title-help">Write one clear question without including hints about the
+                answer.
+            </div>
         </div>
-        <button class="btn btn-dark align-self-start" type="submit">{{ "Create" if is_new else "Save" }} question
-        </button>
+
+        <div>
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                <div>
+                    <h2 class="h4 mb-1">Answer choices</h2>
+                    <p class="small text-body-secondary mb-0">
+                        Add 2–10 choices. Every choice needs an explanation, and one or more choices may be correct.
+                    </p>
+                </div>
+                <span class="badge text-bg-light" id="choice-count" aria-live="polite"></span>
+            </div>
+            {% set rendered_choice_count = [question.choices | length if question else 0, 2] | max %}
+            <div class="vstack gap-3" id="question-choices">
+                {% for index in range(rendered_choice_count) %}
+                    {% set choice = question.choices[index] if question and index < question.choices|length else none %}
+                    <section class="card shadow-sm question-choice">
+                        <div class="card-body vstack gap-3">
+                            <div class="d-flex justify-content-between align-items-center gap-2">
+                                <h3 class="h5 mb-0">Choice <span class="choice-number">{{ index + 1 }}</span></h3>
+                                <button class="btn btn-sm btn-outline-danger remove-choice" type="button"
+                                        {% if rendered_choice_count <= 2 %}hidden{% endif %}>
+                                    <i class="bi bi-trash" aria-hidden="true"></i> Remove
+                                </button>
+                            </div>
+                            <div>
+                                <label class="form-label" for="choice-title-{{ index + 1 }}">
+                                    Answer <span class="text-danger" aria-hidden="true">*</span><span
+                                        class="visually-hidden"> (required)</span>
+                                </label>
+                                <textarea class="form-control choice-title" id="choice-title-{{ index + 1 }}"
+                                          name="choice_title" rows="2" placeholder="Enter an answer choice" required
+                                          maxlength="500">{{ choice.title if choice else "" }}</textarea>
+                            </div>
+                            <div>
+                                <label class="form-label" for="choice-explanation-{{ index + 1 }}">
+                                    Explanation <span class="text-danger" aria-hidden="true">*</span><span
+                                        class="visually-hidden"> (required)</span>
+                                </label>
+                                <textarea class="form-control choice-explanation"
+                                          id="choice-explanation-{{ index + 1 }}"
+                                          name="choice_explanation" rows="3" required maxlength="2000"
+                                          placeholder="Explain why this choice is correct or incorrect">{{ choice.explanation if choice and choice.explanation else "" }}</textarea>
+                                <div class="form-text">Learners see this after submitting the exam.</div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input correct-choice" id="correct-choice-{{ index + 1 }}"
+                                       type="checkbox" name="correct_choice" value="{{ index }}"
+                                       {% if choice and choice.is_correct or not choice and index == 0 %}checked{% endif %}>
+                                <label class="form-check-label" for="correct-choice-{{ index + 1 }}">This is a correct
+                                    answer</label>
+                            </div>
+                        </div>
+                    </section>
+                {% endfor %}
+            </div>
+            <div class="alert alert-warning mt-3 mb-0" id="correct-choice-error" role="alert" hidden>
+                Select at least one correct answer.
+            </div>
+            <button class="btn btn-outline-secondary mt-3" id="add-choice" type="button">
+                <i class="bi bi-plus-lg" aria-hidden="true"></i> Add another choice
+            </button>
+        </div>
+
+        <div class="border-top pt-3 d-flex flex-wrap gap-2">
+            <button class="btn btn-dark" type="submit">
+                <i class="bi {{ 'bi-plus-lg' if is_new else 'bi-arrow-clockwise' }}" aria-hidden="true"></i>
+                {{ "Create" if is_new else "Save" }} question
+            </button>
+            <a class="btn btn-outline-secondary" href="{{ exam_url(exam) }}#questions">Cancel</a>
+        </div>
     </form>
+
+    <template id="question-choice-template">
+        <section class="card shadow-sm question-choice">
+            <div class="card-body vstack gap-3">
+                <div class="d-flex justify-content-between align-items-center gap-2">
+                    <h3 class="h5 mb-0">Choice <span class="choice-number"></span></h3>
+                    <button class="btn btn-sm btn-outline-danger remove-choice" type="button">
+                        <i class="bi bi-trash" aria-hidden="true"></i> Remove
+                    </button>
+                </div>
+                <div>
+                    <label class="form-label">
+                        Answer <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> (required)</span>
+                    </label>
+                    <textarea class="form-control choice-title" name="choice_title" rows="2"
+                              placeholder="Enter an answer choice" required maxlength="500"></textarea>
+                </div>
+                <div>
+                    <label class="form-label">
+                        Explanation <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> (required)</span>
+                    </label>
+                    <textarea class="form-control choice-explanation" name="choice_explanation" rows="3" required
+                              maxlength="2000" placeholder="Explain why this choice is correct or incorrect"></textarea>
+                    <div class="form-text">Learners see this after submitting the exam.</div>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input correct-choice" type="checkbox" name="correct_choice">
+                    <label class="form-check-label">This is a correct answer</label>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <script>
+      const questionForm = document.getElementById("question-form")
+      const choicesContainer = document.getElementById("question-choices")
+      const choiceTemplate = document.getElementById("question-choice-template")
+      const addChoiceButton = document.getElementById("add-choice")
+      const choiceCount = document.getElementById("choice-count")
+      const correctChoiceError = document.getElementById("correct-choice-error")
+      const minimumChoices = 2
+      const maximumChoices = 10
+
+      const syncChoices = () => {
+        const choices = [...choicesContainer.querySelectorAll(".question-choice")]
+        choices.forEach((choice, index) => {
+          const number = index + 1
+          choice.querySelector(".choice-number").textContent = String(number)
+          const fields = [
+            [".choice-title", "choice-title"],
+            [".choice-explanation", "choice-explanation"],
+            [".correct-choice", "correct-choice"]
+          ]
+          fields.forEach(([selector, prefix]) => {
+            const field = choice.querySelector(selector)
+            field.id = `${prefix}-${number}`
+            field.closest("div").querySelector("label").htmlFor = field.id
+          })
+          choice.querySelector(".correct-choice").value = String(index)
+          choice.querySelector(".remove-choice").hidden = choices.length <= minimumChoices
+        })
+        choiceCount.textContent = `${choices.length} of ${maximumChoices} choices`
+        addChoiceButton.disabled = choices.length >= maximumChoices
+        addChoiceButton.title = addChoiceButton.disabled ? `A question can have up to ${maximumChoices} choices.` : ""
+      }
+
+      addChoiceButton.addEventListener("click", () => {
+        if (choicesContainer.children.length >= maximumChoices) return
+        const choice = choiceTemplate.content.firstElementChild.cloneNode(true)
+        choicesContainer.append(choice)
+        syncChoices()
+        choice.querySelector(".choice-title").focus()
+      })
+
+      choicesContainer.addEventListener("click", event => {
+        const removeButton = event.target.closest(".remove-choice")
+        if (!removeButton || choicesContainer.children.length <= minimumChoices) return
+        removeButton.closest(".question-choice").remove()
+        syncChoices()
+      })
+
+      questionForm?.addEventListener("submit", async event => {
+        event.preventDefault()
+        if (!event.target.reportValidity()) return
+        const form = new FormData(event.target)
+        const correct = form.getAll("correct_choice").map(Number)
+        correctChoiceError.hidden = correct.length > 0
+        if (!correct.length) {
+          event.target.querySelector(".correct-choice").focus()
+          return
+        }
+        const choices = form.getAll("choice_title").map((title, index) => ({
+          title,
+          explanation: form.getAll("choice_explanation")[index] || "",
+          is_correct: correct.includes(index)
+        }))
+        const response = await fetch(event.target.dataset.questionUrl, {
+          method: event.target.dataset.method,
+          credentials: "include",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({
+            title: form.get("title"),
+            choices
+          })
+        })
+        if (response.ok) {
+          if (event.target.dataset.reloadOnSuccess) window.location.reload()
+          else window.location.href = event.target.dataset.successUrl
+        } else alert((await response.json()).message || "Unable to save question")
+      })
+      choicesContainer.addEventListener("change", event => {
+        if (event.target.matches(".correct-choice")) {
+          correctChoiceError.hidden = choicesContainer.querySelector(".correct-choice:checked") !== null
+        }
+      })
+      syncChoices()
+    </script>
 {% endblock %}

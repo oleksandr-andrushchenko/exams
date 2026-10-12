@@ -3,6 +3,7 @@ import asyncio
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import PlainTextResponse
 
+
 from api_deps import (
     get_error_response,
 )
@@ -74,9 +75,13 @@ from deps import (
 )
 from notifications import get_access_log
 from question_dtos import QuestionDTO, UpdateQuestionDTO
-from question_utils import Question, create_question, delete_question, get_question, get_questions, update_question
+from question_utils import (
+    Question, create_question, delete_question, get_question, get_questions, question_without_answers, update_question,
+)
 from session_dtos import AnswerDTO
-from session_utils import answer_question, complete_session, create_session, get_session, get_sessions
+from session_utils import (
+    ActiveExamSessionError, answer_question, complete_session, create_session, get_session, get_sessions,
+)
 from shared_deps import (
     OptCurUserDep,
     CurUserDep,
@@ -93,6 +98,7 @@ from shared_utils import (
     get_exam_url,
     get_tags,
     get_categories,
+    is_prod,
 )
 from web import Application, Request, HTTPException, HTMLResponse, JSONResponse, RedirectResponse, \
     RequestValidationError, CORSMiddleware
@@ -471,16 +477,20 @@ async def _create_question(exam: ExamDep, question_dto: QuestionDTO, cur_user: C
 
 
 @route("get", "api-questions", response_class=JSONResponse)
-async def _get_questions(exam_id: str) -> list[Question]:
-    return get_questions(exam_id)
+async def _get_questions(exam: ExamDep, cur_user: OptCurUserDep) -> list:
+    questions = get_questions(exam.id)
+    if cur_user and cur_user.id == exam.owner_id:
+        return questions
+    return [question_without_answers(question) for question in questions]
 
 
 @route("get", "api-question", response_class=JSONResponse)
-async def _get_question(exam_id: str, question_id: str) -> Question:
+async def _get_question(exam: ExamDep, question_id: str, cur_user: OptCurUserDep):
     try:
-        return get_question(exam_id, question_id)
+        question = get_question(exam.id, question_id)
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return question if cur_user and cur_user.id == exam.owner_id else question_without_answers(question)
 
 
 @route("patch", "update-question", response_class=JSONResponse)
@@ -502,7 +512,12 @@ async def _delete_question(exam_id: str, question_id: str, cur_user: CurUserDep)
 
 @route("post", "create-exam-session", response_class=JSONResponse)
 async def _create_exam_session(exam_id: str, cur_user: CurUserDep):
-    return create_session(exam_id, cur_user)
+    try:
+        return create_session(exam_id, cur_user)
+    except ActiveExamSessionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @route("get", "api-exam-sessions", response_class=JSONResponse)
@@ -516,14 +531,20 @@ async def _get_exam_session(session_id: str, cur_user: CurUserDep):
         return get_session(cur_user.id, session_id)
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @route("post", "answer-exam-session", response_class=JSONResponse)
 async def _answer_exam_session(session_id: str, answer: AnswerDTO, cur_user: CurUserDep):
     try:
-        return answer_question(get_session(cur_user.id, session_id), answer.question_id, answer.choice_index)
+        session = get_session(cur_user.id, session_id)
+        updated_session = answer_question(session, answer.question_id, answer.choice_indices)
+        return {"session": updated_session}
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @route("post", "complete-exam-session", response_class=JSONResponse)
@@ -532,3 +553,5 @@ async def _complete_exam_session(session_id: str, cur_user: CurUserDep):
         return complete_session(get_session(cur_user.id, session_id))
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc

@@ -3,28 +3,25 @@
         <label class="form-label" for="title">
             Title <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> (required)</span>
         </label>
-        <div class="input-group">
-            <span class="input-group-text align-items-start pt-3" aria-hidden="true"><i class="bi bi-card-heading"></i></span>
-            <textarea class="form-control form-control-lg" id="title" name="title"
-                      placeholder="e.g., AWS Solutions Architect Associate Practice Exam"
-                      required rows="2" maxlength="500" autofocus
-                      aria-describedby="exam-title-help">{{ exam.title if exam else "" }}</textarea>
-        </div>
+        <textarea class="form-control form-control-lg" id="title" name="title"
+                  placeholder="e.g., AWS Solutions Architect Associate Practice Exam"
+                  required rows="2" maxlength="500" autofocus
+                  aria-describedby="exam-title-help">{{ exam.title if exam else "" }}</textarea>
         <div class="form-text" id="exam-title-help">Use a concise title that clearly identifies the exam.</div>
     </div>
 
     <div>
         <label class="form-label" for="description">
-            Description <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> (required)</span>
+            Description <span class="text-danger" aria-hidden="true">*</span><span
+                class="visually-hidden"> (required)</span>
         </label>
-        <div class="input-group">
-            <span class="input-group-text align-items-start pt-2" aria-hidden="true"><i class="bi bi-text-paragraph"></i></span>
-            <textarea class="form-control" id="description" name="description"
-                      placeholder="Describe the topics, audience, and learning goals" rows="5"
-                      required minlength="10" maxlength="500"
-                      aria-describedby="exam-description-help">{{ exam.description if exam else "" }}</textarea>
+        <textarea class="form-control" id="description" name="description"
+                  placeholder="Describe the topics, audience, and learning goals" rows="5"
+                  required minlength="10" maxlength="500"
+                  aria-describedby="exam-description-help">{{ exam.description if exam else "" }}</textarea>
+        <div class="form-text" id="exam-description-help">Use 10–500 characters to help learners understand what to
+            expect.
         </div>
-        <div class="form-text" id="exam-description-help">Use 10–500 characters to help learners understand what to expect.</div>
     </div>
 
     <div>
@@ -43,25 +40,6 @@
         {% endif %}
     </div>
 
-    <fieldset class="border rounded-3 p-3" aria-describedby="exam-category-help">
-        <legend class="float-none w-auto px-2 fs-6 fw-semibold">
-            Category <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> (required)</span>
-        </legend>
-        <div class="row g-2">
-            {% for category in categories %}
-                <div class="col-12 col-sm-6 col-lg-4">
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="category"
-                               id="exam-category-{{ category.slug }}" value="{{ category.slug }}" required
-                               {% if (exam and exam.category == category.slug) or (not exam and category.slug == 'other') %}checked{% endif %}>
-                        <label class="form-check-label"
-                               for="exam-category-{{ category.slug }}">{{ category.name }}</label>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-        <div class="form-text" id="exam-category-help">Category missing? <a href="{{ url('contacts') }}">Ask us to add it</a>.</div>
-    </fieldset>
     <div>
         <label class="form-label" for="certification_id">
             Certification <span class="text-body-secondary fw-normal">(optional)</span>
@@ -70,57 +48,22 @@
             <span class="input-group-text" aria-hidden="true"><i class="bi bi-patch-check"></i></span>
             <select class="form-select" id="certification_id" name="certification_id"
                     aria-describedby="exam-certification-help">
-                <option value="">Custom exam / certification not listed</option>
+                <option value="">Other / certification not listed</option>
                 {% for certification in certifications %}
                     <option value="{{ certification.id }}"
-                            data-category="{{ certification.category }}"
-                            {% if exam and exam.certification_id == certification.id %}selected{% endif %}>{{ certification.name }}</option>
+                            {% if exam and exam.certification_id == certification.id %}selected{% endif %}>{{ certification.name }}
+                        · {{ certification.provider }}</option>
                 {% endfor %}
             </select>
         </div>
         <div class="form-text" id="exam-certification-help">
-            You can create a custom exam now or <a href="{{ url('contacts') }}">request a certification</a>.
+            Category and difficulty are inherited from the certification. Unlisted certifications use Other.
+            You can <a href="{{ url('contacts') }}">request a certification</a>.
             {% if cur_user and check_auth(cur_user, Permission.CREATE_CERTIFICATION) %}
                 You can also <a href="{{ url('new-certification') }}">add the certification</a> first.
             {% endif %}
         </div>
     </div>
-    <fieldset class="border rounded-3 p-3" aria-describedby="exam-difficulty-help">
-        <legend class="float-none w-auto px-2 fs-6 fw-semibold">
-            Practice exam difficulty <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> (required)</span>
-        </legend>
-        <div class="row g-2">
-            {% for value, label in exam_difficulties %}
-                <div class="col-12 col-sm-6 col-lg-4">
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="difficulty"
-                               id="exam-difficulty-{{ value }}" value="{{ value }}" required
-                               {% if (exam and ((exam.difficulty == value) or (value == 'intermediate' and exam.difficulty == 'medium') or (value == 'advanced' and exam.difficulty == 'professional'))) or (not exam and value == 'intermediate') %}checked{% endif %}>
-                        <label class="form-check-label" for="exam-difficulty-{{ value }}">{{ label }}</label>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-        <div class="form-text" id="exam-difficulty-help">This rates the challenge of this practice exam, not the certification's credential level.</div>
-    </fieldset>
-    <fieldset class="border rounded-3 p-3" aria-describedby="exam-language-help">
-        <legend class="float-none w-auto px-2 fs-6 fw-semibold">
-            Language <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> (required)</span>
-        </legend>
-        <div class="row g-2">
-            {% for value, label in exam_languages %}
-                <div class="col-12 col-sm-6 col-lg-4">
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="language" id="exam-language-{{ value }}"
-                               value="{{ value }}" required
-                               {% if (exam and exam.language == value) or (not exam and value == 'en') %}checked{% endif %}>
-                        <label class="form-check-label" for="exam-language-{{ value }}">{{ label }}</label>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-        <div class="form-text" id="exam-language-help">Choose the language used for questions and answers.</div>
-    </fieldset>
     <div>
         <label class="form-label" for="tags-input">
             <i class="bi bi-tags" aria-hidden="true"></i> Tags
@@ -166,9 +109,5 @@
       successMessage: "Exam created!"
     })
 
-    document.getElementById("certification_id").addEventListener("change", event => {
-      const category = event.target.selectedOptions[0].dataset.category
-      if (category) document.querySelector(`[name="category"][value="${CSS.escape(category)}"]`)?.click()
-    })
   })
 </script>

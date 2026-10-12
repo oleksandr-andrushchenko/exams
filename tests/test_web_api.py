@@ -371,12 +371,14 @@ def test_certification_create_edit_and_permissions(guest_client):
     assert new_page.status_code == 200
     new_doc = pq(new_page.text)
     assert new_doc('input[name="category"][value="other"]').attr("checked") == "checked"
-    assert len(new_doc('input[name="level"]')) == 6
+    assert len(new_doc('input[name="level"]')) == 7
+    assert new_doc('input[name="level"][value="other"]')
+    assert new_doc('input[name="provider"][value="Other"]')
     assert get(regular_client, "/certifications/new").status_code == 403
 
     payload = {
         "name": "Functional Certification",
-        "provider": "Example Provider",
+        "provider": "AWS",
         "description": "An official credential used by the functional test suite.",
         "category": "other",
         "level": "associate",
@@ -395,13 +397,13 @@ def test_certification_create_edit_and_permissions(guest_client):
 
     edit_page = get(root_client, "/certifications/functional-certification/edit")
     assert edit_page.status_code == 200
-    assert pq(edit_page.text)('input[name="provider"]').attr("value") == "Example Provider"
+    assert pq(edit_page.text)('input[name="provider"][value="AWS"]').attr("checked") == "checked"
 
-    payload["provider"] = "Updated Provider"
+    payload["provider"] = "Google Cloud"
     update_response = patch(root_client, "/certifications/functional-certification", json=payload)
     assert update_response.status_code == 200, update_response.text
     item = dynamodb_table.get_item(Key={"pk": "CERTIFICATION", "sk": "functional-certification"})["Item"]
-    assert item["provider"] == "Updated Provider"
+    assert item["provider"] == "Google Cloud"
 
 
 def test_guest_user_get_index(guest_client):
@@ -823,9 +825,18 @@ EXAM_CONTENT = "Functional endpoint coverage description for integration testing
 
 def test_exam_create_and_new_page_endpoints_success_and_failure(guest_client):
     root_client = get_logged_in_client(root_user)
+    certification = dynamodb_table.get_item(
+        Key={"pk": "CERTIFICATION", "sk": "functional-certification"}
+    )["Item"]
 
     new_success = get(root_client, "/exams/new")
     assert new_success.status_code == 200
+    new_doc = pq(new_success.text)
+    assert "Other" in new_doc('select[name="certification_id"] option[value=""]').text()
+    assert not new_doc('[name="category"]')
+    assert not new_doc('[name="difficulty"]')
+    assert not new_doc('[name="language"]')
+    assert not new_doc('[name="is_premium"]')
     new_failure = get(guest_client, "/exams/new")
     assert new_failure.status_code == 401
     check_auth_links_are_nofollow(pq(new_failure.text))
@@ -835,6 +846,7 @@ def test_exam_create_and_new_page_endpoints_success_and_failure(guest_client):
         "description": EXAM_CONTENT,
         "image_filename": EXAM_IMAGE_FILENAME,
         "tags": ["functional-tag", "coverage-tag"],
+        "certification_id": certification["id"],
     })
     assert create_success.status_code == 200, create_success.text
     exam_item = next(
@@ -845,6 +857,57 @@ def test_exam_create_and_new_page_endpoints_success_and_failure(guest_client):
     functional_state["exam_slug"] = exam_item["exam_slug"]
     assert exam_item["description"] == EXAM_CONTENT
     assert exam_item["image_filename"] == EXAM_IMAGE_FILENAME
+    assert exam_item["category"] == "other"
+    assert exam_item["difficulty"] == "intermediate"
+    assert exam_item["language"] == "en"
+    assert "is_premium" not in exam_item
+
+    question_page = get(root_client, f"/exams/{exam_item['id']}/questions/new")
+    assert question_page.status_code == 200, question_page.text
+    question_doc = pq(question_page.text)
+    assert len(question_doc("#question-choices > .question-choice")) == 2
+    assert question_doc("#add-choice")
+    assert question_doc("#question-choice-template")
+    assert "2–10 choices" in question_doc.text()
+    assert not question_doc('#question-form [name="description"]')
+    assert not question_doc('#question-form [name="choice_description"]')
+    assert question_doc('textarea[name="choice_title"]')
+    assert not question_doc('input[name="is_premium"]')
+
+    create_question = post(root_client, f"/exams/{exam_item['id']}/questions", json={
+        "title": "Which option is correct?",
+        "choices": [
+            {
+                "title": "The correct option",
+                "explanation": "This option is correct.",
+                "is_correct": True,
+            },
+            {
+                "title": "The incorrect option",
+                "explanation": "This option is incorrect.",
+                "is_correct": False,
+            },
+        ],
+    })
+    assert create_question.status_code == 200, create_question.text
+
+    create_second_question = post(root_client, f"/exams/{exam_item['id']}/questions", json={
+        "title": "Additional architecture scenario",
+        "choices": [
+            {
+                "title": "The additional correct option",
+                "explanation": "This additional option is correct.",
+                "is_correct": True,
+            },
+            {
+                "title": "The additional incorrect option",
+                "explanation": "This additional option is incorrect.",
+                "is_correct": False,
+            },
+        ],
+    })
+    assert create_second_question.status_code == 200, create_second_question.text
+    functional_state["question_id"] = create_second_question.json()["id"]
 
     invalid_description = post(root_client, "/exams", json={
         "title": "Exam with invalid links",
@@ -860,6 +923,59 @@ def test_exam_create_and_new_page_endpoints_success_and_failure(guest_client):
         "tags": ["functional-tag"],
     })
     assert create_failure.status_code == 422
+
+
+def test_exam_session_page_persists_answers_and_shows_finalized_results():
+    root_client = get_logged_in_client(root_user)
+    exam_id = functional_state["exam_id"]
+
+    response = post(root_client, f"/exams/{exam_id}/sessions")
+
+    assert response.status_code == 200, response.text
+    session = response.json()
+    page = get(root_client, f"/exam-sessions/{session['id']}")
+    assert page.status_code == 200, page.text
+    session_doc = pq(page.text)
+    assert len(session_doc(".question-result")) == 0
+    assert len(session_doc(".session-open-review")) == session["total_questions"]
+    assert len(session_doc(".session-review-question")) == session["total_questions"]
+    assert len(session_doc(".review-question-status")) == session["total_questions"]
+
+    answered = post(root_client, f"/exam-sessions/{session['id']}/answers", json={
+        "question_id": session["question_ids"][0],
+        "choice_indices": [0],
+    })
+    assert answered.status_code == 200, answered.text
+    assert "feedback" not in answered.json()
+    answered_page = get(root_client, f"/exam-sessions/{session['id']}")
+    assert answered_page.status_code == 200, answered_page.text
+    answered_question = pq(answered_page.text)(
+        f'.session-question[data-question-id="{session["question_ids"][0]}"]'
+    )
+    assert answered_question.attr("data-answered") == "true"
+    selected_input = answered_question('input[value="0"]')
+    assert selected_input.attr("checked") == "checked", selected_input.outer_html()
+
+    for question_id in session["question_ids"][1:]:
+        skipped = post(root_client, f"/exam-sessions/{session['id']}/answers", json={
+            "question_id": question_id,
+            "choice_indices": [],
+        })
+        assert skipped.status_code == 200, skipped.text
+    completed = post(root_client, f"/exam-sessions/{session['id']}/complete")
+    assert completed.status_code == 200, completed.text
+
+    finalized_page = get(root_client, f"/exam-sessions/{session['id']}")
+    assert finalized_page.status_code == 200, finalized_page.text
+    finalized_doc = pq(finalized_page.text)
+    assert len(finalized_doc(".question-result")) == session["total_questions"]
+    assert finalized_doc("#exam-results-heading").text().strip() == "Question results"
+    assert "Correct answer" in finalized_doc(".question-result").text()
+    assert "Your selection" in finalized_doc(".question-result").text()
+    retry = finalized_doc("#try-exam")
+    assert retry.text().strip() == "Retry exam"
+    assert retry.attr("data-create-session-url").endswith(f"/exams/{exam_id}/sessions")
+    assert "SESSION_ID" in retry.attr("data-session-url-template")
 
 
 def test_earn_page_seo(guest_client):
@@ -1004,6 +1120,64 @@ def test_exam_read_edit_update_status_endpoints_success_and_failure(guest_client
     assert exams_by_slug_success.status_code == 200
     exams_by_slug_failure = get(guest_client, "/invalid/latest/exams?limit=0")
     assert exams_by_slug_failure.status_code == 422
+
+
+def test_all_questions_are_public_and_sessions_include_every_question(guest_client):
+    regular_client = get_logged_in_client(regular_user)
+    exam_id = functional_state["exam_id"]
+    question_id = functional_state["question_id"]
+
+    # Older stored flags must never restrict access after the move to free exams.
+    dynamodb_table.update_item(
+        Key={"pk": f"EXAM#{exam_id}", "sk": f"QUESTION#{question_id}"},
+        UpdateExpression="SET is_premium = :enabled",
+        ExpressionAttributeValues={":enabled": True},
+    )
+    exam_page = get(guest_client, f"/exams/{exam_id}")
+    assert exam_page.status_code == 200, exam_page.text
+    exam_doc = pq(exam_page.text)
+    assert "2 questions" in exam_doc.text()
+    assert "Additional architecture scenario" in exam_doc.text()
+    schema = json.loads(exam_doc('script[type="application/ld+json"]').text())
+    assert schema["isAccessibleForFree"] is True
+    public_questions = get(guest_client, f"/exams/{exam_id}/questions")
+    assert public_questions.status_code == 200, public_questions.text
+    assert len(public_questions.json()) == 2
+    for question in public_questions.json():
+        assert "is_premium" not in question
+        assert all(set(choice) == {"title"} for choice in question["choices"])
+    question_response = get(guest_client, f"/exams/{exam_id}/questions/{question_id}")
+    assert question_response.status_code == 200, question_response.text
+    assert "is_premium" not in question_response.json()
+    question_page = get(guest_client, f"/questions/{question_id}")
+    assert question_page.status_code == 200, question_page.text
+    assert "Additional architecture scenario" in question_page.text
+
+    session_response = post(regular_client, f"/exams/{exam_id}/sessions")
+    assert session_response.status_code == 200, session_response.text
+    session = session_response.json()
+    assert session["total_questions"] == 2
+    assert question_id in session["question_ids"]
+    session_page = get(regular_client, f"/exam-sessions/{session['id']}")
+    assert session_page.status_code == 200, session_page.text
+    assert "Additional architecture scenario" in session_page.text
+
+    active_exam_page = pq(get(regular_client, f"/exams/{exam_id}").text)
+    assert active_exam_page("#continue-exam").text().strip() == "Continue exam"
+    assert active_exam_page("#continue-exam").attr("href").endswith(f"/exam-sessions/{session['id']}")
+    assert not active_exam_page("#try-exam")
+
+    blocked_session = post(regular_client, f"/exams/{exam_id}/sessions")
+    assert blocked_session.status_code == 409, blocked_session.text
+
+    for session_question_id in session["question_ids"]:
+        skipped = post(regular_client, f"/exam-sessions/{session['id']}/answers", json={
+            "question_id": session_question_id,
+            "choice_indices": [],
+        })
+        assert skipped.status_code == 200, skipped.text
+    completed = post(regular_client, f"/exam-sessions/{session['id']}/complete")
+    assert completed.status_code == 200, completed.text
 
 
 def test_exam_impression_comment_and_comment_update_endpoints_success_and_failure(guest_client):

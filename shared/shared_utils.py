@@ -271,7 +271,7 @@ class Exam:
     created_at: int
     updated_at: int | None
     published_at: int | None
-    is_premium: bool | None
+    questions_count: int
     offset: str | None
 
 
@@ -1431,7 +1431,7 @@ def exam_from_dynamodb(d_item: dict[str, Any]) -> Exam:
         created_at=d_item["created_at"],
         updated_at=d_item.get("updated_at"),
         published_at=d_item.get("published_at"),
-        is_premium=False,
+        questions_count=int(d_item.get("questions_count", 0)),
         offset=None,
     )
 

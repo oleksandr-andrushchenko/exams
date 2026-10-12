@@ -3,24 +3,9 @@
 {% block content %}
     <h1 class="h3">Questions for {{ exam.title }}</h1>
     {% if cur_user and check_auth(cur_user, Permission.CREATE_QUESTION, exam) %}
-        <form id="question-form" class="card card-body mb-4"
-              data-question-url="{{ url('create-question', exam_id=exam.id, absolute=True) }}"
-              data-method="POST" data-reload-on-success="true">
-            <h2 class="h5">Add question</h2>
-            <input class="form-control mb-2" name="title" placeholder="Question title" required>
-            <textarea class="form-control mb-2" name="description" placeholder="Question description"
-                      required></textarea>
-            <div id="choices" class="mb-2">
-                {% for index in range(4) %}
-                    <div class="input-group mb-2"><input class="form-control" name="choice_title"
-                                                         placeholder="Choice {{ index + 1 }}" required><input
-                            class="form-control" name="choice_description" placeholder="Choice description"><span
-                            class="input-group-text"><input type="radio" name="correct_choice" value="{{ index }}"
-                                                            {% if index == 0 %}checked{% endif %}> Correct</span></div>
-                {% endfor %}
-            </div>
-            <button class="btn btn-dark align-self-start" type="submit">Add question</button>
-        </form>
+        <a class="btn btn-dark mb-4" href="{{ url('new-question', exam_id=exam.id) }}">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i> Add question
+        </a>
     {% endif %}
     {% if questions %}
         <ol class="list-group list-group-numbered">

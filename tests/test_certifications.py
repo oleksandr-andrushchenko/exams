@@ -25,8 +25,17 @@ def certification_dto(**changes):
 def test_certification_dto_accepts_curated_level():
     assert certification_dto().level == "associate"
     assert certification_dto(level="business").level == "business"
+    assert certification_dto(level="other").level == "other"
 
 
 def test_certification_dto_rejects_unlisted_level():
     with pytest.raises(ValueError, match="invalid certification level"):
         certification_dto(level="guru")
+
+
+def test_certification_dto_accepts_only_curated_providers():
+    assert certification_dto(provider="Google Cloud").provider == "Google Cloud"
+    assert certification_dto(provider="Other").provider == "Other"
+
+    with pytest.raises(ValueError, match="invalid certification provider"):
+        certification_dto(provider="Unknown Provider")

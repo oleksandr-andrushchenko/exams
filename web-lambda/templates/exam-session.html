@@ -8,34 +8,233 @@
 {% block content %}
     <h1>{{ title }}</h1>
     {% if session.status == 'in_progress' %}
-        <p class="small text-secondary">Answer all {{ session.total_questions }} questions to receive your result.</p>
+        <p class="small text-secondary">One question at a time · {{ session.answered_questions }} of {{ session.total_questions }} answered</p>
+        <div class="progress mb-4" role="progressbar" aria-label="Exam progress" aria-valuemin="0"
+             aria-valuemax="{{ session.total_questions }}">
+            <div class="progress-bar" id="session-progress" style="width: 0"></div>
+        </div>
+        <form id="session-form"
+              data-answer-url="{{ url('answer-exam-session', session_id=session.id, absolute=True) }}"
+              data-complete-url="{{ url('complete-exam-session', session_id=session.id, absolute=True) }}">
+            {% for question in questions %}
+                {% set selected = answers.get(question.id, []) %}
+                {% set multiple = question.choices | selectattr('is_correct') | list | length > 1 %}
+                <fieldset class="card card-body session-question" data-question-id="{{ question.id }}"
+                          data-answered="{{ 'true' if selected else 'false' }}"
+                          data-visited="{{ 'true' if question.id in answers else 'false' }}"
+                          {% if not loop.first %}hidden{% endif %}>
+                    <legend class="h5">Question {{ loop.index }} of {{ questions|length }}: {{ question.title }}</legend>
+                    <p class="small text-secondary">{{ "Select all correct answers." if multiple else "Select one answer." }}</p>
+                    <div>
+                    {% for choice in question.choices %}
+                        <label class="d-block border rounded p-2 mb-2">
+                            <input type="{{ 'checkbox' if multiple else 'radio' }}"
+                                   name="question-{{ question.id }}" value="{{ loop.index0 }}"
+                                   {% if loop.index0 in selected %} checked{% endif %}>
+                            <strong>{{ choice.title }}</strong>
+                        </label>
+                    {% endfor %}
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mt-3">
+                        <button class="btn btn-outline-secondary session-previous" type="button">
+                            <i class="bi bi-arrow-left" aria-hidden="true"></i> Previous
+                        </button>
+                        <button class="btn btn-dark session-answer" type="button">Submit answer</button>
+                        <button class="btn btn-outline-dark session-next" type="button">
+                            {{ "Review" if loop.last else "Next" }}
+                            <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                        </button>
+                        <button class="btn btn-outline-dark session-open-review" type="button">
+                            Review &amp; submit
+                        </button>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            <section class="card card-body" id="session-review" hidden>
+                <h2 class="h4">Ready to submit?</h2>
+                <p id="session-review-summary"></p>
+                <ol class="list-group list-group-numbered mb-3" id="session-review-questions">
+                    {% for question in questions %}
+                        {% set selected = answers.get(question.id, []) %}
+                        <li class="list-group-item d-flex align-items-center gap-2">
+                            <button class="btn btn-link text-start flex-grow-1 session-review-question" type="button"
+                                    data-question-index="{{ loop.index0 }}">
+                                {{ question.title }}
+                            </button>
+                            <span class="badge review-question-status {{ 'text-bg-success' if selected else 'text-bg-secondary' }}">
+                                {{ "Answered" if selected else "Not answered" }}
+                            </span>
+                        </li>
+                    {% endfor %}
+                </ol>
+                <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-dark" id="submit-exam" type="submit">
+                        Submit exam
+                    </button>
+                    <a class="btn btn-outline-secondary" href="{{ exam_url(exam) }}">Back to exam</a>
+                </div>
+            </section>
+        </form>
     {% else %}
         <div class="alert {% if session.status == 'passed' %}alert-success{% else %}alert-danger{% endif %}" role="status">
             <h2 class="h5">You {{ session.status }} this exam</h2>
             <p class="mb-0">Result: {{ session.score }}% ({{ session.correct_answers }}/{{ session.total_questions }} correct)</p>
         </div>
-    {% endif %}
-    {% if session.status == 'in_progress' %}
-        <form id="session-form" class="vstack gap-4"
-              data-answer-url="{{ url('answer-exam-session', session_id=session.id, absolute=True) }}"
-              data-complete-url="{{ url('complete-exam-session', session_id=session.id, absolute=True) }}">
-            {% for question in questions %}
-                <fieldset class="card card-body">
-                    <legend class="h5">{{ loop.index }}. {{ question.title }}</legend>
-                    <p>{{ question.description }}</p>
-                    {% for choice in question.choices %}
-                        <label class="d-block border rounded p-2 mb-2">
-                            <input required type="radio" name="question-{{ question.id }}" value="{{ loop.index0 }}">
-                            <strong>{{ choice.title }}</strong>
-                            {% if choice.description %}<span class="d-block text-secondary ms-4">{{ choice.description }}</span>{% endif %}
-                        </label>
-                    {% endfor %}
-                </fieldset>
-            {% endfor %}
-            <button class="btn btn-dark align-self-start" type="submit">Submit exam</button>
-        </form>
-    {% else %}
         <p>Your result is recorded in your exam history.</p>
-        <a class="btn btn-dark" href="{{ url('exam-sessions') }}">Back to history</a>
+        <section class="mb-4" aria-labelledby="exam-results-heading">
+            <h2 class="h4" id="exam-results-heading">Question results</h2>
+            {% for question in questions %}
+                {% set result = results[question.id] %}
+                <article class="card card-body mb-3 question-result">
+                    <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
+                        <h3 class="h5 mb-0">Question {{ loop.index }}: {{ question.title }}</h3>
+                        {% if result.is_correct %}
+                            <span class="badge text-bg-success">Correct</span>
+                        {% elif result.is_answered %}
+                            <span class="badge text-bg-danger">Incorrect</span>
+                        {% else %}
+                            <span class="badge text-bg-secondary">Not answered</span>
+                        {% endif %}
+                    </div>
+                    {% for choice in question.choices %}
+                        {% set choice_result = result.choices[loop.index0] %}
+                        <div class="border rounded p-2 mb-2{% if choice_result.is_correct %} border-success bg-success-subtle{% elif choice_result.is_selected %} border-danger bg-danger-subtle{% endif %}">
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                <strong>{{ choice.title }}</strong>
+                                {% if choice_result.is_correct %}
+                                    <span class="badge text-bg-success">Correct answer</span>
+                                {% endif %}
+                                {% if choice_result.is_selected %}
+                                    <span class="badge {{ 'text-bg-success' if choice_result.is_correct else 'text-bg-danger' }}">
+                                        Your selection
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <p class="mb-0 mt-2">{{ choice_result.explanation }}</p>
+                        </div>
+                    {% endfor %}
+                </article>
+            {% endfor %}
+        </section>
+        <div class="d-flex flex-wrap gap-2">
+            {% if active_session %}
+                <a class="btn btn-dark" href="{{ url('exam-session', session_id=active_session.id) }}">
+                    Continue exam
+                </a>
+            {% else %}
+                <button class="btn btn-dark start-exam" id="try-exam"
+                        data-create-session-url="{{ url('create-exam-session', exam_id=exam.id, absolute=True) }}"
+                        data-session-url-template="{{ url('exam-session', session_id='SESSION_ID', absolute=True) }}">
+                    Retry exam
+                </button>
+            {% endif %}
+            <a class="btn btn-outline-secondary" href="{{ url('exam-sessions') }}">Back to history</a>
+        </div>
     {% endif %}
+    <script>
+      const sessionForm = document.getElementById("session-form")
+      if (sessionForm) {
+        const questions = [...sessionForm.querySelectorAll(".session-question")]
+        const review = document.getElementById("session-review")
+        const submitButton = document.getElementById("submit-exam")
+        let currentIndex = 0
+
+        const updateView = (index, historyMode = "push") => {
+          currentIndex = Math.max(0, Math.min(index, questions.length))
+          const pageUrl = new URL(window.location.href)
+          if (currentIndex === questions.length) {
+            pageUrl.searchParams.delete("question")
+            pageUrl.searchParams.set("view", "review")
+          } else {
+            pageUrl.searchParams.delete("view")
+            pageUrl.searchParams.set("question", questions[currentIndex].dataset.questionId)
+          }
+          if (pageUrl.href !== window.location.href) {
+            if (historyMode === "replace") window.history.replaceState(null, "", pageUrl)
+            else window.history.pushState(null, "", pageUrl)
+          }
+          questions.forEach((question, questionIndex) => { question.hidden = questionIndex !== currentIndex })
+          review.hidden = currentIndex !== questions.length
+          if (currentIndex < questions.length) {
+            questions[currentIndex].querySelector(".session-previous").disabled = currentIndex === 0
+          } else {
+            const unanswered = questions.filter(question => question.dataset.answered !== "true").length
+            const unvisited = questions.filter(question => question.dataset.visited !== "true").length
+            document.getElementById("session-review-summary").textContent = unvisited
+              ? `${unvisited} question${unvisited === 1 ? " has" : "s have"} not been visited. Submit an answer or use Next on each one before submitting.`
+              : unanswered
+                ? `${unanswered} question${unanswered === 1 ? " is" : "s are"} not answered. You may submit or return to a question.`
+                : "Every question is answered. You can submit the exam now."
+            submitButton.disabled = unvisited > 0
+            document.querySelectorAll(".review-question-status").forEach((status, questionIndex) => {
+              const answered = questions[questionIndex].dataset.answered === "true"
+              status.textContent = answered ? "Answered" : "Not answered"
+              status.classList.toggle("text-bg-success", answered)
+              status.classList.toggle("text-bg-secondary", !answered)
+            })
+          }
+          const visited = questions.filter(question =>
+            question.dataset.visited === "true" || question.dataset.answered === "true").length
+          const progress = document.getElementById("session-progress")
+          progress.style.width = `${Math.round(visited * 100 / questions.length)}%`
+          progress.setAttribute("aria-valuenow", String(visited))
+        }
+
+        const restoreView = () => {
+          const params = new URL(window.location.href).searchParams
+          const questionIndex = questions.findIndex(question => question.dataset.questionId === params.get("question"))
+          updateView(params.get("view") === "review" ? questions.length : Math.max(0, questionIndex), "replace")
+        }
+
+        const saveAnswer = async (question, skip = false) => {
+          const selected = skip ? [] : [...question.querySelectorAll("input:checked")].map(input => Number(input.value))
+          if (!skip && !selected.length) {
+            alert("Select an answer or use Next to leave this question unanswered.")
+            return null
+          }
+          const response = await fetch(sessionForm.dataset.answerUrl, {
+            method: "POST",
+            credentials: "include",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({question_id: question.dataset.questionId, choice_indices: selected})
+          })
+          if (!response.ok) {
+            alert((await response.json()).message || "Unable to save this answer")
+            return null
+          }
+          question.dataset.answered = String(selected.length > 0)
+          question.dataset.visited = "true"
+          if (skip) question.querySelectorAll("input:checked").forEach(input => { input.checked = false })
+          return true
+        }
+
+        questions.forEach((question, index) => {
+          question.querySelector(".session-previous").addEventListener("click", () => updateView(index - 1))
+          question.querySelector(".session-open-review").addEventListener("click", () => updateView(questions.length))
+          question.querySelector(".session-next").addEventListener("click", async () => {
+            if (question.dataset.visited === "true" || await saveAnswer(question, true) !== null) updateView(index + 1)
+          })
+          question.querySelector(".session-answer").addEventListener("click", async () => {
+            if (await saveAnswer(question)) updateView(index + 1)
+          })
+        })
+
+        document.querySelectorAll(".session-review-question").forEach(button => {
+          button.addEventListener("click", () => updateView(Number(button.dataset.questionIndex)))
+        })
+        sessionForm.addEventListener("submit", async event => {
+          event.preventDefault()
+          const response = await fetch(sessionForm.dataset.completeUrl, {method: "POST", credentials: "include"})
+          if (response.ok) {
+            const resultsUrl = new URL(window.location.href)
+            resultsUrl.searchParams.delete("question")
+            resultsUrl.searchParams.delete("view")
+            window.location.replace(resultsUrl.href)
+          }
+          else alert((await response.json()).message || "Unable to submit exam")
+        })
+        window.addEventListener("popstate", restoreView)
+        restoreView()
+      }
+    </script>
 {% endblock %}
