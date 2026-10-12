@@ -23,21 +23,23 @@
     <section class="bg-primary-subtle border-bottom mb-5 py-5" aria-labelledby="welcome-heading">
         <div class="container">
             <div class="row align-items-center g-4 g-lg-5">
-                <div class="col-lg-7">
+                <div class="{{ {"def": 12, "lg": 7} | col_classes }}">
                     <span class="badge rounded-pill text-primary-emphasis bg-white border mb-3 px-3 py-2">
                         <i class="bi bi-mortarboard me-1" aria-hidden="true"></i> Free community practice exams
                     </span>
-                    <h1 class="display-5 fw-bold mb-3" id="welcome-heading">Build confidence.<br>Practice with {{ site_name }}.</h1>
+                    <h1 class="display-5 fw-bold mb-3" id="welcome-heading">Build confidence.<br>Practice
+                        with {{ site_name }}.</h1>
                     <p class="lead text-body-secondary mb-4">{{ site_desc }}</p>
                     <div class="d-flex flex-wrap gap-2">
                         <a href="{{ exams_url() }}" class="btn btn-primary btn-lg">
                             Explore exams <i class="bi bi-arrow-right ms-2" aria-hidden="true"></i>
                         </a>
-                        <a href="{{ url('certifications') }}" class="btn btn-outline-primary btn-lg">Find a certification</a>
+                        <a href="{{ url('certifications') }}" class="btn btn-outline-primary btn-lg">Find a
+                            certification</a>
                     </div>
                     <p class="small text-body-secondary mt-3 mb-0">{{ site_name }} &middot; {{ site_short_desc }}</p>
                 </div>
-                <div class="col-lg-5">
+                <div class="{{ {"def": 12, "lg": 5} | col_classes }}">
                     <div class="card border-0 shadow-sm rounded-4">
                         <div class="card-body p-4">
                             <h2 class="h5 mb-4">A little practice. A clear next step.</h2>
@@ -77,7 +79,7 @@
                     View all categories <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
                 </a>
             </div>
-            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3" id="homepage-categories">
+            <div class="{{ {"def": 1, "md": 2, "xl": 3} | row_classes }} g-3" id="homepage-categories">
                 {% for category in featured_categories[:6] %}
                     {% with category_heading_level=3 %}
                         {% include "fragments/category.html" %}
@@ -95,13 +97,14 @@
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
                 <div>
                     <h2 class="h4 mb-1" id="certifications-heading">Explore certifications</h2>
-                    <p class="text-body-secondary mb-0">Choose a target credential and find exams to help you prepare.</p>
+                    <p class="text-body-secondary mb-0">Choose a target credential and find exams to help you
+                        prepare.</p>
                 </div>
                 <a href="{{ url('certifications') }}" class="btn btn-outline-primary btn-sm">
                     View all certifications <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
                 </a>
             </div>
-            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3" id="homepage-certifications">
+            <div class="{{ {"def": 1, "md": 2, "lg": 4} | row_classes }} g-3" id="homepage-certifications">
                 {% for certification in (certifications | default([]))[:6] %}
                     {% with certification_heading_level=3 %}
                         {% include "fragments/certification-card.html" %}
@@ -178,6 +181,37 @@
             {% include "fragments/become-an-author.html" %}
         {% endif %}
 
+        {% if show_popular_exams %}
+            <section class="mb-5">
+                <h2 class="h5 mb-2">
+                    <a href="{{ exams_url(type=ExamQueryType.POPULAR) }}" class="link-body-emphasis">
+                        Popular exams
+                    </a>
+                </h2>
+                {% if popular_exams %}
+                    <div id="popular-exams" class="{{ {"def": 1, "sm": 2, "xl": 3} | row_classes }} g-3 mb-2"
+                         data-masonry-options='{"percentPosition": true }'>
+                        {% with exams=popular_exams,
+                                exam_img_sizes={"1400px": "328px", "1200px": "288px", "992px": "444px", "768px": "324px", "default": "100vw"} %}
+                            {% include "fragments/exams.html" %}
+                        {% endwith %}
+                    </div>
+
+                    <a href="{{ exams_url(type=ExamQueryType.POPULAR) }}"
+                       class="btn btn-light btn-sm bi bi-star">
+                        See all popular exams
+                    </a>
+                    <a href="{{ exams_url(type=ExamQueryType.POPULAR) }}"
+                       class="btn btn-light btn-sm bi bi-tags">
+                        Search popular exams by tags
+                    </a>
+                {% else %}
+                    <p class="text-body-secondary small mb-0">Nothing here yet. Check back soon as the community
+                        grows.</p>
+                {% endif %}
+            </section>
+        {% endif %}
+
         <section class="mb-5">
             <h2 class="h5 mb-2">
                 <a href="{{ exams_url() }}" class="link-body-emphasis">
@@ -185,7 +219,7 @@
                 </a>
             </h2>
             {% if latest_exams %}
-                <div id="exams" class="{{ {"def": 1, "sm": 2, "xl": 3} | row_classes }} g-3 mb-2"
+                <div id="exams" class="{{ {"def": 1, "sm": 2, "lg": 3} | row_classes }} g-3 mb-2"
                      data-masonry-options='{"percentPosition": true }'>
                     {% with exams=latest_exams, eager_exam_images=1,
                             exam_img_sizes={"1400px": "328px", "1200px": "288px", "992px": "444px", "768px": "324px", "default": "100vw"} %}
@@ -216,36 +250,6 @@
                 <p class="text-body-secondary small mb-0">Nothing here yet. Check back soon as the community grows.</p>
             {% endif %}
         </section>
-
-        {% if show_popular_exams %}
-            <section class="mb-5">
-                <h2 class="h5 mb-2">
-                    <a href="{{ exams_url(type=ExamQueryType.POPULAR) }}" class="link-body-emphasis">
-                        Popular exams
-                    </a>
-                </h2>
-                {% if popular_exams %}
-                    <div id="popular-exams" class="{{ {"def": 1, "sm": 2, "xl": 3} | row_classes }} g-3 mb-2"
-                         data-masonry-options='{"percentPosition": true }'>
-                        {% with exams=popular_exams,
-                                exam_img_sizes={"1400px": "328px", "1200px": "288px", "992px": "444px", "768px": "324px", "default": "100vw"} %}
-                            {% include "fragments/exams.html" %}
-                        {% endwith %}
-                    </div>
-
-                    <a href="{{ exams_url(type=ExamQueryType.POPULAR) }}"
-                       class="btn btn-light btn-sm bi bi-star">
-                        See all popular exams
-                    </a>
-                    <a href="{{ exams_url(type=ExamQueryType.POPULAR) }}"
-                       class="btn btn-light btn-sm bi bi-tags">
-                        Search popular exams by tags
-                    </a>
-                {% else %}
-                    <p class="text-body-secondary small mb-0">Nothing here yet. Check back soon as the community grows.</p>
-                {% endif %}
-            </section>
-        {% endif %}
 
         <section class="mb-5">
             <h2 class="h5 mb-2">Latest comments</h2>

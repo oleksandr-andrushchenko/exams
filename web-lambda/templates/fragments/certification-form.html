@@ -18,7 +18,7 @@
         </legend>
         <div class="row g-2">
             {% for value, label in certification_providers %}
-                <div class="col-12 col-sm-6 col-lg-4">
+                <div class="{{ {"def": 12, "sm": 6, "lg": 4} | col_classes }}">
                     <div class="form-check">
                         <input class="form-check-input" type="radio" name="provider"
                                id="certification-provider-{{ loop.index }}" value="{{ value }}" required
@@ -49,7 +49,7 @@
         </legend>
         <div class="row g-2">
             {% for category in categories %}
-                <div class="col-12 col-sm-6 col-lg-4">
+                <div class="{{ {"def": 12, "sm": 6, "lg": 4} | col_classes }}">
                     <div class="form-check">
                         <input class="form-check-input" type="radio" name="category"
                                id="certification-category-{{ category.slug }}" value="{{ category.slug }}" required
@@ -68,7 +68,7 @@
         </legend>
         <div class="row g-2">
             {% for value, label in certification_levels %}
-                <div class="col-12 col-sm-6 col-lg-4">
+                <div class="{{ {"def": 12, "sm": 6, "lg": 4} | col_classes }}">
                     <div class="form-check">
                         <input class="form-check-input" type="radio" name="level"
                                id="certification-level-{{ value }}" value="{{ value }}" required

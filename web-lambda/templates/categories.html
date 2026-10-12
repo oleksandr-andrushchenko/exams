@@ -14,7 +14,7 @@
 {% block content %}
     <h1>{{ title }}</h1>
     <p class="small text-secondary">Browse exams by system design area.</p>
-    <div class="row row-cols-1 row-cols-lg-2 g-3" id="categories">
+    <div class="{{ {"def": 1, "lg": 2} | row_classes }} g-3" id="categories">
         {% for item in categories %}
             {% with category=item, category_image_loading="eager" if loop.index <= 2 else "lazy" %}
                 {% include "fragments/category.html" %}

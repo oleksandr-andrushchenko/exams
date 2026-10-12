@@ -42,6 +42,9 @@
 
 - Prefer Bootstrap 5 components and utility classes for presentation changes before adding custom rules to
   `static/styles.css`.
+- Generate Bootstrap grid sizes with the Jinja `row_classes` and `col_classes` filters instead of hardcoding
+  `row-cols-*` or sized `col-*` classes. Plain `row` and `col` classes may remain when no sizes are specified.
+  `col_classes` includes the base `col` class; use `"def": 12` when a responsive column must stack at full width.
 - Bootstrap and Bootstrap Icons are loaded centrally in `web-lambda/templates/layout.html`. Exam cards live in
   `shared/templates/fragments` and are also returned by lazy-loading endpoints; keep their styles and markup consistent
   for initial page renders and appended results.

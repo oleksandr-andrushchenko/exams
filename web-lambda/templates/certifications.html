@@ -14,7 +14,7 @@
         {% endif %}
     </div>
     <p class="text-secondary">Choose a target credential and practice with community-created exams.</p>
-    <div id="certifications" class="row row-cols-1 row-cols-md-3 g-3"
+    <div id="certifications" class="{{ {"def": 1, "md": 3} | row_classes }} g-3"
          data-masonry-options='{"percentPosition": true}'>
         {% for certification in certifications %}
             {% include "fragments/certification-card.html" %}
