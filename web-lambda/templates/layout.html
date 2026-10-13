@@ -143,10 +143,9 @@
           'upload_public_file_url': url('upload-public-file', absolute=True)
       } | tojson | forceescape }}">
 
-<a class="visually-hidden-focusable position-absolute top-0 start-0 m-2 p-3 bg-white rounded shadow z-3"
-   href="{{ url(current_route, **request.path_params) if current_route else url("index") }}{% if request.url.query %}?{{ request.url.query }}{% endif %}#main-content">Skip to content</a>
-
-<header class="border-bottom bg-white">
+<header class="site-header position-relative border-bottom bg-white">
+    <a class="visually-hidden-focusable position-absolute top-0 start-0 m-2 p-3 bg-white rounded shadow z-3"
+       href="{{ url(current_route, **request.path_params) if current_route else url("index") }}{% if request.url.query %}?{{ request.url.query }}{% endif %}#main-content">Skip to content</a>
     <nav class="navbar navbar-expand-lg py-3" aria-label="Main navigation">
         <div class="container">
             <a class="navbar-brand fw-bold text-primary" href="{{ index_url }}">

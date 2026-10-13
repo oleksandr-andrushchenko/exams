@@ -39,13 +39,13 @@
                         <button class="btn btn-outline-secondary session-previous" type="button">
                             <i class="bi bi-arrow-left" aria-hidden="true"></i> Previous
                         </button>
-                        <button class="btn btn-primary session-answer" type="button">Submit answer</button>
+                        <button class="btn btn-primary session-answer" type="button"><i class="bi bi-check2-circle" aria-hidden="true"></i> Submit answer</button>
                         <button class="btn btn-outline-dark session-next" type="button">
                             {{ "Review" if loop.last else "Next" }}
                             <i class="bi bi-arrow-right" aria-hidden="true"></i>
                         </button>
                         <button class="btn btn-outline-dark session-open-review" type="button">
-                            Review &amp; submit
+                            <i class="bi bi-clipboard-check" aria-hidden="true"></i> Review &amp; submit
                         </button>
                     </div>
                 </fieldset>
@@ -69,9 +69,9 @@
                 </ol>
                 <div class="d-flex flex-wrap gap-2">
                     <button class="btn btn-primary" id="submit-exam" type="submit">
-                        Submit exam
+                        <i class="bi bi-check2-circle" aria-hidden="true"></i> Submit exam
                     </button>
-                    <a class="btn btn-outline-secondary" href="{{ exam_url(exam) }}">Back to exam</a>
+                    <a class="btn btn-outline-secondary" href="{{ exam_url(exam) }}"><i class="bi bi-arrow-left" aria-hidden="true"></i> Back to exam</a>
                 </div>
             </section>
         </form>
@@ -120,16 +120,16 @@
         <div class="d-flex flex-wrap gap-2">
             {% if active_session %}
                 <a class="btn btn-primary" href="{{ url('exam-session', session_id=active_session.id) }}">
-                    Continue exam
+                    <i class="bi bi-play-circle" aria-hidden="true"></i> Continue exam
                 </a>
             {% else %}
                 <button class="btn btn-primary start-exam" id="try-exam"
                         data-create-session-url="{{ url('create-exam-session', exam_id=exam.id, absolute=True) }}"
                         data-session-url-template="{{ url('exam-session', session_id='SESSION_ID', absolute=True) }}">
-                    Retry exam
+                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Retry exam
                 </button>
             {% endif %}
-            <a class="btn btn-outline-secondary" href="{{ url('exam-sessions') }}">Back to history</a>
+            <a class="btn btn-outline-secondary" href="{{ url('exam-sessions') }}"><i class="bi bi-clock-history" aria-hidden="true"></i> Back to history</a>
         </div>
     {% endif %}
     <script>

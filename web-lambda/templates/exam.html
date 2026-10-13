@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% set layout_assets = {"prism": true} %}
+{% set layout_assets = {"prism": true, "masonry": true} %}
 
 {% set exam_canonical_url = exam_url(exam, absolute=True) %}
 {% set exam_alternate_url = url("exam", exam_id=exam.id, absolute=True) %}
@@ -113,12 +113,17 @@
         <div class="{{ {"def": 12, "lg": 8} | col_classes }} overflow-auto exam-content">
             <article class="mb-4">
                 <header>
-                    <h1 class="mb-0">{{ exam.title }}</h1>
-                    {% if exam.certification_slug %}
-                        <p class="mb-1 text-secondary">Practice for <a
-                                href="{{ url('certification', slug=exam.certification_slug) }}">{{ exam.certification_name }}</a>
-                        </p>
+                    {% if exam.tags %}
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                            <small class="text-secondary bi bi-tags"> Tags:</small>
+                            {% for tag in exam.tags %}
+                                <a href="{{ exams_url(tags=[tag]) }}" class="btn btn-light btn-sm">
+                                    {{ tag }}
+                                </a>
+                            {% endfor %}
+                        </div>
                     {% endif %}
+                    <h1 class="mb-0">{{ exam.title }}</h1>
 
                     {% if exam.duration_minutes %}
                         <p class="mb-2 text-body-secondary">Suggested duration: {{ exam.duration_minutes }} minutes</p>
@@ -145,17 +150,6 @@
                             {% endif %}
                         {% endif %}
                     </div>
-
-                    {% if exam.tags %}
-                        <div>
-                            <small class="text-secondary bi bi-tags"> Tags:</small>
-                            {% for tag in exam.tags %}
-                                <a href="{{ exams_url(tags=[tag]) }}" class="btn btn-light btn-sm">
-                                    {{ tag }}
-                                </a>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
 
                     {% if exam.status == ExamStatus.REJECTED %}
                         <div>
@@ -199,9 +193,9 @@
 
             <section id="questions" class="mb-4">
                 <div class="d-flex align-items-center gap-2 mb-2">
-                    <h2 class="h5 mb-2 text-decoration-underline">Questions &mdash; {{ questions_count }}</h2>
+                    <h2 class="h5 mb-2">Questions &mdash; {{ questions_count }}</h2>
                     {% if cur_user and check_auth(cur_user, Permission.CREATE_QUESTION, exam) %}
-                        <a class="btn btn-dark btn-sm" href="{{ url('new-question', exam_id=exam.id) }}">Add
+                        <a class="btn btn-dark btn-sm" href="{{ url('new-question', exam_id=exam.id) }}"><i class="bi bi-plus-circle" aria-hidden="true"></i> Add
                             question</a>
                     {% endif %}
                 </div>
@@ -216,7 +210,7 @@
                                 {% endif %}
                                 {% if cur_user and check_auth(cur_user, Permission.UPDATE_QUESTION, question) %}
                                     <a class="btn btn-link btn-sm"
-                                       href="{{ url('edit-question', question_id=question.id) }}">Edit</a>
+                                       href="{{ url('edit-question', question_id=question.id) }}"><i class="bi bi-pencil" aria-hidden="true"></i> Edit</a>
                                 {% endif %}
                             </li>
                         {% endfor %}
@@ -229,7 +223,7 @@
             </section>
 
             <section class="exam-comments">
-                <h3 class="h5 mb-2 text-decoration-underline">Comments &mdash; {{ exam.comments_count }}</h3>
+                <h3 class="h5 mb-2">Comments &mdash; {{ exam.comments_count }}</h3>
 
                 <div class="d-flex flex-column gap-4">
                     {% include "fragments/exam-comment-form.html" %}
@@ -254,8 +248,18 @@
 
         <div class="{{ {"def": 12, "lg": 4} | col_classes }}">
             <aside class="sticky-lg-top" style="top: 1rem;">
+                {% if certification %}
+                    <section class="mb-4" id="exam-certification" aria-labelledby="exam-certification-heading">
+                        <h2 class="h5" id="exam-certification-heading">Certification</h2>
+                        <div class="{{ {"def": 1} | row_classes }}">
+                            {% with certification_heading_level=3 %}
+                                {% include "fragments/certification-card.html" %}
+                            {% endwith %}
+                        </div>
+                    </section>
+                {% endif %}
                 <section class="mb-4">
-                    <h2 class="h5 text-decoration-underline">Author</h2>
+                    <h2 class="h5">Author</h2>
                     {% with user=author, h_tag_size=3, image_column_size={"def":3,"md":2}, user_bg_color="light", user_shadow=True %}
                         {% include "fragments/user.html" %}
                     {% endwith %}
@@ -288,12 +292,12 @@
                 <div class="d-flex flex-wrap gap-2">
                     {% if active_session %}
                         <a class="btn btn-dark" id="continue-exam"
-                           href="{{ url('exam-session', session_id=active_session.id) }}">Continue exam</a>
+                           href="{{ url('exam-session', session_id=active_session.id) }}"><i class="bi bi-play-circle" aria-hidden="true"></i> Continue exam</a>
                     {% elif cur_user and questions %}
                         <button class="btn btn-dark start-exam" id="try-exam"
                                 data-create-session-url="{{ url('create-exam-session', exam_id=exam.id, absolute=True) }}"
                                 data-session-url-template="{{ url('exam-session', session_id='SESSION_ID', absolute=True) }}">
-                            Start exam
+                            <i class="bi bi-play-circle" aria-hidden="true"></i> Start exam
                         </button>
                     {% endif %}
                 </div>
@@ -308,20 +312,24 @@
 
     {% if related_exams %}
         <section class="mb-4">
-            <h2 class="h5 mb-2 text-decoration-underline">
+            <h2 class="h5 mb-2">
                 Related exams
             </h2>
-            <div id="related-exams" class="{{ {"def": 1} | row_classes }} g-2">
-                {% with exams=related_exams,
-                            horizontal=True,
-                            preview=False,
-                            vert_gap=0,
-                            h_tag_size=3,
-                            h_display_size=6,
-                            image_order_size={"def":12} %}
+            <div id="related-exams" class="{{ {"def": 1, "sm": 2, "lg": 3} | row_classes }} g-3 mb-2"
+                 data-masonry-options='{"percentPosition": true }'>
+                {% with exams=related_exams, h_tag_size=3,
+                        exam_img_sizes={"1400px": "328px", "1200px": "288px", "992px": "444px", "768px": "324px", "default": "100vw"} %}
                     {% include "fragments/exams.html" %}
                 {% endwith %}
             </div>
+            {% with limit=related_query.limit,
+                    offset=related_exams[-1].offset,
+                    next_page_url=exam_url(exam, related_offset=related_exams[-1].offset) if related_exams[-1].offset else none,
+                    first_page_url=exam_url(exam) if related_query.offset else none,
+                    url=url("related-exams-fragment", exam_id=exam.id, absolute=True),
+                    container="#related-exams", page_offset_param="related_offset", auto_click=True %}
+                {% include "fragments/load-more-button.html" %}
+            {% endwith %}
         </section>
     {% endif %}
 {% endblock %}

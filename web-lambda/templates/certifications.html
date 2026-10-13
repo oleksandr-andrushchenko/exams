@@ -10,11 +10,11 @@
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
         <h1 class="mb-0">Certifications</h1>
         {% if cur_user and check_auth(cur_user, Permission.CREATE_CERTIFICATION) %}
-            <a class="btn btn-dark" href="{{ url('new-certification') }}">New certification</a>
+            <a class="btn btn-dark" href="{{ url('new-certification') }}"><i class="bi bi-plus-circle" aria-hidden="true"></i> New certification</a>
         {% endif %}
     </div>
     <p class="text-secondary">Choose a target credential and practice with community-created exams.</p>
-    <div id="certifications" class="{{ {"def": 1, "md": 3} | row_classes }} g-3"
+    <div id="certifications" class="{{ {"def": 1, "md": 2, "lg": 4} | row_classes }} g-3"
          data-masonry-options='{"percentPosition": true}'>
         {% for certification in certifications %}
             {% include "fragments/certification-card.html" %}

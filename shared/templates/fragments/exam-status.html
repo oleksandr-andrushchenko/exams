@@ -9,7 +9,7 @@
                 {% if not is_published %}
                 title="Publish this exam"
                 {% endif %}>
-            {% if is_published %}<i class="bi bi-check2-all"></i>{% endif %} {% if is_published %}Published{% else %}
+            <i class="bi bi-check2-all" aria-hidden="true"></i> {% if is_published %}Published{% else %}
             Publish{% endif %}
         </button>
 
@@ -22,7 +22,7 @@
                 {% if not is_unpublished %}
                 title="Unpublish this exam"
                 {% endif %}>
-            {% if is_unpublished %}<i class="bi bi-clock"></i>{% endif %} {% if is_unpublished %}Unpublished{% else %}
+            <i class="bi bi-clock" aria-hidden="true"></i> {% if is_unpublished %}Unpublished{% else %}
             Unpublish{% endif %}
         </button>
 
@@ -42,7 +42,7 @@
                 {% if not is_rejected %}
                 title="Reject this exam"
                 {% endif %}>
-            {% if is_rejected %}<i class="bi bi-x-lg"></i>{% endif %} {% if is_rejected %}Rejected{% else %}
+            <i class="bi bi-x-lg" aria-hidden="true"></i> {% if is_rejected %}Rejected{% else %}
             Reject{% endif %}
         </button>
     </div>

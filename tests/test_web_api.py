@@ -2,6 +2,8 @@
 
 import json
 import os
+import subprocess
+import sys
 import time
 import uuid
 from email import policy
@@ -164,7 +166,7 @@ def check_external_links_are_nofollow(doc):
 
 def check_header(doc, user_alias: str | None):
     check_external_links_are_nofollow(doc)
-    header_el = doc("header")
+    header_el = doc('header nav[aria-label="Main navigation"]')
     assert header_el('a[href$="/"]')
     assert header_el('a[href$="/exams"]')
     assert header_el('a[href$="/contacts"]')
@@ -422,6 +424,10 @@ def test_certification_create_edit_and_permissions(guest_client):
     guest_page = get(guest_client, "/certifications/functional-certification")
     assert guest_page.status_code == 200
     assert not pq(guest_page.text)('a[href$="/certifications/functional-certification/edit"]')
+    category_card = pq(guest_page.text)('aside[aria-labelledby="certification-category-heading"]')
+    assert category_card('h3').text() == "Other"
+    assert category_card('a[href="/exams?category=other"]')
+    assert "0 published exams" in category_card.text()
 
     edit_page = get(root_client, "/certifications/functional-certification/edit")
     assert edit_page.status_code == 200
@@ -1058,6 +1064,10 @@ def test_exam_read_edit_update_status_endpoints_success_and_failure(guest_client
     read_success = get(root_client, f"/exams/{exam_id}")
     assert read_success.status_code == 200, read_success.text
     read_doc = pq(read_success.text)
+    certification_card = read_doc("aside #exam-certification")
+    assert certification_card("h3").text().strip() == "Functional Certification"
+    assert certification_card('a[href="/certifications/functional-certification"]')
+    assert "Google Cloud" in certification_card.text()
     exam_schema = json.loads(read_doc('script[type="application/ld+json"]').text())
     assert exam_schema["@type"] == "Exam"
     assert exam_schema["inLanguage"] == "en"
@@ -1565,3 +1575,130 @@ def test_exam_code_update_clear_validation_and_legacy_read(guest_client):
     assert legacy.status_code == 200, legacy.text
     assert "Exam code:" not in pq(legacy.text)("article header").text()
     assert pq(get(root_client, path + "/edit").text)('input[name="exam_code"]').attr("value") == ""
+
+
+def test_exam_bundle_import_dry_run_publish_and_safe_rerun(tmp_path, guest_client):
+    bundle = {
+        "format": "examme-practice-exam-review",
+        "format_version": 1,
+        "certification": {
+            "name": "Functional Certification", "provider": "Google Cloud", "level": "associate",
+            "category": "other", "description": "A certification used by import tests.",
+        },
+        "exam": {
+            "title": "Importer functional practice exam", "description": "An exam used to validate safe bundle imports.",
+            "tags": ["import-test"], "exam_code": "TEST-01",
+        },
+        "exam_settings": {"total_questions": 2, "suggested_duration_minutes": 30},
+        "questions": [
+            {
+                "title": f"Import question number {index}",
+                "choices": [
+                    {"title": "Correct", "explanation": "Correct explanation.", "is_correct": True},
+                    {"title": "Incorrect", "explanation": "Incorrect explanation.", "is_correct": False},
+                ],
+                "reference_urls": ["https://example.com/reference"],
+                "correct_choice_indices": [0], "select_count": 1,
+            }
+            for index in range(2)
+        ],
+    }
+    path = tmp_path / "bundle.json"
+    path.write_text(json.dumps(bundle))
+    project = Path(os.environ["PROJECT_ROOT"])
+    env = dict(os.environ, DYNAMODB_TABLE=os.environ["TEST_DYNAMODB_TABLE"], APP_STAGE="local",
+               APP_ENV="test", WEB_BASE_URL=WEB_TEST_BASE_URL,
+               PYTHONPATH=":".join(str(project / name) for name in ("scripts", "shared", "api-lambda", "web-lambda")))
+    command = [sys.executable, str(project / "scripts/load_exam_bundle.py"), str(path),
+               "--owner-id", user_ids["root"], "--approve-by", user_ids["root"]]
+
+    def invoke(*args):
+        return subprocess.run(command + list(args), env=env, cwd=project, capture_output=True, text=True, timeout=60)
+
+    dry_run = invoke()
+    assert dry_run.returncode == 0, dry_run.stderr
+    assert '"mode": "dry_run"' in dry_run.stdout
+    locator_key = {"pk": "EXAM_SLUG#importer-functional-practice-exam", "sk": "META"}
+    assert "Item" not in dynamodb_table.get_item(Key=locator_key)
+
+    applied = invoke("--apply")
+    assert applied.returncode == 0, applied.stderr
+    exam_id = dynamodb_table.get_item(Key=locator_key)["Item"]["exam_id"]
+    exam_key = {"pk": f"EXAM#{exam_id}", "sk": "META"}
+    record = dynamodb_table.get_item(Key=exam_key)["Item"]
+    assert record["status"] == "published"
+    assert record["user_id"] == user_ids["root"]
+    assert record["import_approver_id"] == user_ids["root"]
+    assert record["duration_minutes"] == 30
+    assert record["questions_count"] == 2
+    assert get(guest_client, f"/exams/{exam_id}").status_code == 200
+
+    rerun = invoke("--apply")
+    assert rerun.returncode == 0, rerun.stderr
+    assert '"questions_to_create": 0' in rerun.stdout
+    assert dynamodb_table.get_item(Key=exam_key)["Item"]["questions_count"] == 2
+
+    bundle["questions"][0]["choices"][0]["is_correct"] = False
+    path.write_text(json.dumps(bundle))
+    invalid = invoke("--apply")
+    assert invalid.returncode != 0
+    assert dynamodb_table.get_item(Key=exam_key)["Item"]["questions_count"] == 2
+
+
+def test_related_exams_grid_autoload_and_crawlable_pagination(guest_client):
+    root_client = get_logged_in_client(root_user)
+
+    def create_related(title, tags, published=True):
+        response = post(root_client, "/exams", json={
+            "title": title, "description": "A practice exam for related-feed pagination coverage.", "tags": tags,
+        })
+        assert response.status_code == 200, response.text
+        slug = title.lower().replace(" ", "-")
+        exam_id = dynamodb_table.get_item(Key={"pk": f"EXAM_SLUG#{slug}", "sk": "META"})["Item"]["exam_id"]
+        if published:
+            response = post(root_client, f"/exams/{exam_id}/status", json={"status": "published"})
+            assert response.status_code == 200, response.text
+        return exam_id
+
+    source_id = create_related("Related pagination source", ["related-aws", "related-python"])
+    expected_ids = {
+        create_related(f"Related pagination candidate {index}",
+                       ["related-aws", "related-python"] if index % 2 else ["related-python"])
+        for index in range(8)
+    }
+    create_related("Related pagination unpublished", ["related-python"], published=False)
+    create_related("Related pagination unrelated", ["unrelated-feed"])
+
+    first_page = get(guest_client, f"/exams/{source_id}")
+    assert first_page.status_code == 200, first_page.text
+    first_doc = pq(first_page.text)
+    grid = first_doc("#related-exams")
+    assert {"row-cols-1", "row-cols-sm-2", "row-cols-lg-3"} <= set(grid.attr("class").split())
+    assert grid.attr("data-masonry-options")
+    assert len(grid(".exam")) == 6
+    load_more = first_doc('.btn-load-more[data-container="#related-exams"]')
+    assert load_more.attr("data-auto-click") is not None
+    assert load_more.attr("data-page-offset-param") == "related_offset"
+    assert "related_offset=" in load_more.attr("href")
+    assert "/related-fragment" in load_more.attr("data-url")
+    offset = load_more.attr("data-offset")
+    fragment = get(guest_client, f"/exams/{source_id}/related-fragment", params={"offset": offset})
+    assert fragment.status_code == 200, fragment.text
+    assert len(pq(fragment.text)(".exam")) == 2
+    assert not pq(fragment.text)(".exam[data-offset]")
+    fallback = get(guest_client, load_more.attr("href"))
+    assert fallback.status_code == 200, fallback.text
+    assert len(pq(fallback.text)("#related-exams .exam")) == 2
+    assert not pq(fallback.text)('.btn-load-more[data-container="#related-exams"]')
+    rendered_ids = set()
+    for doc in [grid, pq(fragment.text)]:
+        for link in doc(".exam a[href]").items():
+            href = link.attr("href")
+            for exam_id in expected_ids:
+                record = dynamodb_table.get_item(Key={"pk": f"EXAM#{exam_id}", "sk": "META"})["Item"]
+                if record["exam_slug"] in href or exam_id in href:
+                    rendered_ids.add(exam_id)
+    assert rendered_ids == expected_ids
+    assert get(guest_client, f"/exams/{source_id}/related-fragment", params={"offset": "invalid"}).status_code == 422
+    other_id = next(iter(expected_ids))
+    assert get(guest_client, f"/exams/{other_id}/related-fragment", params={"offset": offset}).status_code == 422

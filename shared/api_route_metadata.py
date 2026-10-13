@@ -19,6 +19,7 @@ API_URL_ROUTES = {
     "api-exams": "/exams",
     "exam-hrefs": "/exams/hrefs",
     "exams-fragment": "/exams-fragment",
+    "related-exams-fragment": "/exams/{exam_id}/related-fragment",
     "exam-comments-fragment": "/exams/{exam_id}/comments-fragment",
     "update-exam": "/exams/{exam_id}",
     "update-exam-status": "/exams/{exam_id}/status",

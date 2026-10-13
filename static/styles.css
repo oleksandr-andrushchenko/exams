@@ -114,11 +114,22 @@ h1,
 .card {
     --bs-card-border-color: var(--bs-border-color);
     --bs-card-border-radius: 1rem;
+    --bs-card-inner-border-radius: calc(var(--bs-card-border-radius) - var(--bs-card-border-width));
     --bs-card-bg: #fff;
 }
 
 .card-title {
     overflow-wrap: anywhere;
+}
+
+.certification-card {
+    --bs-card-bg: #f0f6ff;
+    --bs-card-border-color: var(--bs-primary-border-subtle);
+}
+
+.certification-card:hover,
+.certification-card:focus-visible {
+    --bs-card-border-color: var(--bs-primary);
 }
 
 .exam-card {
@@ -132,6 +143,11 @@ h1,
 .exam-card:focus-within {
     border-color: #9ec5fe;
     box-shadow: 0 0.5rem 1.5rem rgb(36 50 75 / 10%);
+}
+
+/* Keep navigation dropdowns above Bootstrap sticky sidebars (1020), below modal backdrops (1050). */
+.site-header {
+    z-index: 1030;
 }
 
 .navbar .nav-link {

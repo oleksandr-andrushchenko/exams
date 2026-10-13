@@ -1,7 +1,7 @@
 {% set auto_click = auto_click | default(True) %}
 
 {% if first_page_url %}
-    <a class="btn btn-light btn-sm" href="{{ first_page_url }}">Back to first page</a>
+    <a class="btn btn-light btn-sm" href="{{ first_page_url }}"><i class="bi bi-arrow-bar-left" aria-hidden="true"></i> Back to first page</a>
 {% endif %}
 {% if offset %}
     {% set element = "a" if next_page_url else "button" %}
@@ -11,7 +11,8 @@
             data-offset="{{ offset }}"
             data-url="{{ url }}"
             data-container="{{ container }}"
+            data-page-offset-param="{{ page_offset_param | default('offset') }}"
             {% if auto_click %}data-auto-click{% endif %}
-    >Load more
+    ><i class="bi bi-arrow-down-circle" aria-hidden="true"></i> Load more
     </{{ element }}>
 {% endif %}

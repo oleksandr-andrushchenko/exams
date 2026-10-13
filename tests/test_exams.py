@@ -1,4 +1,3 @@
-import asyncio
 import os
 import sys
 from pathlib import Path
@@ -12,7 +11,8 @@ previous_cwd = os.getcwd()
 os.chdir(project_root / "shared")
 import shared_utils
 import web_utils
-from query_dtos import ExamQueryDTO
+import related_exam_utils
+from query_dtos import ExamQueryDTO, RelatedExamQueryDTO
 os.chdir(previous_cwd)
 
 
@@ -65,34 +65,33 @@ def test_popular_exams_by_tags_uses_last_match_as_pagination_cursor(monkeypatch)
     }
 
 
-def test_related_exams_query_each_tag_and_batch_load_candidates(monkeypatch):
+def test_related_exams_paginate_shared_tags_without_duplicates_or_current_exam(monkeypatch):
     current = exam("current", ["aws", "python"], 40)
-    candidates = [
+    candidates = {item.id: item for item in [
+        exam("current", ["aws", "python"], 40),
         exam("related-1", ["aws"], 30),
         exam("related-2", ["aws", "python"], 20),
-    ]
-    captured_queries = []
-    captured_batch_ids = []
+        exam("related-3", ["python"], 10),
+    ]}
+    records = {
+        "aws": [("EXAM#40#current", "current"), ("EXAM#30#related-1", "related-1"),
+                ("EXAM#20#related-2", "related-2")],
+        "python": [("EXAM#40#current", "current"), ("EXAM#20#related-2", "related-2"),
+                   ("EXAM#10#related-3", "related-3")],
+    }
 
-    def get_exam_ids_by_tag(tag, limit):
-        captured_queries.append((tag, limit))
-        return {
-            "aws": ["current", "related-1", "related-2"],
-            "python": ["current", "related-2"],
-        }[tag]
+    def tag_records(tag, before, limit):
+        return [{"sk": key, "exam_id": exam_id} for key, exam_id in records[tag]
+                if before is None or key < before][:limit]
 
-    def get_exams_by_ids(exam_ids):
-        captured_batch_ids.extend(exam_ids)
-        return candidates
-
-    monkeypatch.setattr(web_utils, "_get_exam_ids_by_tag", get_exam_ids_by_tag)
-    monkeypatch.setattr(web_utils, "_get_exams_by_ids", get_exams_by_ids)
-
-    result = asyncio.run(web_utils.get_exam_related_exams(current, limit=2))
-
-    assert [item.id for item in result] == ["related-2", "related-1"]
-    assert sorted(captured_queries) == [("aws", 3), ("python", 3)]
-    assert captured_batch_ids == ["related-1", "related-2"]
+    monkeypatch.setattr(related_exam_utils, "_get_tag_records", tag_records)
+    monkeypatch.setattr(related_exam_utils, "_get_exams_by_ids", lambda ids: [candidates[item] for item in ids])
+    first = related_exam_utils.get_related_exams(current, RelatedExamQueryDTO(limit=2))
+    assert [item.id for item in first] == ["related-1", "related-2"]
+    assert first[-1].offset
+    second = related_exam_utils.get_related_exams(current, RelatedExamQueryDTO(limit=2, offset=first[-1].offset))
+    assert [item.id for item in second] == ["related-3"]
+    assert second[-1].offset is None
 
 
 def test_related_exam_batch_read_retries_unprocessed_keys(monkeypatch):
@@ -116,10 +115,10 @@ def test_related_exam_batch_read_retries_unprocessed_keys(monkeypatch):
 
     client = Client()
     table = SimpleNamespace(name="exams", meta=SimpleNamespace(client=client))
-    monkeypatch.setattr(web_utils, "get_dynamodb_table", lambda: table)
-    monkeypatch.setattr(web_utils, "exam_from_dynamodb", lambda item: item["id"])
+    monkeypatch.setattr(related_exam_utils, "get_dynamodb_table", lambda: table)
+    monkeypatch.setattr(related_exam_utils, "exam_from_dynamodb", lambda item: item["id"])
 
-    result = web_utils._get_exams_by_ids(["related-1", "related-2"])
+    result = related_exam_utils._get_exams_by_ids(["related-1", "related-2"])
 
     assert result == ["related-1", "related-2"]
     assert client.requests[1] == {"exams": {"Keys": [unprocessed_key]}}

@@ -6,50 +6,64 @@
     {% endwith %}
 {% endblock %}
 {% block content %}
-    <div class="row align-items-start g-4">
-        {% if certification.image_filename %}
-            <div class="{{ {"def": 12, "md": 3, "lg": 2} | col_classes }}">
-                <img class="img-fluid rounded" src="{{ static_url(certification.image_filename) }}"
-                     alt="{{ certification.name }}">
-            </div>
-        {% endif %}
-        <div class="{{ ({"def": 12, "md": 9, "lg": 10} if certification.image_filename else {"def": 12}) | col_classes }}">
-            <p class="text-secondary">{{ certification.provider }} · {{ certification.level|title }}</p>
-            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                <h1>{{ certification.name }}</h1>
-                {% if cur_user and check_auth(cur_user, Permission.UPDATE_CERTIFICATION) %}
-                    <a class="btn btn-light bi bi-pencil" href="{{ url('edit-certification', slug=certification.slug) }}">
-                        Edit certification</a>
+    <div class="row g-4">
+        <div class="{{ ({"def": 12, "lg": 8} if category else {"def": 12}) | col_classes }}">
+            <div class="row align-items-start g-4">
+                {% if certification.image_filename %}
+                    <div class="{{ {"def": 12, "md": 3, "lg": 2} | col_classes }}">
+                        <img class="img-fluid rounded" src="{{ static_url(certification.image_filename) }}"
+                             alt="{{ certification.name }}">
+                    </div>
                 {% endif %}
-            </div>
-            {% if certification.duration_minutes or certification.question_count %}
-                <div class="d-flex flex-wrap gap-2 mb-3">
-                    {% if certification.question_count %}
-                        <span class="badge text-bg-light">{{ certification.question_count }} questions</span>
+                <div class="{{ ({"def": 12, "md": 9, "lg": 10} if certification.image_filename else {"def": 12}) | col_classes }}">
+                    <p class="text-secondary">{{ certification.provider }} · {{ certification.level|title }}</p>
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h1>{{ certification.name }}</h1>
+                        {% if cur_user and check_auth(cur_user, Permission.UPDATE_CERTIFICATION) %}
+                            <a class="btn btn-light bi bi-pencil" href="{{ url('edit-certification', slug=certification.slug) }}">
+                                Edit certification</a>
+                        {% endif %}
+                    </div>
+                    {% if certification.duration_minutes or certification.question_count %}
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            {% if certification.question_count %}
+                                <span class="badge text-bg-light">{{ certification.question_count }} questions</span>
+                            {% endif %}
+                            {% if certification.duration_minutes %}
+                                <span class="badge text-bg-light">{{ certification.duration_minutes }} minutes</span>
+                            {% endif %}
+                        </div>
                     {% endif %}
-                    {% if certification.duration_minutes %}
-                        <span class="badge text-bg-light">{{ certification.duration_minutes }} minutes</span>
+                    <p>{{ certification.description }}</p>
+                    {% if certification.official_url %}
+                        <a href="{{ certification.official_url }}" rel="nofollow noopener noreferrer">Official certification page</a>
                     {% endif %}
                 </div>
-            {% endif %}
-            <p>{{ certification.description }}</p>
-            {% if certification.official_url %}
-                <a href="{{ certification.official_url }}" rel="nofollow noopener noreferrer">Official certification page</a>
-            {% endif %}
+            </div>
         </div>
+        {% if category %}
+            <aside class="{{ {"def": 12, "lg": 4} | col_classes }}" aria-labelledby="certification-category-heading">
+                <h2 class="h5" id="certification-category-heading">Category</h2>
+                <div class="{{ {"def": 1} | row_classes }}">
+                    {% with category_heading_level=3 %}
+                        {% include "fragments/category.html" %}
+                    {% endwith %}
+                </div>
+            </aside>
+        {% endif %}
     </div>
 
     <section class="mt-4">
         <h2 class="h4">Practice exams</h2>
         {% if related_exams %}
-            <div class="{{ {"def": 1, "md": 2, "xl": 3} | row_classes }} g-3">
+            <div class="{{ {"def": 1, "sm": 2, "lg": 3} | row_classes }} g-3">
                 {% with exams=related_exams %}
                     {% include "fragments/exams.html" %}
                 {% endwith %}
             </div>
         {% else %}
             <p class="text-secondary">No practice exams are available for this certification yet.</p>
-            <a class="btn btn-dark" href="{{ exams_url(category=certification.category) }}">Browse exams in this category</a>
+            <a class="btn btn-dark" href="{{ exams_url(category=certification.category) }}"><i class="bi bi-search" aria-hidden="true"></i> Browse exams in this category</a>
         {% endif %}
     </section>
 {% endblock %}

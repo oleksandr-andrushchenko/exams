@@ -226,69 +226,6 @@ def get_popular_published_exams(limit: int = BaseQueryDTO.DEFAULT_LIMIT) -> list
     return get_popular_exams(query_dto)
 
 
-def _get_exam_ids_by_tag(tag: str, limit: int) -> list[str]:
-    response = query_dynamodb_table(
-        key_condition_expr=Key("pk").eq(f"EXAM_TAG_COMBO#{tag}"),
-        scan_index_forward=False,
-        limit=limit,
-    )
-    return [item["exam_id"] for item in response.get("Items", []) if item.get("exam_id")]
-
-
-def _get_exams_by_ids(exam_ids: list[str]) -> list[Exam]:
-    if not exam_ids:
-        return []
-
-    table = get_dynamodb_table()
-    keys = [{"pk": f"EXAM#{exam_id}", "sk": "META"} for exam_id in exam_ids]
-    items = []
-    batch_size = 100
-    max_attempts = 3
-
-    for start in range(0, len(keys), batch_size):
-        pending_keys = keys[start:start + batch_size]
-        for _ in range(max_attempts):
-            response = table.meta.client.batch_get_item(
-                RequestItems={table.name: {"Keys": pending_keys}}
-            )
-            items.extend(response.get("Responses", {}).get(table.name, []))
-            pending_keys = response.get("UnprocessedKeys", {}).get(table.name, {}).get("Keys", [])
-            if not pending_keys:
-                break
-        if pending_keys:
-            logger.warning("Related exam batch read left unprocessed keys")
-
-    return [exam_from_dynamodb(item) for item in items]
-
-
-async def get_exam_related_exams(exam: Exam, limit: int = 10) -> list[Exam]:
-    if not exam.tags:
-        return []
-
-    # Single-tag partitions contain small exam-ID records. Query them in
-    # parallel, then batch-load only this bounded candidate set instead of
-    # scanning the global full-exam popularity index.
-    per_tag_limit = limit + 1
-    exam_ids_by_tag = await asyncio.gather(*(
-        to_thread(_get_exam_ids_by_tag, tag, per_tag_limit)
-        for tag in exam.tags
-    ))
-    exam_ids = list(dict.fromkeys(
-        exam_id
-        for tag_exam_ids in exam_ids_by_tag
-        for exam_id in tag_exam_ids
-        if exam_id != exam.id
-    ))
-    exams = await to_thread(_get_exams_by_ids, exam_ids)
-    tags = set(exam.tags)
-    return sorted(
-        (candidate for candidate in exams
-         if candidate.id != exam.id and candidate.status == ExamStatus.PUBLISHED),
-        key=lambda candidate: (len(tags.intersection(candidate.tags)), candidate.rating),
-        reverse=True,
-    )[:limit]
-
-
 def get_latest_exam_comments(query_dto: ExamCommentQueryDTO = None) -> list[ExamComment]:
     if query_dto is None:
         query_dto = ExamCommentQueryDTO()

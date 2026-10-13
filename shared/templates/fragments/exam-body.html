@@ -1,4 +1,8 @@
 <div class="card-body">
+    <div class="small fw-semibold text-primary mb-2">
+        <i class="bi bi-ui-checks-grid me-1" aria-hidden="true"></i>
+        Practice exam
+    </div>
     <a class="link-body-emphasis text-decoration-none" href="{{ exam_url(exam) }}">
         <h{{ h_tag_size }} class="h{{ h_display_size | default(3) }} mb-2 card-title">
             {{ exam.title }}

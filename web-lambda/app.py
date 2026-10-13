@@ -4,15 +4,14 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import PlainTextResponse
 from starlette.routing import Match
 
-from certification_utils import get_certification, get_certifications
+from certification_utils import find_certification, get_certification, get_certifications
 from form_options import CERTIFICATION_LEVELS, CERTIFICATION_PROVIDERS
 from notifications import get_access_log
-from query_dtos import (
-    TagQueryDTO,
-)
+from query_dtos import RelatedExamQueryDTO, TagQueryDTO
+from related_exam_utils import get_related_exams
 from question_utils import get_all_questions, get_question_by_id, get_questions
 from session_utils import get_active_session, get_question_result, get_session, get_session_answers, get_sessions
-from shared_utils import get_indexnow_key, template_request
+from shared_utils import decode_offset, get_indexnow_key, template_request
 from shared_deps import (
     OptCurUserDep,
     CurUserDep,
@@ -32,6 +31,7 @@ from shared_utils import (
 )
 from web import (
     Application,
+    parse_dto,
     Request,
     HTTPException,
     HTMLResponse,
@@ -87,7 +87,6 @@ from web_utils import (
     get_allowed_origins,
     get_redirect_url,
     should_show_popular_exams,
-    get_exam_related_exams,
     get_exam_comments,
     get_latest_exam_comments,
     get_user_by_auth_token,
@@ -296,7 +295,10 @@ async def index(cur_user: OptCurUserDep) -> str:
     })
 
 
-async def _exam_page(exam: ExamDep, cur_user: OptCurUserDep) -> HTMLResponse:
+async def _exam_page(exam: ExamDep, cur_user: OptCurUserDep, related_offset: str | None = None) -> HTMLResponse:
+    related_query = parse_dto(RelatedExamQueryDTO, {"offset": related_offset})
+    if related_query.offset and decode_offset(related_query.offset)["pk"] != f"RELATED_EXAMS#{exam.id}":
+        raise HTTPException(status_code=422, detail="offset belongs to a different exam")
     (
         author,
         exam_impression,
@@ -305,14 +307,16 @@ async def _exam_page(exam: ExamDep, cur_user: OptCurUserDep) -> HTMLResponse:
         category,
         questions,
         active_session,
+        certification,
     ) = await asyncio.gather(
         to_thread(find_user, exam.user_id),
         to_thread(find_exam_impression, exam, cur_user) if cur_user else asyncio.sleep(0, result=None),
-        get_exam_related_exams(exam),
+        to_thread(get_related_exams, exam, related_query),
         to_thread(get_exam_comments, exam),
         to_thread(find_category, exam.category),
         to_thread(get_questions, exam.id),
         to_thread(get_active_session, cur_user.id) if cur_user else asyncio.sleep(0, result=None),
+        to_thread(find_certification, exam.certification_slug) if exam.certification_slug else asyncio.sleep(0, result=None),
     )
     html_content = get_html_content("exam.html", {
         "cur_user": cur_user,
@@ -320,12 +324,14 @@ async def _exam_page(exam: ExamDep, cur_user: OptCurUserDep) -> HTMLResponse:
         "author": author,
         "exam_impression": exam_impression,
         "related_exams": related_exams,
+        "related_query": related_query,
         "comments": comments,
         "comments_query": ExamCommentQueryDTO(),
         "category": category,
         "questions": questions,
         "questions_count": exam.questions_count,
         "active_session": active_session,
+        "certification": certification,
     })
     return HTMLResponse(html_content)
 
@@ -423,11 +429,15 @@ async def certification_page(slug: str, cur_user: OptCurUserDep) -> str:
         certification = get_certification(slug)
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    exams = await to_thread(get_exams, ExamQueryDTO(limit=1000), cur_user)
+    exams, category = await asyncio.gather(
+        to_thread(get_exams, ExamQueryDTO(limit=1000), cur_user),
+        to_thread(find_category, certification.category),
+    )
     related_exams = [exam for exam in exams if exam.certification_id == certification.id]
     return get_html_content("certification.html", {
         "cur_user": cur_user,
         "certification": certification,
+        "category": category,
         "related_exams": related_exams,
     })
 
@@ -449,8 +459,8 @@ async def edit_certification_page(slug: str, cur_user: CurUserDep) -> str:
 
 
 @route("get", "exam")
-async def exam_page(exam: ExamDep, cur_user: OptCurUserDep):
-    return await _exam_page(exam, cur_user)
+async def exam_page(exam: ExamDep, cur_user: OptCurUserDep, related_offset: str | None = None):
+    return await _exam_page(exam, cur_user, related_offset)
 
 
 @route("get", "edit-exam", response_class=HTMLResponse)
@@ -472,8 +482,9 @@ async def user_page_by_slug(user: UserBySlugDep, exams_query_dto: ExamQueryDep,
 
 
 @route("get", "exam-by-slugs", response_class=HTMLResponse)
-async def exam_page_by_slugs(exam: ExamBySlugsDep, cur_user: OptCurUserDep) -> HTMLResponse:
-    return await _exam_page(exam, cur_user)
+async def exam_page_by_slugs(exam: ExamBySlugsDep, cur_user: OptCurUserDep,
+                             related_offset: str | None = None) -> HTMLResponse:
+    return await _exam_page(exam, cur_user, related_offset)
 
 
 @route("get", "exams-by-slugs", response_class=HTMLResponse)

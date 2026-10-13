@@ -88,6 +88,26 @@ class TagQueryDTO(BaseQueryDTO):
         return BaseQueryDTO.has_params(self) or self.type != self.DEFAULT_TYPE or self.prefix is not None
 
 
+@dataclass(slots=True)
+class RelatedExamQueryDTO(BaseQueryDTO):
+    limit: int = 6
+
+    def __post_init__(self):
+        BaseQueryDTO.__post_init__(self)
+        if self.offset is None:
+            return
+        try:
+            cursor = json.loads(base64.b64decode(self.offset, altchars=b'-_', validate=True).decode())
+        except (ValueError, UnicodeError, TypeError, RecursionError) as exc:
+            raise ValueError("offset must be a valid related-exam cursor") from exc
+        if (not isinstance(cursor, dict) or set(cursor) != {"pk", "sk"}
+                or not isinstance(cursor["pk"], str) or not isinstance(cursor["sk"], str)
+                or not re.fullmatch(r"RELATED_EXAMS#[^#]+", cursor["pk"])
+                or not re.fullmatch(r"EXAM#[0-9]+#[^#]+", cursor["sk"])
+                or len(cursor["pk"]) > 2048 or len(cursor["sk"]) > 1024):
+            raise ValueError("offset must be a valid related-exam cursor")
+
+
 class ExamQueryType(StrEnum):
     LATEST = "latest"
     POPULAR = "popular"

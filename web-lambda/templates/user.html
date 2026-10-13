@@ -179,7 +179,7 @@
             <div class="{{ {"def": 12, "lg": 8} | col_classes }}">
                 {% if user.about %}
                     <div class="mb-4">
-                        <h2 class="h5 mb-2 text-decoration-underline">About</h2>
+                        <h2 class="h5 mb-2">About</h2>
                         <div class="card-text">{{ user.about }}</div>
                     </div>
                 {% endif %}
@@ -199,7 +199,7 @@
         </div>
 
         <section>
-            <h2 class="h5 mb-2 text-decoration-underline">
+            <h2 class="h5 mb-2">
                 {{ exams_title }}
             </h2>
 
@@ -234,7 +234,7 @@
             {% endif %}
 
             {% if exams %}
-                <div id="exams" class="{{ {"def": 1, "sm": 2, "lg": 3, "xl": 4} | row_classes }} g-3"
+                <div id="exams" class="{{ {"def": 1, "sm": 2, "lg": 3} | row_classes }} g-3"
                      data-masonry-options='{"percentPosition": true }'>
                     {% with exam_img_sizes={"1400px": "196px", "1200px": "166px", "992px": "96px", "768px": "156px", "default": "100vw"} %}
                         {% include "fragments/exams.html" %}

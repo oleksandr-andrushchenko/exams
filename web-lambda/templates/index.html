@@ -34,7 +34,7 @@
                         <a href="{{ exams_url() }}" class="btn btn-primary btn-lg">
                             Explore exams <i class="bi bi-arrow-right ms-2" aria-hidden="true"></i>
                         </a>
-                        <a href="{{ url('certifications') }}" class="btn btn-outline-primary btn-lg">Find a
+                        <a href="{{ url('certifications') }}" class="btn btn-outline-primary btn-lg"><i class="bi bi-award" aria-hidden="true"></i> Find a
                             certification</a>
                     </div>
                     <p class="small text-body-secondary mt-3 mb-0">{{ site_name }} &middot; {{ site_short_desc }}</p>
@@ -189,7 +189,7 @@
                     </a>
                 </h2>
                 {% if popular_exams %}
-                    <div id="popular-exams" class="{{ {"def": 1, "sm": 2, "xl": 3} | row_classes }} g-3 mb-2"
+                    <div id="popular-exams" class="{{ {"def": 1, "sm": 2, "lg": 3} | row_classes }} g-3 mb-2"
                          data-masonry-options='{"percentPosition": true }'>
                         {% with exams=popular_exams,
                                 exam_img_sizes={"1400px": "328px", "1200px": "288px", "992px": "444px", "768px": "324px", "default": "100vw"} %}

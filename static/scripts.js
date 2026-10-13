@@ -498,7 +498,7 @@ document.querySelectorAll(".start-exam").forEach(button => {
       btn.dataset.offset = newOffset
       if (btn.hasAttribute("href")) {
         const nextPageUrl = new URL(btn.href)
-        nextPageUrl.searchParams.set("offset", newOffset)
+        nextPageUrl.searchParams.set(btn.dataset.pageOffsetParam || "offset", newOffset)
         btn.href = nextPageUrl.toString()
       }
     } catch (err) {

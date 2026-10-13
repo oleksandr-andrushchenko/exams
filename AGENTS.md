@@ -40,6 +40,8 @@
 
 ## UI styling
 
+- Do not underline non-link headings. Apply link decoration to anchors rather than the heading container.
+
 - External HTTP(S) links must include `rel="nofollow"`; preserve `noopener noreferrer` when present. Apply this to
   user links, certification and question references, configured social links, and social-sharing controls.
 
@@ -48,6 +50,8 @@
 - Generate Bootstrap grid sizes with the Jinja `row_classes` and `col_classes` filters instead of hardcoding
   `row-cols-*` or sized `col-*` classes. Plain `row` and `col` classes may remain when no sizes are specified.
   `col_classes` includes the base `col` class; use `"def": 12` when a responsive column must stack at full width.
+- Exam card grids use `row_classes` with `def: 1, sm: 2, lg: 3`; certification catalog grids use
+  `def: 1, md: 2, lg: 4`. A single certification in an exam sidebar remains full width.
 - Bootstrap and Bootstrap Icons are loaded centrally in `web-lambda/templates/layout.html`. Exam cards live in
   `shared/templates/fragments` and are also returned by lazy-loading endpoints; keep their styles and markup consistent
   for initial page renders and appended results.
@@ -125,10 +129,15 @@
 - A linked certification is authoritative for an exam's category and difficulty. Exam records retain denormalized values
   for discovery indexes; unlisted certifications use `other`, and exam language defaults to English.
 - Run the Python functional suite with `make tests`; its isolated Compose stack uses DynamoDB rather than PostgreSQL.
+- Import reviewed JSON bundles with `scripts/load_exam_bundle.py BUNDLE --owner-id ID`; add `--approve-by ID` to
+  publish only after question verification, and `--apply` to write. Reruns require an identical bundle and owner;
+  imported exams carry a source fingerprint. Run only one importer for a bundle at a time.
 - Run production maintenance/import commands through the `scripts-production` service in
   `docker-compose.scripts.production.yml`. These commands must default to a read-only dry run and require an explicit
   `--apply` for writes; use application services such as `save_public_file` instead of duplicating their behavior or
   calling the deployed HTTP API.
+- The production scripts environment needs `AWS_PROFILE` set from `AWS_PROJECT` and `DYNAMODB_TABLE` resolved from
+  the deployed stack's `DynamoDbTableName` output; `.env.prod` does not supply those runtime values automatically.
 - After DynamoDB schema/index changes, run `make recreate-local-dynamodb`; the local table is persistent and cannot be
   migrated in place. Local AWS CLI commands default to `us-west-2`.
 - Exams maintain a transactional `questions_count` counter. Query exam questions with the `EXAM#<id>` partition and
@@ -166,6 +175,9 @@
   Web error handlers pass their request explicitly because exception handling may occur after middleware resets context.
 - Global exam feeds validate cursors with `ExamListingQueryDTO`; user profile feeds retain `ExamQueryDTO` because their
   DynamoDB index keys differ. Reset the cursor when changing listing filters, and keep pagination links crawlable.
+- Related-exam feeds use shared `related_exam_utils` and `RelatedExamQueryDTO`: merge single-tag partitions by
+  creation time, deduplicate exam IDs, exclude the current exam, and return only published matches. Cursors are scoped
+  to the source exam. Autoload uses the API fragment endpoint; crawlable exam-page links use `related_offset`.
 - Initialize Masonry through `data-masonry-options`, not the library's `data-masonry` auto-initialization. Shared client
   code observes card sizes and media events to relayout both initial and dynamically appended cards.
 - Uploaded images accept JPEG, PNG, GIF, WebP, and AVIF. Pillow 11.3 or newer supplies AVIF support; AVIF uploads generate

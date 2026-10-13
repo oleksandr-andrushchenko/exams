@@ -1,13 +1,24 @@
 <div class="col">
-    <a class="card card-body h-100 text-decoration-none" href="{{ url('certification', slug=certification.slug) }}">
+    <a class="card certification-card h-100 overflow-hidden text-decoration-none"
+       href="{{ url('certification', slug=certification.slug) }}">
         {% if certification.image_filename %}
-            <img class="card-img-top rounded mb-2" src="{{ static_url(certification.image_filename) }}"
+            <img class="card-img-top" src="{{ static_url(certification.image_filename) }}"
                  alt="{{ certification.name }}" loading="lazy" decoding="async">
         {% endif %}
-        <small class="text-secondary">{{ certification.provider }} · {{ certification.level|title }}</small>
-        <h{{ certification_heading_level | default(2) }} class="h5">
-            {{ certification.name }}
-        </h{{ certification_heading_level | default(2) }}>
-        <p class="mb-0 text-body-secondary">{{ certification.description }}</p>
+        <div class="card-body">
+            <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+                <span class="badge text-primary-emphasis bg-primary-subtle">{{ certification.provider }}</span>
+                <small class="text-body-secondary">{{ certification.level|title }}</small>
+            </div>
+            <h{{ certification_heading_level | default(2) }} class="h5 card-title">
+                {{ certification.name }}
+            </h{{ certification_heading_level | default(2) }}>
+            <p class="card-text mb-0 text-body-secondary">{{ certification.description }}</p>
+        </div>
+        <div class="card-footer d-flex align-items-center gap-2 border-0 bg-primary-subtle text-primary-emphasis small">
+            <i class="bi bi-award" aria-hidden="true"></i>
+            <span>View certification</span>
+            <i class="bi bi-arrow-right ms-auto" aria-hidden="true"></i>
+        </div>
     </a>
 </div>

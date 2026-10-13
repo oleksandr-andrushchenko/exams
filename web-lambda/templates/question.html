@@ -13,7 +13,7 @@
 {% block content %}
     <h1 class="h3">{{ question.title }}</h1>
     {% if cur_user and check_auth(cur_user, Permission.UPDATE_QUESTION, question) %}
-        <a class="btn btn-outline-secondary mb-3" href="{{ url('edit-question', question_id=question.id) }}">Edit
+        <a class="btn btn-outline-secondary mb-3" href="{{ url('edit-question', question_id=question.id) }}"><i class="bi bi-pencil" aria-hidden="true"></i> Edit
             question</a>
         {% include "fragments/question-references.html" %}
     {% endif %}
@@ -23,16 +23,16 @@
     </ol>
     <div class="d-flex flex-wrap gap-2 mb-3">
         {% if active_session %}
-            <a class="btn btn-dark" href="{{ url('exam-session', session_id=active_session.id) }}">Continue exam</a>
+            <a class="btn btn-dark" href="{{ url('exam-session', session_id=active_session.id) }}"><i class="bi bi-play-circle" aria-hidden="true"></i> Continue exam</a>
         {% elif cur_user %}
             <button class="btn btn-dark start-exam" type="button"
                     data-create-session-url="{{ url('create-exam-session', exam_id=exam.id, absolute=True) }}"
                     data-session-url-template="{{ url('exam-session', session_id='SESSION_ID', absolute=True) }}">
-                Start exam
+                <i class="bi bi-play-circle" aria-hidden="true"></i> Start exam
             </button>
         {% else %}
             <a class="btn btn-dark" href="{{ url('login', redirect_url=url('question-by-id', question_id=question.id)) }}"
-               rel="nofollow">Sign in to start exam</a>
+               rel="nofollow"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Sign in to start exam</a>
         {% endif %}
     </div>
     {% if active_session and active_session.exam_id != exam.id %}
@@ -41,7 +41,7 @@
 
     <section class="mt-4">
         <h2 class="h4">Exam</h2>
-        <div class="{{ {"def": 1, "md": 2, "xl": 3} | row_classes }} g-3">
+        <div class="{{ {"def": 1, "sm": 2, "lg": 3} | row_classes }} g-3">
             {% include "fragments/exam.html" %}
         </div>
     </section>

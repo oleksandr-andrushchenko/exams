@@ -3,6 +3,9 @@ import asyncio
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import PlainTextResponse
 
+from related_exam_utils import get_related_exams
+from shared_deps import RelatedExamQueryDep
+
 
 from api_deps import (
     get_error_response,
@@ -261,6 +264,17 @@ async def exams_fragment(query_dto: ExamListingQueryDep, cur_user: OptCurUserDep
     return get_html_content("fragments/exams.html", {
         "exams": get_exams(query_dto, cur_user)
     })
+
+
+@route("get", "related-exams-fragment", response_class=HTMLResponse)
+async def related_exams_fragment(exam: ExamDep, query_dto: RelatedExamQueryDep) -> str:
+    try:
+        exams = await to_thread(get_related_exams, exam, query_dto)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return get_html_content("fragments/exams.html", {"exams": exams, "h_tag_size": 3,
+                            "exam_img_sizes": {"1400px": "328px", "1200px": "288px", "992px": "444px",
+                                               "768px": "324px", "default": "100vw"}})
 
 
 @route("get", "api-exams", response_class=JSONResponse)
