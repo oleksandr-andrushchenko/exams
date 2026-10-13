@@ -11,7 +11,7 @@ from exam_dtos import (
 )
 from form_options import CERTIFICATION_LEVEL_DIFFICULTIES
 from question_dtos import QuestionDTO
-from question_utils import create_question
+from question_utils import create_question, get_questions
 from search_engine_submissions import notify_search_engines, submit_sitemap_to_search_engines
 from shared_utils import *
 from shared_utils import (
@@ -339,6 +339,13 @@ def generate_sitemap(user: User, req) -> tuple[int, str]:
         while exams := get_latest_exams(ExamQueryDTO(status=ExamStatus.PUBLISHED, limit=1000, offset=offset)):
             for exam in exams:
                 yield get_exam_url(req, exam, absolute=True), lastmod(exam.updated_at, exam.published_at or exam.created_at)
+                for question in get_questions(exam.id):
+                    if exam.user_slug and exam.slug:
+                        question_url = get_url(req, "question-by-slugs", True, user_slug=exam.user_slug,
+                                               exam_slug=exam.slug, question_slug=question.slug)
+                    else:
+                        question_url = get_url(req, "question-by-id", True, question_id=question.id)
+                    yield question_url, lastmod(question.updated_at, question.created_at)
             offset = exams[-1].offset
             if not offset:
                 break
@@ -1315,7 +1322,7 @@ def _notify_exam_search_engines(exam: Exam) -> None:
 
     name = "exam-by-slugs" if exam.user_slug else "exam"
     params = {"user_slug": exam.user_slug, "exam_slug": exam.slug} if exam.user_slug else {"exam_id": exam.id}
-    path = Route(WEB_URL_ROUTES[name], name=name).url_path_for(name, **params)
+    path = Route(WEB_URL_ROUTES[name], endpoint=lambda request: None, name=name).url_path_for(name, **params)
     notify_search_engines(f"{get_web_base_url().rstrip('/')}{path}")
 
 

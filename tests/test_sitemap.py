@@ -97,7 +97,9 @@ def test_sitemap_covers_all_pages_and_uses_record_dates(sitemap_context, monkeyp
             None: [SimpleNamespace(id="p1", slug="one", user_slug="creator", updated_at=None,
                                    published_at=1_704_153_600_000, created_at=1, offset="exams-2")],
             "exams-2": [SimpleNamespace(id="p2", slug="two", user_slug="creator", updated_at=1_704_240_000_000,
-                                          published_at=1_704_153_600_000, created_at=1, offset=None)],
+                                          published_at=1_704_153_600_000, created_at=1, offset=None),
+                        SimpleNamespace(id="p3", slug="three", user_slug=None, updated_at=None,
+                                        published_at=1_704_153_600_000, created_at=1, offset=None)],
         },
         "get_latest_users": {
             None: [SimpleNamespace(id="u1", username="creator", updated_at=None,
@@ -111,9 +113,26 @@ def test_sitemap_covers_all_pages_and_uses_record_dates(sitemap_context, monkeyp
         def query(dto, data=data, name=name):
             calls[name].append(dto.offset)
             assert dto.limit == 1000
+            if name == "get_latest_exams":
+                assert dto.status == api_utils.ExamStatus.PUBLISHED
             return data[dto.offset]
 
         monkeypatch.setattr(api_utils, name, query)
+
+    questions = {
+        "p1": [SimpleNamespace(id="q1", slug="first-question", created_at=1_704_153_600_000, updated_at=None),
+               SimpleNamespace(id="q2", slug="second-question", created_at=1_704_153_600_000,
+                               updated_at=1_704_240_000_000)],
+        "p2": [],
+        "p3": [SimpleNamespace(id="q3", slug="third-question", created_at=1_704_153_600_000, updated_at=None)],
+    }
+    question_calls = []
+
+    def get_questions(exam_id):
+        question_calls.append(exam_id)
+        return questions[exam_id]
+
+    monkeypatch.setattr(api_utils, "get_questions", get_questions)
 
     count, sitemap_url = api_utils.generate_sitemap(None, request)
     root = ElementTree.fromstring(files["sitemap.xml"])
@@ -130,6 +149,10 @@ def test_sitemap_covers_all_pages_and_uses_record_dates(sitemap_context, monkeyp
     assert not any("category=empty" in url for url in urls)
     assert urls["https://example.com/@creator/one"] == "2024-01-02"
     assert urls["https://example.com/@creator/two"] == "2024-01-03"
+    assert question_calls == ["p1", "p2", "p3"]
+    assert urls["https://example.com/@creator/one/first-question"] == "2024-01-02"
+    assert urls["https://example.com/@creator/one/second-question"] == "2024-01-03"
+    assert urls["https://example.com/questions/q3"] == "2024-01-02"
     assert urls["https://example.com/@creator"] == "2024-01-01"
     assert urls["https://example.com/users/u2"] is None
     assert urls["https://example.com/privacy-policy"] is None

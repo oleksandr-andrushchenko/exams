@@ -10,7 +10,34 @@ sys.path.insert(0, str(project_root / "shared"))
 sys.path.insert(0, str(project_root / "api-lambda"))
 
 import shared_utils as app_config
+import api_utils
 import search_engine_submissions
+
+
+@pytest.mark.parametrize("user_slug, expected_path", [
+    ("exam-author", "/@exam-author/practice-exam"),
+    (None, "/exams/exam-id"),
+])
+def test_published_exam_notification_builds_public_url(monkeypatch, user_slug, expected_path):
+    notifications = []
+    monkeypatch.setattr(api_utils, "is_prod", lambda: True)
+    monkeypatch.setattr(api_utils, "get_web_base_url", lambda: "https://example.com/")
+    monkeypatch.setattr(api_utils, "notify_search_engines", notifications.append)
+    exam = SimpleNamespace(id="exam-id", slug="practice-exam", user_slug=user_slug)
+
+    api_utils._notify_exam_search_engines(exam)
+
+    assert notifications == [f"https://example.com{expected_path}"]
+
+
+def test_published_exam_notification_skips_non_production(monkeypatch):
+    notifications = []
+    monkeypatch.setattr(api_utils, "is_prod", lambda: False)
+    monkeypatch.setattr(api_utils, "notify_search_engines", notifications.append)
+
+    api_utils._notify_exam_search_engines(SimpleNamespace())
+
+    assert notifications == []
 
 
 def test_notify_search_engines_submits_urls_to_indexnow(monkeypatch):

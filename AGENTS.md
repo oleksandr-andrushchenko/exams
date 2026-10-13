@@ -186,3 +186,4 @@
   submissions use configured Google, Bing, and Yandex APIs. Google service account JSON belongs in the retained Secrets
   Manager secret created by CloudFormation, never in tracked files. Keep the web Lambda free of Google auth dependencies.
 - Sitemaps paginate all catalog records, escape XML through ElementTree, and split at protocol size/count limits.
+  Include questions only beneath published exams, using the same slug URLs as exam pages with an ID URL fallback.
