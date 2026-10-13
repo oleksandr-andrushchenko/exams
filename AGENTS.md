@@ -26,11 +26,10 @@
 ## Testing
 
 - Run `make tests` after all functional changes and before handing off the work.
-- `make tests` uses the isolated `docker-compose.test.yml` stack: `api`, `web`, `runner`, and `postgres` services in the
-  `test` Compose project. It does not reuse development containers or the development database. Functional tests must
-  call the API over the test Compose network (`API_URL`) and use their own database connection for fixtures/assertions;
-  they must not import or mount the API Express app from `server.ts`. The runner waits for both API and web
-  healthchecks. Use `make test-up` and `make test-down` when manually exercising the test web Lambda at port 13000.
+- `make tests` runs pytest in the isolated `docker-compose.test.yml` stack with `api-lambda`, `web-lambda`, `tests`,
+  and `dynamodb` services and its own `app_test` table. It does not reuse development containers or the development
+  database. Functional tests call the test services through `API_TEST_BASE_URL` and `WEB_TEST_BASE_URL` and use their
+  own database connections for fixtures and assertions; do not import the API application to make functional requests.
 
 ## Shared Lambda code
 
@@ -39,9 +38,9 @@
   server when run directly.
 
 - Keep common domain models, persistence primitives, validation, and behavior used by both Lambdas in `shared`.
-- Before adding a helper to `shared`, search its callers in both Lambdas. Keep helpers used by only one Lambda in that
-  Lambda, and keep page composition, orchestration, and presentation queries with their owner. Web-only helpers belong
-  in `web-lambda/web_utils.py`; genuinely shared domain and validation code remains in `shared`.
+- Before adding or keeping a helper in `shared`, search its callers in both Lambdas. Keep helpers used by only one
+  Lambda in that Lambda, and keep page composition, orchestration, and presentation queries with their owner. Web-only
+  helpers belong in `web-lambda/web_utils.py`; genuinely shared domain and validation code remains in `shared`.
 - For example, a shared exam-item fragment could be consumed by the web Lambda for rendering and by the API Lambda when
   returning content during subsequent lazy loads.
 
@@ -81,8 +80,8 @@
 
 ## Templates
 
-- Store layout and page templates in the templates root; store reusable partial HTML templates in the `fragments`
-  directory.
+- Store layout and page templates in the owning Lambda's templates root; store reusable partial HTML templates in the
+  `fragments` directory.
 - Build internal links with named web-route helpers (`url(...)`, `exam_url(...)`, etc.); do not use bare fragment-only
   links such as `href="#questions"`. A fragment may be appended to a generated endpoint URL when the target is a section
   on that page.
@@ -145,7 +144,6 @@
   trimmed and uppercased on writes; blank values clear the code, and legacy exams without the field remain valid.
 - A linked certification is authoritative for an exam's category and difficulty. Exam records retain denormalized values
   for discovery indexes; unlisted certifications use `other`, and exam language defaults to English.
-- Run the Python functional suite with `make tests`; its isolated Compose stack uses DynamoDB rather than PostgreSQL.
 - Import reviewed JSON bundles with `scripts/load_exam_bundle.py BUNDLE --owner-id ID`; add `--approve-by ID` to
   publish only after question verification, and `--apply` to write. Reruns require an identical bundle and owner;
   imported exams carry a source fingerprint. Run only one importer for a bundle at a time.
@@ -195,24 +193,34 @@
   before advancing. Make reruns skip completed items and resume interrupted work. Preserve complete-bundle validation
   and post-import question verification for reviewed exam bundles; never publish a partially imported exam.
 - Isolate independent item failures, report structured errors with source identity, exception type, and reason, and leave
-  failed items retryable. Continue other items, report success/skip/error totals, and exit nonzero if any failed. Stop
+  failed items retryable. Include parsing, media preparation, DTO validation, and application writes in the item-level
+  error boundary. Continue other items, report success/skip/error totals, and exit nonzero if any failed. Stop
   immediately for invalid run configuration, authentication, permission, policy, exhausted quota, or sustained rate limits.
 - Check stable source IDs and completion state before expensive detail requests, media processing, or model calls.
   Reuse persisted import fingerprints where available. Store any filesystem checkpoints in ignored, host-mounted
   `scripts/importer/` or `.tmp/` paths so they survive container recreation. Mark completion only during `--apply`, after
   successful writes or intentional terminal skips; dry runs must not mark items complete.
-- Use stdout for structured dry-run review. Show the source item and the complete DTO/service arguments, intended
-  create/resume/unchanged/skip action, and publication intent. Do not create extra review manifests unless requested.
+  Use the same canonical source identifier for live imports and backfills from persisted URLs. Backfill completion state
+  incrementally through application helpers, defaulting to dry-run.
+- Use stdout for structured dry-run review: print one record per item with the complete source item under `input` and
+  complete DTO/service arguments, intended create/resume/unchanged/skip action, and publication intent under `output`.
+  Do not emit separate candidate and outcome records for the same dry-run item or create review manifests unless requested.
 - Persist only source metadata needed for provenance, attribution, rerun matching, or application behavior. Keep raw
   source records, volatile engagement data, and operational media details in review output rather than domain records.
 - Track reusable importer code in Git; keep exports, overrides, downloaded media, caches, checkpoints, and generated
   state ignored. Keep reusable application code and committed guidance source-neutral.
 - For integrations with external source providers, use their official APIs and respect permissions, terms, pagination,
-  quotas, and rate-limit headers. Use conservative concurrency and bounded backoff with jitter for retryable failures;
-  do not bypass access restrictions through scraping, client spoofing, or credential/proxy rotation.
+  quotas, and rate-limit headers, including `Retry-After`. Use conservative concurrency and bounded exponential backoff
+  with jitter only for retryable failures; rely on resumability rather than aggressive retries. Do not bypass access
+  restrictions through scraping, client spoofing, or credential/proxy rotation.
 - When import jobs use publication-time windows, make `--since` inclusive and `--until` exclusive, and enforce source
   timestamps locally so adjacent runs do not duplicate boundary items. Successful-item limits exclude skipped or failed
   items.
+- When adding LLM-backed importers, keep deterministic filtering, deduplication, ordering, field parsing, media handling,
+  defaults, DTO validation, persistence, and rerun handling in code. Send only source text and the minimal context needed
+  for semantic decisions; omit raw API envelopes and fields the script can compute.
+- Prefer one structured LLM call per viable source item that returns either a skip decision or the complete semantic
+  result. Reuse it throughout the item, and avoid model calls for completed or deterministically rejected items.
 
 ## Shared platform updates
 
