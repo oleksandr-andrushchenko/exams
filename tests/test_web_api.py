@@ -1436,6 +1436,45 @@ def test_admin_page_sitemap_and_cache_endpoints_success_and_failure(guest_client
     assert cache_failure.status_code == 403
 
 
+def test_admin_redirect_upsert_and_missing_page_resolution(guest_client):
+    root_client = get_logged_in_client(root_user)
+    regular_client = get_logged_in_client(regular_user)
+    assert pq(get(root_client, "/utils").text)("#upsert-redirect-form")
+    payload = {"path": "/legacy-redirect-page", "redirect_to": "/exams?source=legacy#current"}
+    assert post(guest_client, "/redirects", json=payload).status_code == 401
+    assert post(regular_client, "/redirects", json=payload).status_code == 403
+    response = post(root_client, "/redirects", json=payload)
+    assert response.status_code == 200, response.text
+    assert response.json() == payload
+    key = {"pk": "REDIRECT#/legacy-redirect-page", "sk": "META"}
+    assert dynamodb_table.get_item(Key=key)["Item"]["redirect_to"] == payload["redirect_to"]
+    redirected = get(guest_client, "/legacy-redirect-page?campaign=test", allow_redirects=False)
+    assert redirected.status_code == 308
+    assert redirected.headers["location"] == "/exams?source=legacy&campaign=test#current"
+    head = guest_client.head(f"{WEB_TEST_BASE_URL}/legacy-redirect-page", allow_redirects=False)
+    assert head.status_code == 308
+    assert not head.content
+
+    payload["redirect_to"] = "/certifications"
+    assert post(root_client, "/redirects", json=payload).status_code == 200
+    redirected = get(guest_client, payload["path"], allow_redirects=False)
+    assert redirected.headers["location"] == "/certifications"
+    assert get(guest_client, payload["path"]).status_code == 200
+    assert get(guest_client, "/unknown-redirect-page", allow_redirects=False).status_code == 404
+
+    # Existing pages and file paths retain their normal behavior even with stored mappings.
+    for path in ["/certifications", "/missing-redirect.css"]:
+        dynamodb_table.put_item(Item={"pk": f"REDIRECT#{path}", "sk": "META", "redirect_to": "/exams"})
+    assert get(guest_client, "/certifications", allow_redirects=False).status_code == 200
+    assert get(guest_client, "/missing-redirect.css", allow_redirects=False).status_code == 404
+    for path in ["/certifications", "/missing-redirect.css"]:
+        dynamodb_table.delete_item(Key={"pk": f"REDIRECT#{path}", "sk": "META"})
+
+    invalid = post(root_client, "/redirects", json={"path": payload["path"], "redirect_to": "//example.com"})
+    assert invalid.status_code == 422
+    assert dynamodb_table.get_item(Key=key)["Item"]["redirect_to"] == "/certifications"
+
+
 def test_tag_subscription_create_and_delete():
     root_user_client = get_logged_in_client(root_user)
     tags = ["lifecycle-tag", "lifecycle-combination"]

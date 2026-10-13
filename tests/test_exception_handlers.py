@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 import unittest
+from contextlib import nullcontext
 from pathlib import Path
 from unittest.mock import patch
 
@@ -74,7 +75,9 @@ class ExceptionHandlerTests(unittest.TestCase):
                 "FUNCTION_TEMPLATES_DIR": str(project_root / "web-lambda/templates"),
             }):
                 templates = shared_utils.get_jinja2_env()
-            with patch.object(shared_utils, "jinja2_env", return_value=templates):
+            redirect_lookup = patch.object(module, "find_redirect", return_value=None) \
+                if hasattr(module, "find_redirect") else nullcontext()
+            with patch.object(shared_utils, "jinja2_env", return_value=templates), redirect_lookup:
                 try:
                     await app(scope, receive, send)
                 except Exception as raised:

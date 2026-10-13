@@ -44,4 +44,5 @@ API_URL_ROUTES = {
     "user-exams-fragment": "/users/{user_id}/exams-fragment",
     "generate-sitemap": "/generate-sitemap",
     "drop-cdn-cache": "/drop-cdn-cache",
+    "upsert-redirect": "/redirects",
 }

@@ -75,6 +75,9 @@
 
 ## Web errors
 
+- Admin-managed redirects are saved from Utils through API `POST /redirects` with `UPSERT_REDIRECT` permission.
+  Records use `REDIRECT#<path>` / `META`. The web 404 handler resolves GET/HEAD page paths with a permanent 308,
+  preserving query parameters; existing pages and file paths are not overridden. Destinations must be root-relative.
 - Web routes should propagate HTTP errors with their status codes; the centralized handler covers all 4xx and 5xx
   responses, returning an HTML error page for browser requests and a JSON error object when the client requests JSON.
   Unexpected errors are treated as 500 responses.

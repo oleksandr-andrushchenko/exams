@@ -12,10 +12,11 @@ from exam_dtos import (
 from form_options import CERTIFICATION_LEVEL_DIFFICULTIES
 from question_dtos import QuestionDTO
 from question_utils import create_question, get_questions
+from redirect_dtos import UpsertRedirectDTO
 from search_engine_submissions import notify_search_engines, submit_sitemap_to_search_engines
 from shared_utils import *
 from shared_utils import (
-    Category, User, find_exam, find_exam_by_slug_follow_redirects, find_user_by_username_follow_redirects,
+    Category, Redirect, User, find_exam, find_exam_by_slug_follow_redirects, find_user_by_username_follow_redirects,
     get_dynamodb_item, get_exams, get_static_base_url, get_tags, get_web_base_url, logger,
 )
 from tag_subscription_dtos import TagSubscriptionDTO
@@ -25,6 +26,18 @@ from user_dtos import (
 )
 from validation import validate_category_slug
 from web import RequestValidationError
+
+
+def upsert_redirect(dto: UpsertRedirectDTO, cur_user: User) -> Redirect:
+    verify_authorization(cur_user, Permission.UPSERT_REDIRECT)
+    if cur_user.status == UserStatus.BANNED:
+        raise UserBannedError()
+    get_dynamodb_table().put_item(Item={
+        "pk": f"REDIRECT#{dto.path}",
+        "sk": "META",
+        "redirect_to": dto.redirect_to,
+    })
+    return Redirect(path=dto.path, redirect_to=dto.redirect_to)
 
 
 class ExamHrefExtractor(HTMLParser):

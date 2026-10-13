@@ -11,6 +11,7 @@ from exam_dtos import UpdateCategoryDTO, UpdateExamCommentDTO, UpdateExamComment
 from basic_dtos import ImageFileDTO
 from cdn_cache_dtos import DropCDNCacheDTO
 from query_dtos import ExamCommentQueryDTO
+from redirect_dtos import UpsertRedirectDTO
 from shared_utils import ExamComment, ExamCommentNotFoundError, get_exam_comment
 from tag_subscription_dtos import TagSubscriptionDTO
 from user_dtos import UpdateUserDTO, UpdateUserImpressionDTO, UpdateUserStatusDTO
@@ -37,6 +38,10 @@ def get_tag_subscription_dto(value: TagSubscriptionDTO = Body(...)) -> TagSubscr
 
 
 def get_drop_cdn_cache_dto(value: DropCDNCacheDTO = Body(...)) -> DropCDNCacheDTO:
+    return value
+
+
+def get_upsert_redirect_dto(value: UpsertRedirectDTO = Body(...)) -> UpsertRedirectDTO:
     return value
 
 
@@ -97,6 +102,7 @@ UpdateTagDTODep = Annotated[UpdateTagDTO, Depends(get_update_tag_dto)]
 UpdateCategoryDTODep = Annotated[UpdateCategoryDTO, Depends(get_update_category_dto)]
 TagSubscriptionDTODep = Annotated[TagSubscriptionDTO, Depends(get_tag_subscription_dto)]
 DropCDNCacheDTODep = Annotated[DropCDNCacheDTO, Depends(get_drop_cdn_cache_dto)]
+UpsertRedirectDTODep = Annotated[UpsertRedirectDTO, Depends(get_upsert_redirect_dto)]
 ImageFileDTODep = Annotated[ImageFileDTO, Depends(get_image_file)]
 UpdateUserImpressionDTODep = Annotated[UpdateUserImpressionDTO, Depends(get_update_user_impression_dto)]
 

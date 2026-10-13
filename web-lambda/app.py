@@ -1,4 +1,5 @@
 import asyncio
+from urllib.parse import urlsplit, urlunsplit
 
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import PlainTextResponse
@@ -11,7 +12,7 @@ from query_dtos import RelatedExamQueryDTO, TagQueryDTO
 from related_exam_utils import get_related_exams
 from question_utils import get_all_questions, get_question_by_id, get_questions
 from session_utils import get_active_session, get_question_result, get_session, get_session_answers, get_sessions
-from shared_utils import decode_offset, get_indexnow_key, template_request
+from shared_utils import decode_offset, find_redirect, get_indexnow_key, template_request
 from shared_deps import (
     OptCurUserDep,
     CurUserDep,
@@ -203,8 +204,14 @@ async def access_log_middleware(request: Request, call_next):
 
 
 @app.exception_handler(StarletteHTTPException)
-async def custom_http_exception_handler(_request: Request, exc: StarletteHTTPException):
-    return get_error_response(exc.status_code, exc.detail, request=_request)
+async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
+    if exc.status_code == 404 and request.method in {"GET", "HEAD"} and "." not in request.url.path:
+        redirect = await to_thread(find_redirect, request.url.path)
+        if redirect:
+            target = urlsplit(redirect.redirect_to)
+            query = "&".join(filter(None, (target.query, request.url.query)))
+            return RedirectResponse(urlunsplit(target._replace(query=query)), status_code=308)
+    return get_error_response(exc.status_code, exc.detail, request=request)
 
 
 @app.exception_handler(Exception)

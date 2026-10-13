@@ -82,6 +82,12 @@ class User:
 
 
 @dataclass(slots=True)
+class Redirect:
+    path: str
+    redirect_to: str
+
+
+@dataclass(slots=True)
 class UserActivity:
     id: str
     event_type: str
@@ -371,6 +377,7 @@ class Permission(StrEnum):
     UTILS = "utils"
     GENERATE_SITEMAP = "generate_sitemap"
     DROP_CDN_CACHE = "drop_cdn_cache"
+    UPSERT_REDIRECT = "upsert_redirect"
 
 
 class BaseError(Exception):
@@ -1966,6 +1973,11 @@ def add_dynamodb_delete_transact(
 def get_dynamodb_item(pk: str, sk: str) -> dict[str, Any] | None:
     resp = get_dynamodb_table().get_item(Key={"pk": pk, "sk": sk})
     return resp.get("Item")
+
+
+def find_redirect(path: str) -> Redirect | None:
+    item = get_dynamodb_item(f"REDIRECT#{path}", "META")
+    return Redirect(path=path, redirect_to=item["redirect_to"]) if item else None
 
 
 def get_user(user_id: str, cur_user: User = None) -> User:

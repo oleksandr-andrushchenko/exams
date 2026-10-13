@@ -56,6 +56,7 @@ from api_utils import (
     create_tag_subscription,
     delete_tag_subscription,
     update_category,
+    upsert_redirect,
 )
 from certification_dtos import CertificationDTO
 from certification_utils import create_certification, get_certification, get_certifications, update_certification
@@ -74,6 +75,7 @@ from deps import (
     TagSubscriptionDTODep,
     DropCDNCacheDTODep,
     UpdateCategoryDTODep,
+    UpsertRedirectDTODep,
 )
 from notifications import get_access_log
 from question_dtos import QuestionDTO, UpdateQuestionDTO
@@ -489,6 +491,11 @@ async def user_exams_fragment(user: UserDep, query_dto: ExamQueryDep, cur_user: 
         "exams": get_latest_exams_by_user(user, query_dto, cur_user),
         "cur_user": cur_user,
     })
+
+
+@route("post", "upsert-redirect")
+async def _upsert_redirect(cur_user: CurUserDep, redirect_dto: UpsertRedirectDTODep):
+    return await to_thread(upsert_redirect, redirect_dto, cur_user)
 
 
 @route("post", "generate-sitemap")
