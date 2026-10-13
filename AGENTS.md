@@ -1,5 +1,14 @@
 # Repository instructions
 
+## Change scope
+
+- When committing, split unrelated work into separate commits by logical concern. Include the relevant tests and
+  documentation with each change.
+- Import new dependencies explicitly; do not rely on wildcard imports or accidental re-exports. Remove unused imports.
+- Register new application environment settings in the central configuration in `shared/shared_utils.py` and read
+  them through configuration accessors or `get_config()`. Keep direct environment reads in central configuration or
+  explicit process-bootstrap code.
+
 ## Formatting
 
 - After every change, format every updated file according to the repository's
@@ -29,7 +38,10 @@
   must expose the application factory used by functional tests and the Lambda handler, while only starting a local HTTP
   server when run directly.
 
-- Put common functions and behavior that may be used by both Lambdas in `shared`.
+- Keep common domain models, persistence primitives, validation, and behavior used by both Lambdas in `shared`.
+- Before adding a helper to `shared`, search its callers in both Lambdas. Keep helpers used by only one Lambda in that
+  Lambda, and keep page composition, orchestration, and presentation queries with their owner. Web-only helpers belong
+  in `web-lambda/web_utils.py`; genuinely shared domain and validation code remains in `shared`.
 - For example, a shared exam-item fragment could be consumed by the web Lambda for rendering and by the API Lambda when
   returning content during subsequent lazy loads.
 
@@ -55,6 +67,8 @@
 - Bootstrap and Bootstrap Icons are loaded centrally in `web-lambda/templates/layout.html`. Exam cards live in
   `shared/templates/fragments` and are also returned by lazy-loading endpoints; keep their styles and markup consistent
   for initial page renders and appended results.
+- Keep `static/scripts.js` limited to JavaScript reused across pages. Put page-specific scripts in their owning template
+  and initialize them after dependencies are available, using `DOMContentLoaded` for dependencies loaded with `defer`.
 
 ## Repository knowledge
 
@@ -137,8 +151,7 @@
   imported exams carry a source fingerprint. Run only one importer for a bundle at a time.
 - Run production maintenance/import commands through the `scripts-production` service in
   `docker-compose.scripts.production.yml`. These commands must default to a read-only dry run and require an explicit
-  `--apply` for writes; use application services such as `save_public_file` instead of duplicating their behavior or
-  calling the deployed HTTP API.
+  `--apply` for writes; call application services rather than the deployed HTTP API.
 - The production scripts environment needs `AWS_PROFILE` set from `AWS_PROJECT` and `DYNAMODB_TABLE` resolved from
   the deployed stack's `DynamoDbTableName` output; `.env.prod` does not supply those runtime values automatically.
 - After DynamoDB schema/index changes, run `make recreate-local-dynamodb`; the local table is persistent and cannot be
@@ -171,6 +184,35 @@
 - Public question API responses must omit choice correctness and explanations for learners. Owners may receive the full
   authoring representation.
 - Exam pages show the total question count and links to every question.
+
+## Maintenance and import scripts
+
+- Reuse application services and persistence helpers so imports preserve validation, counters, side effects, and domain
+  invariants. Search for an existing operation before adding direct DynamoDB, S3, or filesystem writes. Keep direct
+  writes limited to explicitly scoped migrations, repairs, or import metadata that existing services cannot express.
+  Use `create_exam`/`update_exam` and `create_question` for content writes and `save_public_file` for public files.
+- For bulk jobs with independent source items, process one item through planning, application, and result reporting
+  before advancing. Make reruns skip completed items and resume interrupted work. Preserve complete-bundle validation
+  and post-import question verification for reviewed exam bundles; never publish a partially imported exam.
+- Isolate independent item failures, report structured errors with source identity, exception type, and reason, and leave
+  failed items retryable. Continue other items, report success/skip/error totals, and exit nonzero if any failed. Stop
+  immediately for invalid run configuration, authentication, permission, policy, exhausted quota, or sustained rate limits.
+- Check stable source IDs and completion state before expensive detail requests, media processing, or model calls.
+  Reuse persisted import fingerprints where available. Store any filesystem checkpoints in ignored, host-mounted
+  `scripts/importer/` or `.tmp/` paths so they survive container recreation. Mark completion only during `--apply`, after
+  successful writes or intentional terminal skips; dry runs must not mark items complete.
+- Use stdout for structured dry-run review. Show the source item and the complete DTO/service arguments, intended
+  create/resume/unchanged/skip action, and publication intent. Do not create extra review manifests unless requested.
+- Persist only source metadata needed for provenance, attribution, rerun matching, or application behavior. Keep raw
+  source records, volatile engagement data, and operational media details in review output rather than domain records.
+- Track reusable importer code in Git; keep exports, overrides, downloaded media, caches, checkpoints, and generated
+  state ignored. Keep reusable application code and committed guidance source-neutral.
+- For integrations with external source providers, use their official APIs and respect permissions, terms, pagination,
+  quotas, and rate-limit headers. Use conservative concurrency and bounded backoff with jitter for retryable failures;
+  do not bypass access restrictions through scraping, client spoofing, or credential/proxy rotation.
+- When import jobs use publication-time windows, make `--since` inclusive and `--until` exclusive, and enforce source
+  timestamps locally so adjacent runs do not duplicate boundary items. Successful-item limits exclude skipped or failed
+  items.
 
 ## Shared platform updates
 
