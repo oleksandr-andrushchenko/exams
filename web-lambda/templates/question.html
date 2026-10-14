@@ -11,38 +11,72 @@
     {% endwith %}
 {% endblock %}
 {% block content %}
-    <h1 class="h3">{{ question.title }}</h1>
-    {% if cur_user and check_auth(cur_user, Permission.UPDATE_QUESTION, question) %}
-        <a class="btn btn-outline-secondary mb-3" href="{{ url('edit-question', question_id=question.id) }}"><i class="bi bi-pencil" aria-hidden="true"></i> Edit
-            question</a>
-        {% include "fragments/question-references.html" %}
-    {% endif %}
-    <ol class="list-group list-group-numbered mb-3">
-        {% for choice in question.choices %}
-            <li class="list-group-item"><strong>{{ choice.title }}</strong></li>{% endfor %}
-    </ol>
-    <div class="d-flex flex-wrap gap-2 mb-3">
-        {% if active_session %}
-            <a class="btn btn-dark" href="{{ url('exam-session', session_id=active_session.id) }}"><i class="bi bi-play-circle" aria-hidden="true"></i> Continue exam</a>
-        {% elif cur_user %}
-            <button class="btn btn-dark start-exam" type="button"
-                    data-create-session-url="{{ url('create-exam-session', exam_id=exam.id, absolute=True) }}"
-                    data-session-url-template="{{ url('exam-session', session_id='SESSION_ID', absolute=True) }}">
-                <i class="bi bi-play-circle" aria-hidden="true"></i> Start exam
-            </button>
-        {% else %}
-            <a class="btn btn-dark" href="{{ url('login', redirect_url=url('question-by-id', question_id=question.id)) }}"
-               rel="nofollow"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Sign in to start exam</a>
-        {% endif %}
-    </div>
-    {% if active_session and active_session.exam_id != exam.id %}
-        <p class="small text-secondary">Complete your active exam before starting this exam.</p>
-    {% endif %}
-
-    <section class="mt-4">
-        <h2 class="h4">Exam</h2>
-        <div class="{{ {"def": 1, "sm": 2, "lg": 3} | row_classes }} g-3">
-            {% include "fragments/exam.html" %}
+    <div class="row g-5">
+        <div class="{{ {"def": 12, "lg": 8} | col_classes }}" id="question-content">
+            <h1 class="h3">{{ question.title }}</h1>
+            {% if cur_user and check_auth(cur_user, Permission.UPDATE_QUESTION, question) %}
+                <a class="btn btn-outline-secondary mb-3" href="{{ url('edit-question', question_id=question.id) }}"><i class="bi bi-pencil" aria-hidden="true"></i> Edit
+                    question</a>
+                {% include "fragments/question-references.html" %}
+            {% endif %}
+            <ol class="list-group list-group-numbered mb-3">
+                {% for choice in question.choices %}
+                    <li class="list-group-item"><strong>{{ choice.title }}</strong></li>
+                {% endfor %}
+            </ol>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                {% if active_session %}
+                    <a class="btn btn-dark" href="{{ url('exam-session', session_id=active_session.id) }}"><i class="bi bi-play-circle" aria-hidden="true"></i> Continue exam</a>
+                {% elif cur_user %}
+                    <button class="btn btn-dark start-exam" type="button"
+                            data-create-session-url="{{ url('create-exam-session', exam_id=exam.id, absolute=True) }}"
+                            data-session-url-template="{{ url('exam-session', session_id='SESSION_ID', absolute=True) }}">
+                        <i class="bi bi-play-circle" aria-hidden="true"></i> Start exam
+                    </button>
+                {% else %}
+                    <a class="btn btn-dark" href="{{ url('login', redirect_url=url('question-by-id', question_id=question.id)) }}"
+                       rel="nofollow"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Sign in to start exam</a>
+                {% endif %}
+            </div>
+            {% if active_session and active_session.exam_id != exam.id %}
+                <p class="small text-secondary">Complete your active exam before starting this exam.</p>
+            {% endif %}
         </div>
-    </section>
+        <div class="{{ {"def": 12, "lg": 4} | col_classes }}">
+            <aside class="sticky-lg-top" id="question-sidebar" style="top: 1rem;" aria-label="Question context">
+                {% if certification %}
+                    <section class="mb-4" id="question-certification" aria-labelledby="question-certification-heading">
+                        <h2 class="h5" id="question-certification-heading">Certification</h2>
+                        <div class="{{ {"def": 1} | row_classes }}">
+                            {% with certification_heading_level=3 %}
+                                {% include "fragments/certification-card.html" %}
+                            {% endwith %}
+                        </div>
+                    </section>
+                {% endif %}
+
+                <section class="mb-4" id="question-exam" aria-labelledby="question-exam-heading">
+                    <h2 class="h5" id="question-exam-heading">Exam</h2>
+                    <div class="{{ {"def": 1} | row_classes }}">
+                        {% with h_tag_size=3, h_display_size=5,
+                                exam_img_sizes={"1400px": "328px", "1200px": "288px", "992px": "296px", "default": "100vw"} %}
+                            {% include "fragments/exam.html" %}
+                        {% endwith %}
+                    </div>
+                </section>
+
+                {% if author %}
+                    <section class="mb-4" id="question-author" aria-labelledby="question-author-heading">
+                        <h2 class="h5" id="question-author-heading">Author</h2>
+                        {% with user=author, h_tag_size=3, h_display_size=5, user_bg_color="light", user_shadow=True %}
+                            {% include "fragments/user.html" %}
+                        {% endwith %}
+                    </section>
+                    {% with user=author, header="Enjoyed this question?" %}
+                        {% include "fragments/bmc-donate.html" %}
+                    {% endwith %}
+                {% endif %}
+            </aside>
+        </div>
+    </div>
 {% endblock %}

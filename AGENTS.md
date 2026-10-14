@@ -70,7 +70,7 @@
   `row-cols-*` or sized `col-*` classes. Plain `row` and `col` classes may remain when no sizes are specified.
   `col_classes` includes the base `col` class; use `"def": 12` when a responsive column must stack at full width.
 - Exam card grids use `row_classes` with `def: 1, sm: 2, lg: 3`; certification catalog grids use
-  `def: 1, md: 2, lg: 4`. A single certification in an exam sidebar remains full width.
+  `def: 1, md: 2, lg: 4`. Individual exam and certification cards in detail-page sidebars remain full width.
 - Bootstrap and Bootstrap Icons are loaded centrally in `web-lambda/templates/layout.html`. Exam cards live in
   `shared/templates/fragments` and are also returned by lazy-loading endpoints; keep their styles and markup consistent
   for initial page renders and appended results.

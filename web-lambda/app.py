@@ -740,11 +740,18 @@ async def exam_session_page(session_id: str, cur_user: CurUserDep) -> str:
 
 async def _render_question_page(question, cur_user: OptCurUserDep) -> str:
     exam = get_exam(question.exam_id, cur_user)
+    author, certification, active_session = await asyncio.gather(
+        to_thread(find_user, exam.owner_id),
+        to_thread(find_certification, exam.certification_slug) if exam.certification_slug else asyncio.sleep(0, result=None),
+        to_thread(get_active_session, cur_user.id) if cur_user else asyncio.sleep(0, result=None),
+    )
     return get_html_content("question.html", {
         "cur_user": cur_user,
         "exam": exam,
         "question": question,
-        "active_session": get_active_session(cur_user.id) if cur_user else None,
+        "author": author,
+        "certification": certification,
+        "active_session": active_session,
     })
 
 

@@ -1741,3 +1741,66 @@ def test_related_exams_grid_autoload_and_crawlable_pagination(guest_client):
     assert get(guest_client, f"/exams/{source_id}/related-fragment", params={"offset": "invalid"}).status_code == 422
     other_id = next(iter(expected_ids))
     assert get(guest_client, f"/exams/{other_id}/related-fragment", params={"offset": offset}).status_code == 422
+
+
+@pytest.mark.parametrize("include_certification_and_donation", [True, False])
+def test_question_page_context_sidebar(guest_client, include_certification_and_donation):
+    root_client = get_logged_in_client(root_user)
+    suffix = "linked" if include_certification_and_donation else "unlisted"
+    title = f"Question sidebar {suffix} exam"
+    certification = dynamodb_table.get_item(
+        Key={"pk": "CERTIFICATION", "sk": "functional-certification"}
+    )["Item"]
+    created = post(root_client, "/exams", json={
+        "title": title,
+        "description": "An exam for verifying question-page context cards.",
+        "tags": ["sidebar-test"],
+        "certification_id": certification["id"] if include_certification_and_donation else None,
+    })
+    assert created.status_code == 200, created.text
+    slug = title.lower().replace(" ", "-")
+    exam_id = dynamodb_table.get_item(Key={"pk": f"EXAM_SLUG#{slug}", "sk": "META"})["Item"]["exam_id"]
+    created_question = post(root_client, f"/exams/{exam_id}/questions", json={
+        "title": f"Which option matches the {suffix} sidebar scenario?",
+        "choices": [
+            {"title": "First option", "explanation": "Private first-choice review reasoning.", "is_correct": True},
+            {"title": "Second option", "explanation": "Private second-choice review reasoning.", "is_correct": False},
+        ],
+        "reference_urls": ["https://example.com/sidebar-reference"],
+    })
+    assert created_question.status_code == 200, created_question.text
+    question = created_question.json()
+    published = post(root_client, f"/exams/{exam_id}/status", json={"status": "published"})
+    assert published.status_code == 200, published.text
+
+    author_key = {"pk": f"USER#{user_ids['root']}", "sk": "META"}
+    original_author = dynamodb_table.get_item(Key=author_key)["Item"]
+    donation_username = "sidebar-author" if include_certification_and_donation else None
+    dynamodb_table.update_item(Key=author_key, UpdateExpression="SET bmc_username = :username",
+                               ExpressionAttributeValues={":username": donation_username})
+    try:
+        for path in [f"/questions/{question['id']}", f"/@root-functional/{slug}/{question['slug']}"]:
+            response = get(guest_client, path)
+            assert response.status_code == 200, response.text
+            doc = pq(response.text)
+            assert doc("#question-content h1").text() == question["title"]
+            assert len(doc("#question-content ol > li")) == 2
+            sidebar = doc("aside#question-sidebar")
+            assert len(sidebar("#question-exam .exam-card")) == 1
+            assert sidebar("#question-exam h3").text().strip() == title
+            assert sidebar("#question-author h3").text().strip() == original_author["name"]
+            assert not doc("#question-content .exam-card")
+            assert bool(sidebar("#question-certification")) == include_certification_and_donation
+            donation = sidebar('a[href="https://buymeacoffee.com/sidebar-author"]')
+            assert bool(donation) == include_certification_and_donation
+            if include_certification_and_donation:
+                assert sidebar("#question-certification h3").text().strip() == certification["name"]
+                assert donation.attr("rel") == "nofollow noopener noreferrer"
+                assert "Enjoyed this question?" in sidebar.text()
+            assert "Private first-choice review reasoning." not in doc.text()
+            assert "Private second-choice review reasoning." not in doc.text()
+            assert not doc('a[href="https://example.com/sidebar-reference"]')
+            check_external_links_are_nofollow(doc)
+    finally:
+        dynamodb_table.update_item(Key=author_key, UpdateExpression="SET bmc_username = :username",
+                                   ExpressionAttributeValues={":username": original_author.get("bmc_username")})
