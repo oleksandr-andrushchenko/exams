@@ -353,7 +353,8 @@ def generate_sitemap(user: User, req) -> tuple[int, str]:
         offset = None
         while exams := get_latest_exams(ExamQueryDTO(status=ExamStatus.PUBLISHED, limit=1000, offset=offset)):
             for exam in exams:
-                yield get_exam_url(req, exam, absolute=True), lastmod(exam.updated_at, exam.published_at or exam.created_at)
+                yield get_exam_url(req, exam, absolute=True), lastmod(exam.updated_at,
+                                                                      exam.published_at or exam.created_at)
                 for question in get_questions(exam.id):
                     if question.status != QuestionStatus.PUBLISHED:
                         continue
@@ -1118,7 +1119,7 @@ def update_exam_status(exam: Exam, update_exam_status_dto: UpdateExamStatusDTO, 
 
     complete_question_status_sync(exam)
 
-    logger.info("Exam status changed", extra={"context": {"exam_id": exam.id, "status": status}})
+    logger.debug("Exam status changed", extra={"context": {"exam_id": exam.id, "status": status}})
     if status == ExamStatus.PUBLISHED:
         try:
             dispatch_exam_published_event(exam)
