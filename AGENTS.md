@@ -160,8 +160,10 @@
 - Run production maintenance/import commands through the `scripts-production` service in
   `docker-compose.scripts.production.yml`. These commands must default to a read-only dry run and require an explicit
   `--apply` for writes; call application services rather than the deployed HTTP API.
-- The production scripts environment needs `AWS_PROFILE` set from `AWS_PROJECT` and `DYNAMODB_TABLE` resolved from
-  the deployed stack's `DynamoDbTableName` output; `.env.prod` does not supply those runtime values automatically.
+- The production scripts service loads `.env.prod` and runs `scripts/production_bootstrap.py` before the requested
+  command. The bootstrap defaults `AWS_PROFILE` to `AWS_PROJECT` and resolves `DYNAMODB_TABLE` from `AWS_STACK`'s
+  `DynamoDbTableName` output unless explicitly configured. Run commands directly through `scripts-production`;
+  no extra environment flags are needed. Keep these process-bootstrap environment reads out of application modules.
 - After DynamoDB schema/index changes, run `make recreate-local-dynamodb`; the local table is persistent and cannot be
   migrated in place. Local AWS CLI commands default to `us-west-2`.
 - Exams maintain a transactional `questions_count` counter. Query exam questions with the `EXAM#<id>` partition and
