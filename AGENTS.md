@@ -98,6 +98,10 @@
 
 ## Web errors
 
+- Login/logout return destinations must be same-origin application pages, never authentication endpoints. Validate
+  both the incoming return URL/referrer and the saved `redirect_url` cookie, then clear that cookie after the callback.
+  Returning to a login callback reuses a single-use authorization code and causes a repeated Cognito `invalid_grant`.
+  Authentication responses use `Cache-Control: no-store`.
 - Admin-managed redirects are saved from Utils through API `POST /redirects` with `UPSERT_REDIRECT` permission.
   Records use `REDIRECT#<path>` / `META`. The web 404 handler resolves GET/HEAD page paths with a permanent 308,
   preserving query parameters; existing pages and file paths are not overridden. Destinations must be root-relative.
