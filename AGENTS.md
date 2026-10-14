@@ -249,6 +249,8 @@
 
 ## Shared platform updates
 
+- Lambda ZIP dependency installs use a 120-second pip socket timeout and five connection retries to tolerate slow
+  package downloads. A PyPI read timeout during packaging is a build failure; retry the build after connectivity recovers.
 - Template request state belongs in `template_request` (a `ContextVar`), never in cached Jinja environment globals.
   Web error handlers pass their request explicitly because exception handling may occur after middleware resets context.
 - Global exam feeds validate cursors with `ExamListingQueryDTO`; user profile feeds retain `ExamQueryDTO` because their

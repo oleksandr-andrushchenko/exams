@@ -332,7 +332,7 @@ generate-web-lambda-code-files: check-prod-env-file scripts-up ## Build the Web 
 	rm -rf .tmp/web
 	rm -f $(CODE_BUILD_DIR)/web-function*.zip
 	mkdir -p .tmp/web $(CODE_BUILD_DIR)
-	$(SCRIPTS_DC) exec --user $(HOST_UID):$(HOST_GID) $(SCRIPTS_CONTAINER) pip install --no-cache-dir -r /app/web-lambda/requirements.txt -t /app/.tmp/web
+	$(SCRIPTS_DC) exec --user $(HOST_UID):$(HOST_GID) $(SCRIPTS_CONTAINER) pip install --timeout 120 --retries 5 --no-cache-dir -r /app/web-lambda/requirements.txt -t /app/.tmp/web
 	$(SCRIPTS_DC) exec --user $(HOST_UID):$(HOST_GID) $(SCRIPTS_CONTAINER) python3 /app/scripts/generate_lambda_build.py web
 	@TIMESTAMP=$$(date +%Y%m%d%H%M%S); mv $(CODE_BUILD_DIR)/web-function.zip $(CODE_BUILD_DIR)/web-function-$$TIMESTAMP.zip; if grep -q "^WEB_LAMBDA_CODE_TIMESTAMP=" $(PROD_ENV_FILE); then sed -i.bak "s|^WEB_LAMBDA_CODE_TIMESTAMP=.*|WEB_LAMBDA_CODE_TIMESTAMP=$$TIMESTAMP|" $(PROD_ENV_FILE); rm -f $(PROD_ENV_FILE).bak; else printf "\nWEB_LAMBDA_CODE_TIMESTAMP=$$TIMESTAMP\n" >> $(PROD_ENV_FILE); fi
 
@@ -342,7 +342,7 @@ generate-api-lambda-code-files: check-prod-env-file scripts-up ## Build the API 
 	rm -rf .tmp/api
 	rm -f $(CODE_BUILD_DIR)/api-function*.zip
 	mkdir -p .tmp/api $(CODE_BUILD_DIR)
-	$(SCRIPTS_DC) exec --user $(HOST_UID):$(HOST_GID) $(SCRIPTS_CONTAINER) pip install --no-cache-dir -r /app/api-lambda/requirements.txt -t /app/.tmp/api
+	$(SCRIPTS_DC) exec --user $(HOST_UID):$(HOST_GID) $(SCRIPTS_CONTAINER) pip install --timeout 120 --retries 5 --no-cache-dir -r /app/api-lambda/requirements.txt -t /app/.tmp/api
 	$(SCRIPTS_DC) exec --user $(HOST_UID):$(HOST_GID) $(SCRIPTS_CONTAINER) python3 /app/scripts/generate_lambda_build.py api
 	@TIMESTAMP=$$(date +%Y%m%d%H%M%S); mv $(CODE_BUILD_DIR)/api-function.zip $(CODE_BUILD_DIR)/api-function-$$TIMESTAMP.zip; if grep -q "^API_LAMBDA_CODE_TIMESTAMP=" $(PROD_ENV_FILE); then sed -i.bak "s|^API_LAMBDA_CODE_TIMESTAMP=.*|API_LAMBDA_CODE_TIMESTAMP=$$TIMESTAMP|" $(PROD_ENV_FILE); rm -f $(PROD_ENV_FILE).bak; else printf "\nAPI_LAMBDA_CODE_TIMESTAMP=$$TIMESTAMP\n" >> $(PROD_ENV_FILE); fi
 
@@ -352,7 +352,7 @@ generate-img-lambda-code-files: check-prod-env-file scripts-up ## Build the Imag
 	rm -rf .tmp/img
 	rm -f $(CODE_BUILD_DIR)/img-function*.zip
 	mkdir -p .tmp/img $(CODE_BUILD_DIR)
-	$(SCRIPTS_DC) exec --user $(HOST_UID):$(HOST_GID) $(SCRIPTS_CONTAINER) pip install --no-cache-dir -r /app/img-lambda/requirements.txt -t /app/.tmp/img
+	$(SCRIPTS_DC) exec --user $(HOST_UID):$(HOST_GID) $(SCRIPTS_CONTAINER) pip install --timeout 120 --retries 5 --no-cache-dir -r /app/img-lambda/requirements.txt -t /app/.tmp/img
 	$(SCRIPTS_DC) exec --user $(HOST_UID):$(HOST_GID) $(SCRIPTS_CONTAINER) python3 /app/scripts/generate_img_lambda_build.py
 	@TIMESTAMP=$$(date +%Y%m%d%H%M%S); mv $(CODE_BUILD_DIR)/img-function.zip $(CODE_BUILD_DIR)/img-function-$$TIMESTAMP.zip; if grep -q "^IMG_LAMBDA_CODE_TIMESTAMP=" $(PROD_ENV_FILE); then sed -i.bak "s|^IMG_LAMBDA_CODE_TIMESTAMP=.*|IMG_LAMBDA_CODE_TIMESTAMP=$$TIMESTAMP|" $(PROD_ENV_FILE); rm -f $(PROD_ENV_FILE).bak; else printf "\nIMG_LAMBDA_CODE_TIMESTAMP=$$TIMESTAMP\n" >> $(PROD_ENV_FILE); fi
 
