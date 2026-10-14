@@ -38,6 +38,7 @@ class SessionTable:
 def question(question_id, correct_indices):
     return SimpleNamespace(
         id=question_id,
+        status="published",
         choices=[{
             "is_correct": index in correct_indices,
             "explanation": f"Choice {index} rationale.",

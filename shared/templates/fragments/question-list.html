@@ -1,0 +1,14 @@
+{% for question in questions %}
+    <a class="list-group-item list-group-item-action" href="{{ url('question-by-id', question_id=question.id) }}"
+       {% if question.offset %}data-offset="{{ question.offset }}"{% endif %}>
+        <strong>{{ question.title }}</strong>
+        {% if question.exam_title %}
+            <small class="d-block mt-2 text-body-secondary">Exam: {{ question.exam_title }}</small>
+        {% endif %}
+        {% if question.status != QuestionStatus.PUBLISHED %}
+            <span class="badge {{ 'text-bg-danger' if question.status == QuestionStatus.REJECTED else 'text-bg-warning' }}">
+                {{ question.status|title }}
+            </span>
+        {% endif %}
+    </a>
+{% endfor %}

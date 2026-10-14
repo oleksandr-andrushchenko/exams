@@ -11,7 +11,9 @@ from exam_dtos import (
 )
 from form_options import CERTIFICATION_LEVEL_DIFFICULTIES
 from question_dtos import QuestionDTO
-from question_utils import create_question, get_questions
+from query_dtos import QuestionStatus
+from question_utils import (complete_question_status_sync, create_question, get_questions,
+                            synchronize_exam_questions)
 from redirect_dtos import UpsertRedirectDTO
 from search_engine_submissions import notify_search_engines, submit_sitemap_to_search_engines
 from shared_utils import *
@@ -353,6 +355,8 @@ def generate_sitemap(user: User, req) -> tuple[int, str]:
             for exam in exams:
                 yield get_exam_url(req, exam, absolute=True), lastmod(exam.updated_at, exam.published_at or exam.created_at)
                 for question in get_questions(exam.id):
+                    if question.status != QuestionStatus.PUBLISHED:
+                        continue
                     if exam.user_slug and exam.slug:
                         question_url = get_url(req, "question-by-slugs", True, user_slug=exam.user_slug,
                                                exam_slug=exam.slug, question_slug=question.slug)
@@ -817,12 +821,18 @@ def update_exam(exam: Exam, update_exam_dto: UpdateExamDTO, cur_user: User) -> N
     if cur_user.id != exam_owner.id:
         add_dynamodb_user_update_transact(transacts, cur_user)
 
+    if status_changed and status != ExamStatus.PUBLISHED:
+        synchronize_exam_questions(exam, status)
+
     try:
         dynamodb_transact_write(transacts)
     except DynamoDBTransactionError as e:
         if e.is_conditional():
             raise SlugDuplicationError(field="title")
         raise
+
+    if status_changed:
+        complete_question_status_sync(exam)
 
     for k, v in changes.items():
         if k == "exam_slug":
@@ -1050,8 +1060,10 @@ def update_exam_status(exam: Exam, update_exam_status_dto: UpdateExamStatusDTO, 
     if cur_user.status == UserStatus.BANNED:
         raise UserBannedError()
 
-    if exam.status == ExamStatus.PUBLISHED:
-        raise ExamAlreadyPublishedError()
+    if exam.status == update_exam_status_dto.status:
+        synchronize_exam_questions(exam, update_exam_status_dto.status)
+        complete_question_status_sync(exam)
+        return
 
     changes = update_exam_status_dto.get_changes()
     if not changes:
@@ -1098,7 +1110,13 @@ def update_exam_status(exam: Exam, update_exam_status_dto: UpdateExamStatusDTO, 
 
     # logger.debug(transacts)
 
+    if status != ExamStatus.PUBLISHED:
+        synchronize_exam_questions(exam, status)
     dynamodb_transact_write(transacts)
+    if status == ExamStatus.PUBLISHED:
+        synchronize_exam_questions(exam, status)
+
+    complete_question_status_sync(exam)
 
     logger.info("Exam status changed", extra={"context": {"exam_id": exam.id, "status": status}})
     if status == ExamStatus.PUBLISHED:

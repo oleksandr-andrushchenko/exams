@@ -1,6 +1,6 @@
 from typing import Annotated, Optional
 
-from query_dtos import ExamListingQueryDTO, RelatedExamQueryDTO
+from query_dtos import ExamListingQueryDTO, QuestionQueryDTO, RelatedExamQueryDTO
 
 from shared_utils import (
     User,
@@ -67,6 +67,11 @@ def get_related_exam_query(request: Request) -> RelatedExamQueryDTO:
     return parse_dto(RelatedExamQueryDTO, dict(request.query_params))
 
 
+def get_question_listing_query(request: Request) -> QuestionQueryDTO:
+    return parse_dto(QuestionQueryDTO, dict(request.query_params))
+
+
+QuestionQueryDep = Annotated[QuestionQueryDTO, Depends(get_question_listing_query)]
 RelatedExamQueryDep = Annotated[RelatedExamQueryDTO, Depends(get_related_exam_query)]
 ExamListingQueryDep = Annotated[ExamListingQueryDTO, Depends(get_exam_listing_query)]
 CurUserDep = Annotated[User, Depends(get_cur_user)]

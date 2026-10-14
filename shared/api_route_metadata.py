@@ -45,4 +45,6 @@ API_URL_ROUTES = {
     "generate-sitemap": "/generate-sitemap",
     "drop-cdn-cache": "/drop-cdn-cache",
     "upsert-redirect": "/redirects",
+    "questions-fragment": "/questions-fragment",
+    "update-question-status": "/exams/{exam_id}/questions/{question_id}/status",
 }

@@ -1804,3 +1804,202 @@ def test_question_page_context_sidebar(guest_client, include_certification_and_d
     finally:
         dynamodb_table.update_item(Key=author_key, UpdateExpression="SET bmc_username = :username",
                                    ExpressionAttributeValues={":username": original_author.get("bmc_username")})
+
+
+def test_questions_listing_skips_inaccessible_and_missing_exams(guest_client):
+    root_client = get_logged_in_client(root_user)
+    regular_client = get_logged_in_client(regular_user)
+
+    def create_question_for_exam(client, label, published=False):
+        title = f"Question listing {label} exam"
+        created = post(client, "/exams", json={
+            "title": title, "description": "Question listing publication and permission coverage.", "tags": ["listing-test"],
+        })
+        assert created.status_code == 200, created.text
+        slug = title.lower().replace(" ", "-")
+        exam_id = dynamodb_table.get_item(Key={"pk": f"EXAM_SLUG#{slug}", "sk": "META"})["Item"]["exam_id"]
+        response = post(client, f"/exams/{exam_id}/questions", json={
+            "title": f"Question listing {label} scenario?",
+            "choices": [
+                {"title": "First option", "explanation": "First-option review explanation.", "is_correct": True},
+                {"title": "Second option", "explanation": "Second-option review explanation.", "is_correct": False},
+            ],
+        })
+        assert response.status_code == 200, response.text
+        if published:
+            assert post(root_client, f"/exams/{exam_id}/status", json={"status": "published"}).status_code == 200
+        return response.json()
+
+    public = create_question_for_exam(root_client, "public", published=True)
+    private = create_question_for_exam(root_client, "private")
+    owned = create_question_for_exam(regular_client, "owned draft")
+    orphan_id = str(uuid.uuid4())
+    now = int(time.time() * 1000)
+    orphan_key = {"pk": "QUESTIONS", "sk": f"{now}#{orphan_id}"}
+    orphan_title = "Question listing orphaned scenario?"
+    dynamodb_table.put_item(Item={
+        **orphan_key, "id": orphan_id, "exam_id": "missing-listing-exam", "owner_id": user_ids["root"],
+        "title": orphan_title, "slug": "question-listing-orphaned-scenario", "created_at": now,
+    })
+    try:
+        for client, expected in [(guest_client, [public]), (regular_client, [public]),
+                                 (root_client, [public])]:
+            response = get(client, "/questions")
+            assert response.status_code == 200, response.text
+            text = pq(response.text)("main .list-group").text()
+            for question in [public, private, owned]:
+                assert (question["title"] in text) == (question in expected)
+            assert orphan_title not in text
+        assert get(guest_client, f"/questions/{private['id']}").status_code == 401
+        assert get(regular_client, f"/questions/{private['id']}").status_code == 403
+        assert get(regular_client, f"/questions/{owned['id']}").status_code == 200
+    finally:
+        dynamodb_table.delete_item(Key=orphan_key)
+
+
+def test_question_publication_lifecycle_and_status_pagination(guest_client):
+    root_client = get_logged_in_client(root_user)
+    regular_client = get_logged_in_client(regular_user)
+    title = "Question status lifecycle exam"
+    response = post(root_client, "/exams", json={
+        "title": title, "description": "Publication and status-index pagination coverage.", "tags": ["question-status"],
+    })
+    assert response.status_code == 200, response.text
+    exam_id = dynamodb_table.get_item(Key={"pk": "EXAM_SLUG#question-status-lifecycle-exam", "sk": "META"})["Item"]["exam_id"]
+
+    def add_question(number):
+        response = post(root_client, f"/exams/{exam_id}/questions", json={
+            "title": f"Status lifecycle question number {number}?",
+            "choices": [
+                {"title": "Correct", "explanation": "Correct-choice explanation.", "is_correct": True},
+                {"title": "Incorrect", "explanation": "Incorrect-choice explanation.", "is_correct": False},
+            ],
+        })
+        assert response.status_code == 200, response.text
+        assert response.json()["status"] == "unpublished"
+        return response.json()
+
+    initial = [add_question(i) for i in range(65)]
+    path = f"/exams/{exam_id}/status"
+    published = post(root_client, path, json={"status": "published"})
+    assert published.status_code == 200, published.text
+    for question in initial:
+        record = dynamodb_table.get_item(Key={"pk": f"EXAM#{exam_id}", "sk": f"QUESTION#{question['id']}"})["Item"]
+        assert record["status"] == "published"
+        listing = dynamodb_table.get_item(Key={"pk": "QUESTIONS#published", "sk": f"{question['created_at']}#{question['id']}"})["Item"]
+        assert listing["title"] == question["title"]
+        assert "choices" not in listing
+    draft = add_question(65)
+    assert get(guest_client, f"/questions/{draft['id']}").status_code == 401
+    public = get(guest_client, f"/exams/{exam_id}/questions").json()
+    assert len(public) == 65
+    assert draft["id"] not in {question["id"] for question in public}
+    assert draft["title"] not in pq(get(guest_client, "/questions").text)("#question-list").text()
+    assert get(guest_client, "/questions?status=unpublished").status_code == 401
+    assert get(regular_client, "/questions?status=unpublished").status_code == 403
+    drafts = get(root_client, "/questions?status=unpublished")
+    assert drafts.status_code == 200, drafts.text
+    assert draft["title"] in pq(drafts.text)("#question-list").text()
+
+    first = get(guest_client, "/questions?limit=2")
+    assert first.status_code == 200, first.text
+    first_doc = pq(first.text)
+    assert len(first_doc("#question-list > a")) == 2
+    more = first_doc('.btn-load-more[data-container="#question-list"]')
+    assert more.attr("href")
+    assert more.attr("data-limit") == "2"
+    assert more.attr("data-auto-click") is not None
+    fragment_url = urlsplit(more.attr("data-url"))
+    fragment = get(guest_client, fragment_url.path + "?" + fragment_url.query,
+                   params={"offset": more.attr("data-offset"), "limit": more.attr("data-limit")})
+    assert fragment.status_code == 200, fragment.text
+    assert len(pq(fragment.text)("a.list-group-item")) == 2
+    assert set(first_doc("#question-list > a").map(lambda i, el: el.get("href"))).isdisjoint(
+        set(pq(fragment.text)("a.list-group-item").map(lambda i, el: el.get("href"))))
+    assert get(guest_client, more.attr("href")).status_code == 200
+    assert get(root_client, "/questions", params={"status": "rejected", "offset": more.attr("data-offset")}).status_code == 422
+    assert get(guest_client, "/questions?offset=invalid").status_code == 422
+
+    status_path = f"/exams/{exam_id}/questions/{draft['id']}/status"
+    assert post(regular_client, status_path, json={"status": "published"}).status_code == 403
+    assert post(root_client, status_path, json={"status": "rejected"}).status_code == 422
+    rejected = post(root_client, status_path, json={"status": "rejected", "comment": "Needs editorial review."})
+    assert rejected.status_code == 200, rejected.text
+    assert draft["title"] in pq(get(root_client, "/questions?status=rejected").text)("#question-list").text()
+    assert pq(get(root_client, f"/questions/{draft['id']}").text)("#question-status-form")
+    assert post(root_client, status_path, json={"status": "published"}).status_code == 200
+    assert get(guest_client, f"/questions/{draft['id']}").status_code == 200
+    session = post(regular_client, f"/exams/{exam_id}/sessions")
+    assert session.status_code == 200, session.text
+    assert session.json()["total_questions"] == 66
+
+    unpublished = post(root_client, path, json={"status": "unpublished"})
+    assert unpublished.status_code == 200, unpublished.text
+    assert get(guest_client, f"/questions/{initial[0]['id']}").status_code == 401
+    assert initial[0]["title"] not in pq(get(guest_client, "/questions").text)("#question-list").text()
+    assert post(root_client, status_path, json={"status": "published"}).status_code == 422
+    republished = post(root_client, path, json={"status": "published"})
+    assert republished.status_code == 200, republished.text
+    user_before = dynamodb_table.get_item(Key={"pk": f"USER#{user_ids['root']}", "sk": "META"})["Item"]["published_exams_count"]
+    retried = post(root_client, path, json={"status": "published"})
+    assert retried.status_code == 200, retried.text
+    user_after = dynamodb_table.get_item(Key={"pk": f"USER#{user_ids['root']}", "sk": "META"})["Item"]["published_exams_count"]
+    assert user_after == user_before
+    assert len(get(guest_client, f"/exams/{exam_id}/questions").json()) == 66
+    # Existing sessions retain their question snapshots when a question returns to review.
+    edited = patch(root_client, f"/exams/{exam_id}/questions/{draft['id']}", json={"title": "Edited lifecycle question?"})
+    assert edited.status_code == 200, edited.text
+    assert edited.json()["status"] == "unpublished"
+    assert len(get(guest_client, f"/exams/{exam_id}/questions").json()) == 65
+    assert get(regular_client, f"/exam-sessions/{session.json()['id']}").status_code == 200
+
+
+def test_legacy_question_status_backfill_preserves_publication_intent(guest_client):
+    root_client = get_logged_in_client(root_user)
+    legacy_questions = []
+    for label, published in [("published", True), ("draft", False)]:
+        title = f"Legacy question migration {label} exam"
+        response = post(root_client, "/exams", json={
+            "title": title, "description": "Legacy status backfill verification.", "tags": ["migration-test"],
+        })
+        assert response.status_code == 200, response.text
+        slug = title.lower().replace(" ", "-")
+        exam_id = dynamodb_table.get_item(Key={"pk": f"EXAM_SLUG#{slug}", "sk": "META"})["Item"]["exam_id"]
+        if published:
+            assert post(root_client, f"/exams/{exam_id}/status", json={"status": "published"}).status_code == 200
+        response = post(root_client, f"/exams/{exam_id}/questions", json={
+            "title": f"Legacy {label} question?",
+            "choices": [
+                {"title": "Yes", "explanation": "Yes rationale.", "is_correct": True},
+                {"title": "No", "explanation": "No rationale.", "is_correct": False},
+            ],
+        })
+        assert response.status_code == 200, response.text
+        question = response.json()
+        key = {"pk": f"EXAM#{exam_id}", "sk": f"QUESTION#{question['id']}"}
+        dynamodb_table.update_item(Key=key, UpdateExpression="REMOVE #status",
+                                   ExpressionAttributeNames={"#status": "status"})
+        dynamodb_table.delete_item(Key={"pk": "QUESTIONS#unpublished", "sk": f"{question['created_at']}#{question['id']}"})
+        dynamodb_table.put_item(Item={**question, "pk": "QUESTIONS", "sk": f"{question['created_at']}#{question['id']}"})
+        legacy_questions.append((question, key, "published" if published else "unpublished"))
+
+    project = Path(os.environ["PROJECT_ROOT"])
+    env = dict(os.environ, DYNAMODB_TABLE=os.environ["TEST_DYNAMODB_TABLE"], APP_STAGE="local", APP_ENV="test",
+               PYTHONPATH=":".join(str(project / name) for name in ("scripts", "shared", "api-lambda", "web-lambda")))
+    command = [sys.executable, str(project / "scripts/backfill_question_statuses.py"), "--user-id", user_ids["root"]]
+    dry = subprocess.run(command, env=env, cwd=project, capture_output=True, text=True, timeout=60)
+    assert dry.returncode == 0, dry.stderr
+    for question, key, status in legacy_questions:
+        assert "status" not in dynamodb_table.get_item(Key=key)["Item"]
+    applied = subprocess.run(command + ["--apply", "--remove-legacy"], env=env, cwd=project, capture_output=True, text=True, timeout=60)
+    assert applied.returncode == 0, applied.stderr
+    for question, key, status in legacy_questions:
+        assert dynamodb_table.get_item(Key=key)["Item"]["status"] == status
+        index_key = {"pk": f"QUESTIONS#{status}", "sk": f"{question['created_at']}#{question['id']}"}
+        assert "Item" in dynamodb_table.get_item(Key=index_key)
+        assert "Item" not in dynamodb_table.get_item(Key={**index_key, "pk": "QUESTIONS"})
+    retry = subprocess.run(command, env=env, cwd=project, capture_output=True, text=True, timeout=60)
+    assert retry.returncode == 0, retry.stderr
+    totals = json.loads(retry.stdout.splitlines()[-1])["totals"]
+    assert totals["planned"] == 0
+    assert totals["errors"] == 0

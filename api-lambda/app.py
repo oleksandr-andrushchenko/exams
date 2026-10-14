@@ -4,7 +4,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import PlainTextResponse
 
 from related_exam_utils import get_related_exams
-from shared_deps import RelatedExamQueryDep
+from shared_deps import QuestionQueryDep, RelatedExamQueryDep
 
 
 from api_deps import (
@@ -78,15 +78,16 @@ from deps import (
     UpsertRedirectDTODep,
 )
 from notifications import get_access_log
-from question_dtos import QuestionDTO, UpdateQuestionDTO
+from question_dtos import QuestionDTO, UpdateQuestionDTO, UpdateQuestionStatusDTO
 from question_utils import (
-    Question, create_question, delete_question, get_question, get_questions, question_without_answers, update_question,
+    Question, can_read_question, create_question, delete_question, get_question, get_question_listing, get_questions,
+    question_without_answers, update_question, update_question_status, verify_question_access,
 )
 from session_dtos import AnswerDTO
 from session_utils import (
     ActiveExamSessionError, answer_question, complete_session, create_session, get_session, get_sessions,
 )
-from shared_utils import template_request
+from shared_utils import DynamoDBTransactionError, template_request
 from shared_deps import (
     OptCurUserDep,
     CurUserDep,
@@ -309,7 +310,12 @@ async def _update_exam(exam: ExamDep, update_exam_dto: UpdateExamDTODep, cur_use
 @route("post", "update-exam-status", response_class=JSONResponse)
 async def _update_exam_status(exam: ExamDep, update_exam_status_dto: UpdateExamStatusDTODep,
                               cur_user: CurUserDep, request: Request) -> str:
-    update_exam_status(exam, update_exam_status_dto, cur_user)
+    try:
+        await to_thread(update_exam_status, exam, update_exam_status_dto, cur_user)
+    except DynamoDBTransactionError as exc:
+        if exc.is_conditional():
+            raise HTTPException(status_code=409, detail="Publication changed concurrently or is still processing; retry shortly") from exc
+        raise
     return get_exam_url(request, exam)
 
 
@@ -521,7 +527,7 @@ async def _create_question(exam: ExamDep, question_dto: QuestionDTO, cur_user: C
 
 @route("get", "api-questions", response_class=JSONResponse)
 async def _get_questions(exam: ExamDep, cur_user: OptCurUserDep) -> list:
-    questions = get_questions(exam.id)
+    questions = [question for question in get_questions(exam.id) if can_read_question(question, cur_user, exam)]
     if cur_user and cur_user.id == exam.owner_id:
         return questions
     return [question_without_answers(question) for question in questions]
@@ -533,7 +539,30 @@ async def _get_question(exam: ExamDep, question_id: str, cur_user: OptCurUserDep
         question = get_question(exam.id, question_id)
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    verify_question_access(question, cur_user, exam)
     return question if cur_user and cur_user.id == exam.owner_id else question_without_answers(question)
+
+
+@route("post", "update-question-status", response_class=JSONResponse)
+async def _update_question_status(exam: ExamDep, question_id: str, dto: UpdateQuestionStatusDTO,
+                                  cur_user: CurUserDep):
+    try:
+        question = get_question(exam.id, question_id)
+        return await to_thread(update_question_status, exam, question, dto, cur_user)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except DynamoDBTransactionError as exc:
+        if exc.is_conditional():
+            raise HTTPException(status_code=409, detail="Question changed or exam publication is processing; retry shortly") from exc
+        raise
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@route("get", "questions-fragment", response_class=HTMLResponse)
+async def questions_fragment(query: QuestionQueryDep, cur_user: OptCurUserDep):
+    questions = await to_thread(get_question_listing, query, cur_user)
+    return get_html_content("fragments/question-list.html", {"questions": questions})
 
 
 @route("patch", "update-question", response_class=JSONResponse)

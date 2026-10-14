@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 
 from basic_dtos import BaseDTO, UNSET
+from query_dtos import QuestionStatus
 from validation import validate_http_url
 
 
@@ -65,6 +66,19 @@ class QuestionDTO(BaseDTO):
         self.title = _text(self.title, "title", 3, 500)
         self.choices = _choices(self.choices)
         self.reference_urls = _reference_urls(self.reference_urls)
+
+
+@dataclass(slots=True)
+class UpdateQuestionStatusDTO(BaseDTO):
+    status: QuestionStatus
+    comment: str | None = None
+
+    def __post_init__(self):
+        self.status = QuestionStatus(self.status)
+        if self.status == QuestionStatus.REJECTED:
+            self.comment = _text(self.comment, "comment", 1, 2000)
+        else:
+            self.comment = None
 
 
 @dataclass(slots=True)

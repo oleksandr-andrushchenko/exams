@@ -10,11 +10,13 @@ from form_options import CERTIFICATION_LEVELS, CERTIFICATION_PROVIDERS
 from notifications import get_access_log
 from query_dtos import RelatedExamQueryDTO, TagQueryDTO
 from related_exam_utils import get_related_exams
-from question_utils import get_all_questions, get_question_by_id, get_questions
+from question_utils import (can_read_question, get_question_by_id, get_question_listing, get_questions,
+                            verify_question_access)
 from session_utils import get_active_session, get_question_result, get_session, get_session_answers, get_sessions
 from shared_utils import decode_offset, find_redirect, get_indexnow_key, template_request
 from shared_deps import (
     OptCurUserDep,
+    QuestionQueryDep,
     CurUserDep,
     ExamQueryDep,
     ExamListingQueryDep,
@@ -325,6 +327,7 @@ async def _exam_page(exam: ExamDep, cur_user: OptCurUserDep, related_offset: str
         to_thread(get_active_session, cur_user.id) if cur_user else asyncio.sleep(0, result=None),
         to_thread(find_certification, exam.certification_slug) if exam.certification_slug else asyncio.sleep(0, result=None),
     )
+    questions = [question for question in questions if can_read_question(question, cur_user, exam)]
     html_content = get_html_content("exam.html", {
         "cur_user": cur_user,
         "exam": exam,
@@ -694,13 +697,12 @@ async def new_question_page(exam_id: str, cur_user: CurUserDep) -> str:
 
 
 @route("get", "questions-all", response_class=HTMLResponse)
-async def all_questions_page(cur_user: OptCurUserDep) -> str:
-    questions = get_all_questions()
-    exams = {question.exam_id: get_exam(question.exam_id, cur_user) for question in questions}
+async def all_questions_page(cur_user: OptCurUserDep, query: QuestionQueryDep) -> str:
+    questions = await to_thread(get_question_listing, query, cur_user)
     return get_html_content("all-questions.html", {
         "cur_user": cur_user,
         "questions": questions,
-        "exams": exams,
+        "question_query": query,
     })
 
 
@@ -740,6 +742,7 @@ async def exam_session_page(session_id: str, cur_user: CurUserDep) -> str:
 
 async def _render_question_page(question, cur_user: OptCurUserDep) -> str:
     exam = get_exam(question.exam_id, cur_user)
+    verify_question_access(question, cur_user, exam)
     author, certification, active_session = await asyncio.gather(
         to_thread(find_user, exam.owner_id),
         to_thread(find_certification, exam.certification_slug) if exam.certification_slug else asyncio.sleep(0, result=None),

@@ -76,6 +76,8 @@
   for initial page renders and appended results.
 - Keep `static/scripts.js` limited to JavaScript reused across pages. Put page-specific scripts in their owning template
   and initialize them after dependencies are available, using `DOMContentLoaded` for dependencies loaded with `defer`.
+- Pass the listing DTO's `limit` explicitly when including `fragments/load-more-button.html`. The scroll loader sends
+  its `data-limit` value to the API, overriding the endpoint URL's limit; an empty value causes a 422 response.
 
 ## Repository knowledge
 
@@ -163,7 +165,7 @@
 - After DynamoDB schema/index changes, run `make recreate-local-dynamodb`; the local table is persistent and cannot be
   migrated in place. Local AWS CLI commands default to `us-west-2`.
 - Exams maintain a transactional `questions_count` counter. Query exam questions with the `EXAM#<id>` partition and
-  `QUESTION#` sort-key prefix, following DynamoDB pagination. Global lists use the `QUESTIONS` partition; direct ID
+  `QUESTION#` sort-key prefix, following DynamoDB pagination. Global lists use `QUESTIONS#<status>` partitions; direct ID
   reads use the `QUESTION#<id>` / `META` locator. Do not scan or filter exam partitions to list questions.
 - Exam categories use `CATEGORY` partitions, category/status exam indexes, and the `published_exams_count` counter;
   legacy exams without a category are read as `other`.
@@ -189,7 +191,20 @@
   can open any question from that list and return to review without creating another session.
 - Public question API responses must omit choice correctness and explanations for learners. Owners may receive the full
   authoring representation.
-- Exam pages show the total question count and links to every question.
+- Exam pages show the total question count and links to questions visible to the current user.
+- Questions have independent `published`, `unpublished`, and `rejected` statuses. New and edited questions are
+  unpublished. Publishing an exam publishes all its questions; unpublishing/rejecting an exam also updates its questions.
+  Repeating publication on an already-published exam publishes newly added questions without repeating exam counters
+  or publication notifications. Question publication uses bounded transactions and a short-lived synchronization guard.
+- Public question discovery uses one key query per page against `QUESTIONS#published`, with no exam joins, scans, or
+  post-query status filtering. Question index records omit answers and references and carry an exam-title snapshot.
+  Cursors are status-specific; unpublished/rejected global feeds require `READ_NON_PUBLISHED_QUESTION`.
+  Individual question pages still check both question and parent-exam access, and session snapshots remain readable.
+- Backfill legacy question statuses and discovery records with `scripts/backfill_question_statuses.py --user-id ID`
+  through the scripts service as part of rollout. It defaults to dry-run and requires `--apply` to write.
+  Legacy questions inherit parent publication status; explicitly unpublished questions remain unpublished. This uses
+  existing table keys and requires no new DynamoDB GSI or CloudFormation table change. Keep legacy list records during
+  rollout; use `--remove-legacy` only after the previous application version is retired.
 
 ## Maintenance and import scripts
 

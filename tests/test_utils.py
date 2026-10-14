@@ -115,7 +115,7 @@ def _is_api_request(method: str, url: str) -> bool:
     path = _api_path(urlsplit(url).path)
     if method == "GET" and urlsplit(url).path == "/posts-fragment":
         return False
-    if path in {"/exams-fragment", "/tags-fragment", "/users-fragment"} or any(
+    if path in {"/exams-fragment", "/tags-fragment", "/users-fragment", "/questions-fragment"} or any(
             path.endswith(suffix) for suffix in ("/comments-fragment", "/exams-fragment", "/related-fragment")):
         return True
     if method == "GET":
@@ -128,7 +128,7 @@ def _is_api_request(method: str, url: str) -> bool:
             "/tag-subscriptions",
             "/generate-sitemap", "/drop-cdn-cache", "/redirects",
         } or bool(re.fullmatch(
-            r"/exams/[^/]+/(status|impression|comment|questions|sessions)", path
+            r"/exams/[^/]+/(status|impression|comment|questions|sessions)|/exams/[^/]+/questions/[^/]+/status", path
         )) or bool(
             re.fullmatch(r"/exam-sessions/[^/]+/(answers|complete)", path)
         ) or bool(

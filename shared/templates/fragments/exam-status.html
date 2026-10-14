@@ -1,15 +1,15 @@
-{% if exam.status != ExamStatus.PUBLISHED and cur_user and check_auth(cur_user, Permission.UPDATE_EXAM_STATUS) %}
+{% if cur_user and check_auth(cur_user, Permission.UPDATE_EXAM_STATUS) %}
     <div class="input-group">
         <!-- Publish Exam -->
         {% set is_published = exam.status == ExamStatus.PUBLISHED %}
         <button type="button"
-                class="btn {% if is_published %}btn-success active{% else %}btn-light btn-exam-publish{% endif %}"
+                class="btn btn-exam-publish {{ 'btn-success' if is_published else 'btn-light' }}"
                 data-exam-id="{{ exam.id }}"
                 data-status="{{ ExamStatus.PUBLISHED.value }}"
                 {% if not is_published %}
                 title="Publish this exam"
                 {% endif %}>
-            <i class="bi bi-check2-all" aria-hidden="true"></i> {% if is_published %}Published{% else %}
+            <i class="bi bi-check2-all" aria-hidden="true"></i> {% if is_published %}Publish all questions{% else %}
             Publish{% endif %}
         </button>
 

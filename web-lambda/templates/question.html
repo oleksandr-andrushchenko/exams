@@ -14,6 +14,7 @@
     <div class="row g-5">
         <div class="{{ {"def": 12, "lg": 8} | col_classes }}" id="question-content">
             <h1 class="h3">{{ question.title }}</h1>
+            {% include "fragments/question-status.html" %}
             {% if cur_user and check_auth(cur_user, Permission.UPDATE_QUESTION, question) %}
                 <a class="btn btn-outline-secondary mb-3" href="{{ url('edit-question', question_id=question.id) }}"><i class="bi bi-pencil" aria-hidden="true"></i> Edit
                     question</a>

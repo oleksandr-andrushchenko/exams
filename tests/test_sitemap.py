@@ -126,6 +126,9 @@ def test_sitemap_covers_all_pages_and_uses_record_dates(sitemap_context, monkeyp
         "p2": [],
         "p3": [SimpleNamespace(id="q3", slug="third-question", created_at=1_704_153_600_000, updated_at=None)],
     }
+    for items in questions.values():
+        for question in items:
+            question.status = api_utils.QuestionStatus.PUBLISHED
     question_calls = []
 
     def get_questions(exam_id):

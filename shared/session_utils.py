@@ -15,7 +15,7 @@ from shared_utils import (
     get_exam,
     utc_now,
 )
-from question_utils import get_questions
+from question_utils import can_read_question, get_questions
 
 
 @dataclass(slots=True)
@@ -90,8 +90,8 @@ def get_sessions(user_id: str) -> list[ExamSession]:
 def create_session(exam_id: str, user: User) -> ExamSession:
     if get_active_session(user.id):
         raise ActiveExamSessionError("Complete your active exam before starting another exam")
-    get_exam(exam_id, user)
-    questions = get_questions(exam_id)
+    exam = get_exam(exam_id, user)
+    questions = [question for question in get_questions(exam_id) if can_read_question(question, user, exam)]
     if not questions:
         raise ValueError("An exam must have at least one question")
     session_id = str(uuid4())

@@ -1,12 +1,19 @@
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from typing import Any
 from uuid import uuid4
 
+from query_dtos import ExamStatus, QuestionQueryDTO, QuestionStatus
+
 from shared_utils import (
     Key,
+    NotAuthenticatedError,
+    check_authorization,
+    decode_offset,
+    encode_offset,
     Permission,
     User,
     UserStatus,
+    UserBannedError,
     add_dynamodb_delete_transact,
     add_dynamodb_put_transact,
     add_dynamodb_update_transact,
@@ -30,6 +37,10 @@ class Question:
     created_at: int
     updated_at: int | None
     reference_urls: list[str] = field(default_factory=list)
+    status: QuestionStatus = QuestionStatus.UNPUBLISHED
+    comment: str | None = None
+    offset: str | None = None
+    exam_title: str | None = None
 
 
 def question_from_dynamodb(item: dict[str, Any]) -> Question:
@@ -51,6 +62,9 @@ def question_from_dynamodb(item: dict[str, Any]) -> Question:
         reference_urls=item.get("reference_urls") or [],
         created_at=int(item["created_at"]),
         updated_at=item.get("updated_at"),
+        status=QuestionStatus(item.get("status", QuestionStatus.UNPUBLISHED)),
+        comment=item.get("comment"),
+        exam_title=item.get("exam_title"),
     )
 
 
@@ -85,6 +99,7 @@ def get_questions(exam_id: str) -> list[Question]:
     table = get_dynamodb_table()
     params = {
         "KeyConditionExpression": Key("pk").eq(f"EXAM#{exam_id}") & Key("sk").begins_with("QUESTION#"),
+        "ConsistentRead": True,
     }
     questions = []
     while True:
@@ -95,13 +110,117 @@ def get_questions(exam_id: str) -> list[Question]:
         params["ExclusiveStartKey"] = response["LastEvaluatedKey"]
 
 
-def get_all_questions(limit: int = 100) -> list[Question]:
-    response = get_dynamodb_table().query(
-        KeyConditionExpression=Key("pk").eq("QUESTIONS"),
-        Limit=limit,
-        ScanIndexForward=False,
+def get_question_listing(query: QuestionQueryDTO, user: User | None = None) -> list[Question]:
+    if query.status != QuestionStatus.PUBLISHED:
+        if user is None:
+            raise NotAuthenticatedError()
+        verify_authorization(user, Permission.READ_NON_PUBLISHED_QUESTION)
+    params = {
+        "KeyConditionExpression": Key("pk").eq(f"QUESTIONS#{query.status}"),
+        "Limit": query.limit,
+        "ScanIndexForward": False,
+        "ConsistentRead": True,
+    }
+    if query.offset:
+        params["ExclusiveStartKey"] = decode_offset(query.offset)
+    response = get_dynamodb_table().query(**params)
+    questions = [question_from_dynamodb(item) for item in response.get("Items", [])]
+    if questions and response.get("LastEvaluatedKey"):
+        questions[-1].offset = encode_offset(response["LastEvaluatedKey"])
+    return questions
+
+
+def can_read_question(question: Question, user: User | None = None, exam=None) -> bool:
+    return (question.status == QuestionStatus.PUBLISHED or bool(user and (
+        (exam and user.id == exam.owner_id)
+        or check_authorization(user, Permission.READ_NON_PUBLISHED_QUESTION, question)
+    )))
+
+
+def verify_question_access(question: Question, user: User | None = None, exam=None) -> None:
+    if can_read_question(question, user, exam):
+        return
+    if user is None:
+        raise NotAuthenticatedError()
+    verify_authorization(user, Permission.READ_NON_PUBLISHED_QUESTION, question)
+
+
+def question_listing_item(question: Question) -> dict[str, Any]:
+    return {key: value for key, value in asdict(question).items()
+            if key not in {"choices", "reference_urls", "offset"}}
+
+
+def add_question_status_transacts(transacts, question, status, comment=None):
+    status = QuestionStatus(status)
+    updated = replace(question, status=status, comment=comment, updated_at=utc_now(), offset=None)
+    add_dynamodb_update_transact(transacts, (f"EXAM#{question.exam_id}", f"QUESTION#{question.id}"),
+                                {"status": status, "comment": comment, "updated_at": updated.updated_at,
+                                 "exam_title": question.exam_title},
+                                add_updated_at=False)
+    update = transacts[-1]["Update"]
+    update["ConditionExpression"] = (
+        "attribute_exists(pk) AND (attribute_not_exists(#old_status) OR #old_status = :old_status) "
+        "AND (attribute_not_exists(#old_updated) OR #old_updated = :old_updated)"
     )
-    return [question_from_dynamodb(item) for item in response.get("Items", [])]
+    update["ExpressionAttributeNames"].update({"#old_status": "status", "#old_updated": "updated_at"})
+    update["ExpressionAttributeValues"].update({":old_status": question.status, ":old_updated": question.updated_at})
+    if question.status != status:
+        add_dynamodb_delete_transact(transacts, (f"QUESTIONS#{question.status}", f"{question.created_at}#{question.id}"))
+    add_dynamodb_put_transact(transacts, (f"QUESTIONS#{status}", f"{question.created_at}#{question.id}"),
+                             question_listing_item(updated))
+    return updated
+
+
+def synchronize_exam_questions(exam, status):
+    """Move questions and their discovery records in bounded, retryable transactions."""
+    lock = []
+    started_at = utc_now()
+    add_dynamodb_update_transact(lock, (f"EXAM#{exam.id}", "META"),
+                                {"question_status_sync_pending": True, "question_status_sync_started_at": started_at},
+                                add_updated_at=False)
+    claim = lock[-1]["Update"]
+    claim["ConditionExpression"] = (
+        "attribute_not_exists(#pending) OR #pending = :false OR #started < :expired"
+    )
+    claim["ExpressionAttributeNames"].update({"#pending": "question_status_sync_pending",
+                                            "#started": "question_status_sync_started_at"})
+    claim["ExpressionAttributeValues"].update({":false": False, ":expired": started_at - 120_000})
+    dynamodb_transact_write(lock)
+    transacts = []
+    for question in get_questions(exam.id):
+        if len(transacts) > 96:
+            dynamodb_transact_write(transacts)
+            transacts = []
+        add_question_status_transacts(transacts, replace(question, exam_title=exam.title), QuestionStatus(status))
+    if transacts:
+        dynamodb_transact_write(transacts)
+
+
+def complete_question_status_sync(exam):
+    transacts = []
+    add_dynamodb_update_transact(transacts, (f"EXAM#{exam.id}", "META"),
+                                {"question_status_sync_pending": False}, add_updated_at=False)
+    dynamodb_transact_write(transacts)
+
+
+def update_question_status(exam, question, dto, user):
+    verify_authorization(user, Permission.UPDATE_QUESTION_STATUS)
+    if user.status == UserStatus.BANNED:
+        raise UserBannedError()
+    if dto.status == QuestionStatus.PUBLISHED and exam.status != ExamStatus.PUBLISHED:
+        raise ValueError("Publish the parent exam before publishing an individual question")
+    transacts = []
+    updated = add_question_status_transacts(transacts, question, dto.status, dto.comment)
+    if dto.status == QuestionStatus.PUBLISHED:
+        transacts.append({"ConditionCheck": {
+            "TableName": get_dynamodb_table().name,
+            "Key": {"pk": f"EXAM#{exam.id}", "sk": "META"},
+            "ConditionExpression": "#status = :published AND (attribute_not_exists(#pending) OR #pending = :false)",
+            "ExpressionAttributeNames": {"#status": "status", "#pending": "question_status_sync_pending"},
+            "ExpressionAttributeValues": {":published": ExamStatus.PUBLISHED, ":false": False},
+        }})
+    dynamodb_transact_write(transacts)
+    return updated
 
 
 def question_without_answers(question: Question) -> dict[str, Any]:
@@ -120,12 +239,12 @@ def create_question(exam, dto, user: User) -> Question:
         raise PermissionError("BANNED")
     now = utc_now()
     question = Question(str(uuid4()), exam.id, user.id, to_kebab_case(dto.title), dto.title,
-                        dto.choices, now, None, dto.reference_urls)
+                        dto.choices, now, None, dto.reference_urls, exam_title=exam.title)
     item = {
         **asdict(question),
         "question": True,
     }
-    list_item = {key: value for key, value in asdict(question).items() if key not in {"choices", "reference_urls"}}
+    list_item = question_listing_item(question)
     transacts = []
     add_dynamodb_put_transact(transacts, (f"EXAM#{exam.id}", f"QUESTION#{question.id}"), item, new_pk_only=True)
     add_dynamodb_put_transact(transacts, (f"QUESTION#{question.id}", "META"), {
@@ -134,7 +253,7 @@ def create_question(exam, dto, user: User) -> Question:
     }, new_pk_only=True)
     add_dynamodb_put_transact(
         transacts,
-        ("QUESTIONS", f"{now}#{question.id}"),
+        (f"QUESTIONS#{question.status}", f"{now}#{question.id}"),
         list_item,
         new_pk_only=True,
     )
@@ -155,6 +274,8 @@ def update_question(question: Question, dto, user: User) -> Question:
     if "title" in changes:
         changes["slug"] = to_kebab_case(changes["title"])
     changes["updated_at"] = utc_now()
+    changes["status"] = QuestionStatus.UNPUBLISHED
+    changes["comment"] = None
     transacts = []
     add_dynamodb_update_transact(
         transacts,
@@ -162,17 +283,20 @@ def update_question(question: Question, dto, user: User) -> Question:
         changes=changes,
         add_updated_at=False,
     )
-    list_changes = {
-        key: value
-        for key, value in changes.items()
-        if key in {"title", "slug", "updated_at"}
-    }
-    add_dynamodb_update_transact(
-        transacts,
-        ("QUESTIONS", f"{question.created_at}#{question.id}"),
-        changes=list_changes,
-        add_updated_at=False,
+    updated = replace(question, **changes)
+    update = transacts[0]["Update"]
+    update["ConditionExpression"] = (
+        "attribute_exists(pk) AND (attribute_not_exists(#old_status) OR #old_status = :old_status) "
+        "AND (attribute_not_exists(#old_updated) OR #old_updated = :old_updated)"
     )
+    update["ExpressionAttributeNames"].update({"#old_status": "status", "#old_updated": "updated_at"})
+    update["ExpressionAttributeValues"].update({":old_status": question.status, ":old_updated": question.updated_at})
+    if question.status != QuestionStatus.UNPUBLISHED:
+        add_dynamodb_delete_transact(transacts, (f"QUESTIONS#{question.status}", f"{question.created_at}#{question.id}"))
+    updated.status = QuestionStatus.UNPUBLISHED
+    updated.comment = None
+    add_dynamodb_put_transact(transacts, (f"QUESTIONS#{updated.status}", f"{question.created_at}#{question.id}"),
+                             question_listing_item(updated))
     dynamodb_transact_write(transacts)
     for key, value in changes.items():
         if hasattr(question, key):
@@ -188,6 +312,7 @@ def delete_question(question: Question, user: User) -> None:
     transacts = []
     add_dynamodb_delete_transact(transacts, (f"EXAM#{question.exam_id}", f"QUESTION#{question.id}"))
     add_dynamodb_delete_transact(transacts, (f"QUESTION#{question.id}", "META"))
+    add_dynamodb_delete_transact(transacts, (f"QUESTIONS#{question.status}", f"{question.created_at}#{question.id}"))
     add_dynamodb_delete_transact(transacts, ("QUESTIONS", f"{question.created_at}#{question.id}"))
     add_dynamodb_update_transact(
         transacts,

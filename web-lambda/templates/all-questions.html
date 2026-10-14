@@ -1,5 +1,8 @@
 {% extends "layout.html" %}
 {% set title = "Questions" %}
+{% if question_query.status != QuestionStatus.PUBLISHED %}
+    {% set meta_robots = "noindex, nofollow" %}
+{% endif %}
 {% block breadcrumbs %}
     {% with breadcrumbs = {"Home": url("index"), "Questions": None} %}
         {% include "fragments/breadcrumbs.html" %}
@@ -7,20 +10,31 @@
 {% endblock %}
 {% block content %}
     <h1>{{ title }}</h1>
-    {% if questions %}
-        <div class="list-group">
-            {% for question in questions %}
-                {% set exam = exams[question.exam_id] %}
-                {% if exam.user_slug and exam.slug %}
-                    {% set question_url = url('question-by-slugs', user_slug=exam.user_slug, exam_slug=exam.slug, question_slug=question.slug) %}
-                {% else %}
-                    {% set question_url = url('question-by-id', question_id=question.id) %}
-                {% endif %}
-                <a class="list-group-item list-group-item-action" href="{{ question_url }}">
-                    <strong>{{ question.title }}</strong>
-                    <small class="d-block mt-2">Exam: {{ exam.title }} · Category: {{ exam.category }} · Tags: {{ exam.tags | join(', ') }}</small>
-                </a>
+    {% if cur_user and check_auth(cur_user, Permission.READ_NON_PUBLISHED_QUESTION) %}
+        <nav class="d-flex flex-wrap gap-2 mb-3" aria-label="Question status">
+            {% for status in QuestionStatus %}
+                <a class="btn btn-sm {{ 'btn-primary' if question_query.status == status else 'btn-outline-secondary' }}"
+                   href="{{ url('questions-all', status=status.value) }}">{{ status.value|title }}</a>
             {% endfor %}
+        </nav>
+    {% endif %}
+    {% if questions %}
+        <div class="list-group mb-3" id="question-list">
+            {% include "fragments/question-list.html" %}
         </div>
-    {% else %}<p class="text-secondary">No questions yet.</p>{% endif %}
+        {% with limit=question_query.limit, offset=questions[-1].offset,
+                next_page_url=url('questions-all', **question_query.get_dict({'offset': questions[-1].offset})),
+                first_page_url=url('questions-all', **question_query.get_dict({'offset': none})) if question_query.offset else none,
+                url=url('questions-fragment', absolute=True, **question_query.get_dict()),
+                container="#question-list", auto_click=True %}
+            {% include "fragments/load-more-button.html" %}
+        {% endwith %}
+    {% else %}
+        <p class="text-secondary">No {{ question_query.status.value }} questions yet.</p>
+        {% if question_query.offset %}
+            <a href="{{ url('questions-all', **question_query.get_dict({'offset': none})) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-bar-left" aria-hidden="true"></i> Back to first page
+            </a>
+        {% endif %}
+    {% endif %}
 {% endblock %}

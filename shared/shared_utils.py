@@ -29,7 +29,7 @@ from api_route_metadata import API_URL_ROUTES
 from basic_dtos import UserTokenDTO
 from exam_dtos import (ExamCommentImpressionAction, ExamImpressionAction)
 from notifications import configure_telegram_logging
-from query_dtos import (BaseQueryDTO, ExamCommentQueryDTO, ExamQueryDTO, ExamQueryType, ExamStatus,
+from query_dtos import (BaseQueryDTO, ExamCommentQueryDTO, ExamQueryDTO, ExamQueryType, ExamStatus, QuestionStatus,
                         TagQueryDTO, TagQueryType, UserQueryDTO, UserQueryType, UserStatus)
 from tag_subscription_dtos import TagSubscription
 from user_dtos import UserImpressionAction
@@ -363,6 +363,8 @@ class Permission(StrEnum):
     UPDATE_EXAM_STATUS = "update_exam_status"
     CREATE_QUESTION = "create_question"
     UPDATE_QUESTION = "update_question"
+    UPDATE_QUESTION_STATUS = "update_question_status"
+    READ_NON_PUBLISHED_QUESTION = "read_non_published_question"
     CREATE_CONTACT_MESSAGE = "create_contact_message"
     UPDATE_EXAM_IMPRESSION = "toggle_exam_impression"
     READ_NON_PUBLISHED_EXAM = "read_non_published_exam"
@@ -1174,6 +1176,7 @@ def get_jinja2_env():
         "Permission": Permission,
         "check_auth": check_authorization,
         "ExamStatus": ExamStatus,
+        "QuestionStatus": QuestionStatus,
         "ExamImpressionAction": ExamImpressionAction,
         "UserImpressionAction": UserImpressionAction,
         "ExamQueryType": ExamQueryType,

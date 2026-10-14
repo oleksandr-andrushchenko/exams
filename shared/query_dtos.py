@@ -119,6 +119,32 @@ class ExamStatus(StrEnum):
     REJECTED = "rejected"
 
 
+class QuestionStatus(StrEnum):
+    UNPUBLISHED = "unpublished"
+    PUBLISHED = "published"
+    REJECTED = "rejected"
+
+
+@dataclass(slots=True)
+class QuestionQueryDTO(BaseQueryDTO):
+    status: QuestionStatus = QuestionStatus.PUBLISHED
+
+    def __post_init__(self):
+        BaseQueryDTO.__post_init__(self)
+        self.status = QuestionStatus(self.status)
+        if self.offset is None:
+            return
+        try:
+            cursor = json.loads(base64.b64decode(self.offset, altchars=b'-_', validate=True).decode())
+        except (ValueError, UnicodeError, TypeError, RecursionError) as exc:
+            raise ValueError("offset must be a valid question cursor") from exc
+        if (not isinstance(cursor, dict) or set(cursor) != {"pk", "sk"}
+                or cursor["pk"] != f"QUESTIONS#{self.status}"
+                or not isinstance(cursor["sk"], str) or len(cursor["sk"]) > 1024
+                or not re.fullmatch(r"[0-9]+#[A-Za-z0-9-]+", cursor["sk"])):
+            raise ValueError("offset does not match this question status")
+
+
 @dataclass(slots=True)
 class ExamQueryDTO(BaseQueryDTO):
     DEFAULT_TYPE = ExamQueryType.LATEST
