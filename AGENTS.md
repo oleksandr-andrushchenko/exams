@@ -98,6 +98,9 @@
 
 ## Web errors
 
+- Exam and question reads return 404 when the visitor cannot access nonpublished content, including rejected content.
+  Apply this to ID and slug URLs and API resource reads; preserve owner/moderator access. Authentication and permission
+  errors on protected listings and unrelated operations retain their normal 401/403 responses.
 - Login/logout return destinations must be same-origin application pages, never authentication endpoints. Validate
   both the incoming return URL/referrer and the saved `redirect_url` cookie, then clear that cookie after the callback.
   Returning to a login callback reuses a single-use authorization code and causes a repeated Cognito `invalid_grant`.

@@ -1660,10 +1660,9 @@ def get_exam(exam_id: str, cur_user: User = None) -> Exam:
     exam = find_exam(exam_id)
     if exam is None:
         raise ExamNotFoundError(f"Post '{exam_id}' not found")
-    if exam.status != ExamStatus.PUBLISHED:
-        if not cur_user:
-            raise NotAuthenticatedError()
-        verify_authorization(cur_user, Permission.READ_NON_PUBLISHED_EXAM, exam)
+    if exam.status != ExamStatus.PUBLISHED and (
+            not cur_user or not check_authorization(cur_user, Permission.READ_NON_PUBLISHED_EXAM, exam)):
+        raise ExamNotFoundError(f"Post '{exam_id}' not found")
     return exam
 
 

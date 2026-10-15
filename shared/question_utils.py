@@ -138,11 +138,8 @@ def can_read_question(question: Question, user: User | None = None, exam=None) -
 
 
 def verify_question_access(question: Question, user: User | None = None, exam=None) -> None:
-    if can_read_question(question, user, exam):
-        return
-    if user is None:
-        raise NotAuthenticatedError()
-    verify_authorization(user, Permission.READ_NON_PUBLISHED_QUESTION, question)
+    if not can_read_question(question, user, exam):
+        raise LookupError(f"Question '{question.id}' not found")
 
 
 def question_listing_item(question: Question) -> dict[str, Any]:

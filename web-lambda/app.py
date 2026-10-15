@@ -746,8 +746,11 @@ async def exam_session_page(session_id: str, cur_user: CurUserDep) -> str:
 
 
 async def _render_question_page(question, cur_user: OptCurUserDep) -> str:
-    exam = get_exam(question.exam_id, cur_user)
-    verify_question_access(question, cur_user, exam)
+    try:
+        exam = get_exam(question.exam_id, cur_user)
+        verify_question_access(question, cur_user, exam)
+    except (ExamNotFoundError, LookupError) as exc:
+        raise HTTPException(status_code=404, detail="Question not found") from exc
     author, certification, active_session = await asyncio.gather(
         to_thread(find_user, exam.owner_id),
         to_thread(find_certification, exam.certification_slug) if exam.certification_slug else asyncio.sleep(0, result=None),

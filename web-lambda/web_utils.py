@@ -9,7 +9,7 @@ from shared_utils import (
     ExamByOldSlugRequestedError, User, UserStatus, UserNotFoundError,
     UserByOldSlugRequestedError, NotAuthenticatedError, Permission,
     find_exam_by_slug_follow_redirects, find_user_by_username_follow_redirects,
-    verify_authorization, get_web_base_url, is_prod, get_auth_token_max_age,
+    verify_authorization, check_authorization, get_web_base_url, is_prod, get_auth_token_max_age,
     get_dynamodb_table, exam_from_dynamodb, query_dynamodb_table, Key, to_thread,
 )
 
@@ -273,10 +273,9 @@ def get_exam_by_slugs(user_slug: str, exam_slug: str, cur_user: User = None) -> 
         raise ExamNotFoundError(f"Post '{exam_slug}' not found")
     if exam.user_slug != user_slug:
         raise UserNotFoundError(f"User '{user_slug}' not found")
-    if exam.status != ExamStatus.PUBLISHED:
-        if not cur_user:
-            raise NotAuthenticatedError()
-        verify_authorization(cur_user, Permission.READ_NON_PUBLISHED_EXAM, exam)
+    if exam.status != ExamStatus.PUBLISHED and (
+            not cur_user or not check_authorization(cur_user, Permission.READ_NON_PUBLISHED_EXAM, exam)):
+        raise ExamNotFoundError(f"Post '{exam_slug}' not found")
     if exam.slug != exam_slug:
         raise ExamByOldSlugRequestedError(exam_slug, exam)
     return exam

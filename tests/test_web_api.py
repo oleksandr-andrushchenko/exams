@@ -1163,7 +1163,7 @@ def test_exam_read_edit_update_status_endpoints_success_and_failure(guest_client
     assert duration_cleared.status_code == 200, duration_cleared.text
     assert dynamodb_table.get_item(Key={"pk": f"EXAM#{exam_id}", "sk": "META"})["Item"].get("duration_minutes") is None
     edit_failure = get(regular_client, f"/exams/{exam_id}/edit")
-    assert edit_failure.status_code == 403
+    assert edit_failure.status_code == 404
 
     invalid_description = patch(root_client, f"/exams/{exam_id}", json={
         "description": "<p>HTML is not allowed in exam descriptions.</p>",
@@ -1894,8 +1894,8 @@ def test_questions_listing_skips_inaccessible_and_missing_exams(guest_client):
             for question in [public, private, owned]:
                 assert (question["title"] in text) == (question in expected)
             assert orphan_title not in text
-        assert get(guest_client, f"/questions/{private['id']}").status_code == 401
-        assert get(regular_client, f"/questions/{private['id']}").status_code == 403
+        assert get(guest_client, f"/questions/{private['id']}").status_code == 404
+        assert get(regular_client, f"/questions/{private['id']}").status_code == 404
         assert get(regular_client, f"/questions/{owned['id']}").status_code == 200
     finally:
         dynamodb_table.delete_item(Key=orphan_key)
@@ -1934,7 +1934,7 @@ def test_question_publication_lifecycle_and_status_pagination(guest_client):
         assert listing["title"] == question["title"]
         assert "choices" not in listing
     draft = add_question(65)
-    assert get(guest_client, f"/questions/{draft['id']}").status_code == 401
+    assert get(guest_client, f"/questions/{draft['id']}").status_code == 404
     public = get(guest_client, f"/exams/{exam_id}/questions").json()
     assert len(public) == 65
     assert draft["id"] not in {question["id"] for question in public}
@@ -1979,7 +1979,7 @@ def test_question_publication_lifecycle_and_status_pagination(guest_client):
 
     unpublished = post(root_client, path, json={"status": "unpublished"})
     assert unpublished.status_code == 200, unpublished.text
-    assert get(guest_client, f"/questions/{initial[0]['id']}").status_code == 401
+    assert get(guest_client, f"/questions/{initial[0]['id']}").status_code == 404
     assert initial[0]["title"] not in pq(get(guest_client, "/questions").text)("#question-list").text()
     assert post(root_client, status_path, json={"status": "published"}).status_code == 422
     republished = post(root_client, path, json={"status": "published"})
@@ -2047,3 +2047,72 @@ def test_legacy_question_status_backfill_preserves_publication_intent(guest_clie
     totals = json.loads(retry.stdout.splitlines()[-1])["totals"]
     assert totals["planned"] == 0
     assert totals["errors"] == 0
+
+
+@pytest.mark.parametrize("exam_status,question_status", [
+    ("unpublished", "unpublished"),
+    ("rejected", "rejected"),
+    ("published", "unpublished"),
+    ("published", "rejected"),
+])
+def test_nonpublic_content_returns_404_without_hiding_author_review(guest_client, exam_status, question_status):
+    owner_client = get_logged_in_client(regular_user)
+    other_client = get_logged_in_client(regular_2_user)
+    root_client = get_logged_in_client(root_user)
+    username = "visibility-author"
+    updated = patch(owner_client, f"/users/{user_ids['regular']}", json={"username": username})
+    assert updated.status_code == 200, updated.text
+    title = f"Private visibility {exam_status} {question_status} exam"
+    created = post(owner_client, "/exams", json={
+        "title": title, "description": "Private content visibility and authorized review coverage.",
+        "tags": ["visibility-test"],
+    })
+    assert created.status_code == 200, created.text
+    slug = title.lower().replace(" ", "-")
+    exam_id = dynamodb_table.get_item(Key={"pk": f"EXAM_SLUG#{slug}", "sk": "META"})["Item"]["exam_id"]
+    response = post(owner_client, f"/exams/{exam_id}/questions", json={
+        "title": f"Private visibility {exam_status} {question_status} question?",
+        "choices": [
+            {"title": "Correct", "explanation": "The supported choice for this scenario.", "is_correct": True},
+            {"title": "Incorrect", "explanation": "This choice does not satisfy the scenario.", "is_correct": False},
+        ],
+    })
+    assert response.status_code == 200, response.text
+    question = response.json()
+    if exam_status != "unpublished":
+        status = post(root_client, f"/exams/{exam_id}/status", json={
+            "status": exam_status, "comment": "Needs review." if exam_status == "rejected" else None,
+        })
+        assert status.status_code == 200, status.text
+    if exam_status == "published":
+        status = post(root_client, f"/exams/{exam_id}/questions/{question['id']}/status", json={
+            "status": question_status, "comment": "Needs review." if question_status == "rejected" else None,
+        })
+        assert status.status_code == 200, status.text
+
+    exam_urls = [f"/exams/{exam_id}", f"/@{username}/{slug}"]
+    question_urls = [f"/questions/{question['id']}", f"/@{username}/{slug}/{question['slug']}",
+                     f"/exams/{exam_id}/questions/{question['id']}"]
+    for client in (guest_client, other_client):
+        for url in exam_urls:
+            assert get(client, url).status_code == (200 if exam_status == "published" else 404)
+        for url in question_urls:
+            hidden = get(client, url)
+            assert hidden.status_code == 404, hidden.text
+            assert question["title"] not in hidden.text
+        hidden_json = get(client, question_urls[2])
+        assert hidden_json.status_code == 404
+        assert hidden_json.json()["code"] == 404
+    for client in (owner_client, root_client):
+        for url in exam_urls + question_urls:
+            accessible = get(client, url)
+            assert accessible.status_code == 200, accessible.text
+
+    if exam_status != "published":
+        renamed = post(root_client, f"/exams/{exam_id}/status", json={"status": "unpublished"})
+        assert renamed.status_code == 200, renamed.text
+        renamed = patch(owner_client, f"/exams/{exam_id}", json={"title": title + " revised"})
+        assert renamed.status_code == 200, renamed.text
+        assert get(guest_client, exam_urls[1], allow_redirects=False).status_code == 404
+        assert get(other_client, exam_urls[1], allow_redirects=False).status_code == 404
+        assert get(owner_client, exam_urls[1], allow_redirects=False).status_code == 308

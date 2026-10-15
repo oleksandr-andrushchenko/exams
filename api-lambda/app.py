@@ -537,9 +537,9 @@ async def _get_questions(exam: ExamDep, cur_user: OptCurUserDep) -> list:
 async def _get_question(exam: ExamDep, question_id: str, cur_user: OptCurUserDep):
     try:
         question = get_question(exam.id, question_id)
+        verify_question_access(question, cur_user, exam)
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    verify_question_access(question, cur_user, exam)
     return question if cur_user and cur_user.id == exam.owner_id else question_without_answers(question)
 
 
