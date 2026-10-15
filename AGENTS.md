@@ -142,6 +142,11 @@
 - DynamoDB exam records use `EXAM#<id>` partitions; questions are stored beneath an exam as `QUESTION#<id>` sort keys.
 - Certification `duration_minutes` and `question_count` describe the official exam. Practice-exam `duration_minutes`
   is an optional suggested time, not an enforced session deadline; actual exam question counts remain derived.
+- When a provider publishes a question-count range or an approximate count, leave certification `question_count`
+  unset and preserve the published format in its description. Keep approximate blueprint percentages as published;
+  normalize them only when allocating practice questions. Do not invent an `exam_code` that the provider does not publish.
+- Certifications currently have no publication status: creating a certification makes its catalog card public.
+  Unpublished linked exams and questions do not hide the certification.
 - Question `reference_urls` are optional HTTP(S) review links. Keep them out of learner API projections and in-progress
   sessions; show them to authors and in finalized session reviews.
 - Questions are validated in `shared/question_dtos.py` and exposed by the API under `/exams/{exam_id}/questions`.
@@ -168,6 +173,9 @@
   command. The bootstrap defaults `AWS_PROFILE` to `AWS_PROJECT` and resolves `DYNAMODB_TABLE` from `AWS_STACK`'s
   `DynamoDbTableName` output unless explicitly configured. Run commands directly through `scripts-production`;
   no extra environment flags are needed. Keep these process-bootstrap environment reads out of application modules.
+- Production scripts that upload public media must also configure `STATIC_S3_BUCKET` before calling `save_public_file`.
+  The standard bootstrap resolves the table only; resolve the bucket from the deployed stack's `SiteBucket` resource
+  during process bootstrap when `.env.prod` does not provide it, and validate required configuration before item writes.
 - After DynamoDB schema/index changes, run `make recreate-local-dynamodb`; the local table is persistent and cannot be
   migrated in place. Local AWS CLI commands default to `us-west-2`.
 - Exams maintain a transactional `questions_count` counter. Query exam questions with the `EXAM#<id>` partition and
