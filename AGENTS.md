@@ -61,7 +61,7 @@
 
 - Do not underline non-link headings. Apply link decoration to anchors rather than the heading container.
 
-- External HTTP(S) links must include `rel="nofollow"`; preserve `noopener noreferrer` when present. Apply this to
+- External HTTP(S) links must use `target="_blank"` and `rel="nofollow noopener noreferrer"`. Apply this to
   user links, certification and question references, configured social links, and social-sharing controls.
 
 - Prefer Bootstrap 5 components and utility classes for presentation changes before adding custom rules to

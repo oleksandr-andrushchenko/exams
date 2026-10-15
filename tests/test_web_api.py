@@ -159,8 +159,9 @@ def check_external_links_are_nofollow(doc):
     for link in doc("a[href]").items():
         href = link.attr("href")
         parsed = urlsplit(href)
-        if parsed.scheme in {"http", "https"} and parsed.netloc != site_host:
-            assert "nofollow" in (link.attr("rel") or "").split(), href
+        if parsed.netloc and parsed.scheme in {"", "http", "https"} and parsed.netloc != site_host:
+            assert link.attr("target") == "_blank", href
+            assert {"nofollow", "noopener", "noreferrer"} <= set((link.attr("rel") or "").split()), href
     for link in doc(".share-btn:not(.email)").items():
         assert {"nofollow", "noopener", "noreferrer"} <= set((link.attr("rel") or "").split())
 
