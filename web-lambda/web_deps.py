@@ -6,7 +6,8 @@ from starlette.responses import HTMLResponse
 
 from shared_deps import OptCurUserDep
 from query_dtos import ExamListingQueryDTO, ExamQueryDTO, UserQueryDTO
-from shared_utils import Exam, User, ExamNotFoundError, UserNotFoundError, get_html_content
+from shared_utils import User, ExamNotFoundError, UserNotFoundError, get_html_content
+from exam_utils import Exam
 from web import Depends, HTTPException, Request, parse_dto
 from web_utils import get_exam_by_slugs, get_user_by_slug, parse_exams_url_slugs_path
 

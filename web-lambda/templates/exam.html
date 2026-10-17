@@ -203,11 +203,7 @@
                     <ol class="list-group list-group-numbered">
                         {% for question in questions %}
                             <li class="list-group-item">
-                                {% if exam.user_slug and exam.slug %}
-                                    <a href="{{ url('question-by-slugs', user_slug=exam.user_slug, exam_slug=exam.slug, question_slug=question.slug) }}">{{ question.title }}</a>
-                                {% else %}
-                                    <a href="{{ url('question-by-id', question_id=question.id) }}">{{ question.title }}</a>
-                                {% endif %}
+                                <a href="{{ url('question-by-id', question_id=question.id) }}">{{ question.title }}</a>
                                 {% if cur_user and check_auth(cur_user, Permission.UPDATE_QUESTION, question) %}
                                     <a class="btn btn-link btn-sm"
                                        href="{{ url('edit-question', question_id=question.id) }}"><i class="bi bi-pencil" aria-hidden="true"></i> Edit</a>

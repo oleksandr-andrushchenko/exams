@@ -1,5 +1,5 @@
 {% for exam in exams %}
-    {% with exam_image_loading="eager" if loop.index <= eager_exam_images | default(0) else "lazy" %}
+    {% with exam=exam %}
         {% if horizontal | default(False) %}
             {% include "fragments/horizontal-exam.html" %}
         {% else %}

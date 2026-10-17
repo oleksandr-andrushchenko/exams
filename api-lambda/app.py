@@ -29,8 +29,6 @@ from api_utils import (
     create_contact_message,
     update_exam_status,
     get_users,
-    get_latest_exams_by_user,
-    get_exams,
     get_all_exams,
     get_all_exam_hrefs,
     find_user,
@@ -45,7 +43,6 @@ from api_utils import (
     update_user_status,
     UserBannedError,
     get_allowed_origins,
-    find_exam,
     create_exam_comment,
     get_exam_comments,
     update_exam_comment,
@@ -58,8 +55,10 @@ from api_utils import (
     update_category,
     upsert_redirect,
 )
+from exam_utils import get_latest_exams_by_user, get_exams, find_exam
 from certification_dtos import CertificationDTO
-from certification_utils import create_certification, get_certification, get_certifications, update_certification
+from certification_utils import create_certification, get_certification, get_certifications
+from certification_mutations import update_certification
 from deps import (
     ImageFileDTODep,
     ExamCommentQueryDep,
@@ -135,17 +134,17 @@ async def _get_certifications():
 @route("post", "create-certification", response_class=JSONResponse, status_code=201)
 async def _create_certification(request: Request, certification: CertificationDTO, cur_user: CurUserDep) -> str:
     certification = create_certification(certification, cur_user)
-    return get_url(request, "certification", slug=certification.slug)
+    return get_url(request, "certification", certification_id=certification.id)
 
 
 @route("patch", "update-certification", response_class=JSONResponse)
-async def _update_certification(slug: str, dto: CertificationDTO, cur_user: CurUserDep, request: Request) -> str:
+async def _update_certification(certification_id: str, dto: CertificationDTO, cur_user: CurUserDep, request: Request) -> str:
     try:
-        certification = get_certification(slug)
+        certification = get_certification(certification_id)
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    update_certification(certification, dto, cur_user)
-    return get_url(request, "certification", slug=certification.slug)
+    await to_thread(update_certification, certification, dto, cur_user)
+    return get_url(request, "certification", certification_id=certification.id)
 
 
 from web_route_metadata import WEB_URL_ROUTES

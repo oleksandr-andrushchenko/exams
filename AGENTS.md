@@ -71,6 +71,13 @@
   `col_classes` includes the base `col` class; use `"def": 12` when a responsive column must stack at full width.
 - Exam card grids use `row_classes` with `def: 1, sm: 2, lg: 3`; certification catalog grids use
   `def: 1, md: 2, lg: 4`. Individual exam and certification cards in detail-page sidebars remain full width.
+- Exam cards use a compact linked certification name and circular badge inside the body instead of a large cover
+  image. Certification cards retain their top images; exam cover images appear on exam detail pages.
+- Homepage certifications default to one DynamoDB query with `Limit=4` in ID order, owned by
+  `web_utils.get_homepage_certifications`. A nonempty `index_page_certification_ids` array in `shared/data.json`
+  overrides the selection and count in every environment, using one `BatchGetItem` request for exact catalog keys.
+  Preserve configured order, deduplicate IDs, and omit missing records. Support up to 100 distinct IDs and fail on
+  unprocessed keys rather than silently showing an incomplete selection.
 - Bootstrap and Bootstrap Icons are loaded centrally in `web-lambda/templates/layout.html`. Exam cards live in
   `shared/templates/fragments` and are also returned by lazy-loading endpoints; keep their styles and markup consistent
   for initial page renders and appended results.
@@ -142,19 +149,47 @@
 
 - The application now follows the ExamMe Python/Starlette two-Lambda layout: shared modules live in `shared`, and
   Lambda-specific code stays in `api-lambda` or `web-lambda`.
+- Shared exam models, DynamoDB mapping, access checks, and listing queries live in `shared/exam_utils.py`.
+  Import exam symbols directly from that module; API mutations remain in `api-lambda/api_utils.py`, while
+  presentation helpers remain with their owner. `shared_utils.py` keeps configuration and persistence primitives.
+- New exam and question IDs use `shared/content_ids.py`: the initial title plus a 16-character random hex suffix.
+  IDs remain immutable on title edits, duplicate titles are allowed, and new records have no separate slug field.
+  Preserve the full normalized title where it fits; cap IDs at 600 UTF-8 bytes and 1,800 percent-encoded characters
+  so secondary keys and sitemap URLs fit. Canonical URLs are `/exams/{exam_id}` and `/questions/{question_id}`.
+- Legacy UUIDs and author/title URLs remain readable and redirect with 308 after access checks, preserving queries.
+  Legacy slug fields are used only by old-route resolution and migration aliases, never by new content writes.
+- Deploy the backward-compatible reader before running `scripts/migrate_ids.py --user-id ID` through the production
+  scripts service: it runs certification, exam, and question migrations in order. Dry-run is the default; `--apply`
+  writes. Run the key migrations during a quiet maintenance window without concurrent authoring. Active sessions
+  block migration of their content. Exam/question migrations scan once to find cross-user session references,
+  preserve statuses/counters/timestamps, and checkpoint under host-mounted ignored `.tmp/content-id-migrations/`.
+  Rerun the same command to resume. Standalone `migrate_exam_ids.py` and `migrate_question_ids.py` accept repeatable
+  `--id` selectors for a small initial rollout. Keep checkpoints until verification completes.
+  Migration writes use bounded batches with unique keys, consistent batch reads, and conditional transactions;
+  preserve atomic cutover groups and the original group offsets so existing checkpoints remain resumable.
 - DynamoDB exam records use `EXAM#<id>` partitions; questions are stored beneath an exam as `QUESTION#<id>` sort keys.
 - Certification `duration_minutes` and `question_count` describe the official exam. Practice-exam `duration_minutes`
   is an optional suggested time, not an enforced session deadline; actual exam question counts remain derived.
 - When a provider publishes a question-count range or an approximate count, leave certification `question_count`
   unset and preserve the published format in its description. Keep approximate blueprint percentages as published;
   normalize them only when allocating practice questions. Do not invent an `exam_code` that the provider does not publish.
+- Check current provider credential pages and study guides before preparing exam content; older catalog PDFs may
+  include retired credentials. Record announced future blueprint revisions separately from the currently effective
+  outline, and document conflicting provider weight labels rather than silently treating them as consistent.
 - Certifications currently have no publication status: creating a certification makes its catalog card public.
   Unpublished linked exams and questions do not hide the certification.
 - Question `reference_urls` are optional HTTP(S) review links. Keep them out of learner API projections and in-progress
   sessions; show them to authors and in finalized session reviews.
 - Questions are validated in `shared/question_dtos.py` and exposed by the API under `/exams/{exam_id}/questions`.
 - Certifications represent official provider credentials; user-owned practice exams may reference a certification but
-  remain separate content. Certification records use the `CERTIFICATION` partition and certification slugs as sort keys.
+  remain separate content. Certification records use the `CERTIFICATION` partition and immutable title-derived IDs
+  as sort keys. IDs are generated with `to_kebab_case(name)` at creation,
+  and remain unchanged on renames. Certifications have no separate slug or UUID. URLs use `certification_id`.
+  `get_certification(id)` reads the exact catalog key; no catalog scan is needed for an ID lookup.
+  Migrate legacy UUID IDs and exam references with `scripts/migrate_certification_ids.py --user-id ID`
+  through the scripts service (`--apply` writes), after deploying the ID-based reader. It preserves existing URL paths
+  and publication state. Run only one migration process at a time.
+  Legacy slug fields are accepted only as migration aliases and removed by the migration.
 - Certification providers, categories, and levels are curated choices defined in `shared/form_options.py`; provider and
   level forms render them as radio controls.
 - Certification levels include `business` for provider-defined nontechnical business credentials such as AWS Certified
@@ -166,6 +201,14 @@
   trimmed and uppercased on writes; blank values clear the code, and legacy exams without the field remain valid.
 - A linked certification is authoritative for an exam's category and difficulty. Exam records retain denormalized values
   for discovery indexes; unlisted certifications use `other`, and exam language defaults to English.
+- Exam cards use stored `certification_id`, `certification_name`, and `certification_image_filename` fields;
+  `Exam.get_certification()` builds a `Certification` from these fields without a database lookup, like
+  `get_user()`. Unsnapshotted metadata uses empty/default values; load the catalog record when full details are needed.
+  Exam saves refresh these fields. Certification edits use
+  `api-lambda/certification_mutations.py` to synchronize linked exam snapshots across all statuses in bounded,
+  guarded transactions. Failed synchronization remains pending and resumes when the certification is saved again.
+  Run `scripts/backfill_exam_certifications.py --user-id ID` through the scripts service for legacy records after
+  rollout; it defaults to dry run and requires `--apply` for writes, preserving publication status.
 - Import reviewed JSON bundles with `scripts/load_exam_bundle.py BUNDLE --owner-id ID`; add `--approve-by ID` to
   publish only after question verification, and `--apply` to write. Reruns require an identical bundle and owner;
   imported exams carry a source fingerprint. Run only one importer for a bundle at a time.
@@ -179,6 +222,8 @@
 - Production scripts that upload public media must also configure `STATIC_S3_BUCKET` before calling `save_public_file`.
   The standard bootstrap resolves the table only; resolve the bucket from the deployed stack's `SiteBucket` resource
   during process bootstrap when `.env.prod` does not provide it, and validate required configuration before item writes.
+- Production scripts that verify public media URLs must also resolve `STATIC_BASE_URL` from the deployed stack's
+  `StaticUrl` output when absent from `.env.prod`; the Lambda environment configures this separately.
 - After DynamoDB schema/index changes, run `make recreate-local-dynamodb`; the local table is persistent and cannot be
   migrated in place. Local AWS CLI commands default to `us-west-2`.
 - Exams maintain a transactional `questions_count` counter. Query exam questions with the `EXAM#<id>` partition and
@@ -264,6 +309,9 @@
 
 ## Shared platform updates
 
+- Local Uvicorn reload watches `/app` by default. Lambda-specific Python files are mounted separately at
+  `/web-lambda` and `/api-lambda`; restart the affected local service after editing them unless its reload directories
+  explicitly include those mounts. Template and static-file changes do not require that restart.
 - Lambda ZIP dependency installs use a 120-second pip socket timeout and five connection retries to tolerate slow
   package downloads. A PyPI read timeout during packaging is a build failure; retry the build after connectivity recovers.
 - Template request state belongs in `template_request` (a `ContextVar`), never in cached Jinja environment globals.
@@ -281,4 +329,4 @@
   submissions use configured Google, Bing, and Yandex APIs. Google service account JSON belongs in the retained Secrets
   Manager secret created by CloudFormation, never in tracked files. Keep the web Lambda free of Google auth dependencies.
 - Sitemaps paginate all catalog records, escape XML through ElementTree, and split at protocol size/count limits.
-  Include questions only beneath published exams, using the same slug URLs as exam pages with an ID URL fallback.
+  Include questions only beneath published exams, using canonical question-ID URLs.

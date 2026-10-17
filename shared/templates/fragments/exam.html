@@ -1,17 +1,11 @@
-{% set image = exam.image_filename %}
 {% set preview = preview | default(True) and exam.preview %}
 {% set vert_gap = vert_gap | default(1) %}
 {% set h_tag_size = h_tag_size | default(3) %}
 {% set h_display_size = h_display_size | default(4) %}
 {% set exam_user = exam.get_user() %}
-{% set exam_img_sizes = exam_img_sizes | default({"768px": "25vw", "default": "100vw"}) %}
 
 <div class="exam col"{% if exam.offset %} data-offset="{{ exam.offset }}"{% endif %}>
     <div class="card exam-card h-100 overflow-hidden">
-        {% if image %}
-            {% include "fragments/exam-link-image.html" %}
-        {% endif %}
-
         {% include "fragments/exam-body.html" %}
     </div>
 </div>

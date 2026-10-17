@@ -54,3 +54,53 @@ def test_duration_rejects_invalid_values(value):
 def test_official_question_count_rejects_invalid_value():
     with pytest.raises(ValueError, match="question_count"):
         certification_dto(question_count=0)
+
+
+def test_certification_catalog_follows_pagination(monkeypatch):
+    import certification_utils
+
+    class Table:
+        def __init__(self):
+            self.calls = []
+
+        def query(self, **params):
+            self.calls.append(params)
+            if "ExclusiveStartKey" not in params:
+                return {"Items": [], "LastEvaluatedKey": {"pk": "CERTIFICATION", "sk": "cursor"}}
+            return {"Items": [{
+                "id": "second-page", "slug": "second-page", "name": "Second page credential",
+                "provider": "Microsoft", "description": "A credential returned after a page boundary.",
+                "category": "other", "level": "associate", "official_url": None, "created_at": 1,
+            }]}
+
+    table = Table()
+    monkeypatch.setattr(certification_utils, "get_dynamodb_table", lambda: table)
+    assert [item.id for item in certification_utils.get_certifications()] == ["second-page"]
+    assert table.calls[1]["ExclusiveStartKey"] == {"pk": "CERTIFICATION", "sk": "cursor"}
+
+
+def test_certification_id_lookup_reads_one_exact_key(monkeypatch):
+    import certification_utils
+
+    calls = []
+
+    def get_item(pk, sk):
+        calls.append((pk, sk))
+        return {"id": sk, "name": "An official credential", "provider": "AWS",
+                "description": "Credential metadata", "created_at": 1}
+
+    monkeypatch.setattr(certification_utils, "get_dynamodb_item", get_item)
+    certification = certification_utils.get_certification("official-credential")
+    assert certification.id == "official-credential"
+    assert not hasattr(certification, "slug")
+    assert calls == [("CERTIFICATION", "official-credential")]
+
+
+def test_legacy_certification_reads_use_existing_url_as_id():
+    from certification_utils import certification_from_dynamodb
+
+    certification = certification_from_dynamodb({
+        "id": "legacy-uuid", "slug": "existing-url", "name": "Renamed credential",
+        "provider": "AWS", "description": "Credential metadata", "created_at": 1,
+    })
+    assert certification.id == "existing-url"

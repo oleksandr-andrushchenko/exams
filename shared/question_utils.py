@@ -1,6 +1,8 @@
 from dataclasses import asdict, dataclass, field, replace
 from typing import Any
-from uuid import uuid4
+from hashlib import sha256
+
+from content_ids import make_content_id, resolve_content_id
 
 from query_dtos import ExamStatus, QuestionQueryDTO, QuestionStatus
 
@@ -20,8 +22,8 @@ from shared_utils import (
     dynamodb_transact_write,
     get_dynamodb_item,
     get_dynamodb_table,
-    to_kebab_case,
     utc_now,
+    to_kebab_case,
     verify_authorization,
 )
 
@@ -31,7 +33,6 @@ class Question:
     id: str
     exam_id: str
     owner_id: str
-    slug: str
     title: str
     choices: list[dict]
     created_at: int
@@ -57,7 +58,6 @@ def question_from_dynamodb(item: dict[str, Any]) -> Question:
         exam_id=item["exam_id"],
         owner_id=item["owner_id"],
         title=item["title"],
-        slug=item.get("slug") or to_kebab_case(item["title"]),
         choices=choices,
         reference_urls=item.get("reference_urls") or [],
         created_at=int(item["created_at"]),
@@ -69,16 +69,38 @@ def question_from_dynamodb(item: dict[str, Any]) -> Question:
 
 
 def find_question(exam_id: str, question_id: str) -> Question | None:
+    exam_id = resolve_content_id("EXAM", exam_id)
+    question_id = resolve_content_id("QUESTION", question_id)
     item = get_dynamodb_item(f"EXAM#{exam_id}", f"QUESTION#{question_id}")
     return question_from_dynamodb(item) if item else None
 
 
 def find_question_by_id(question_id: str) -> Question | None:
+    question_id = resolve_content_id("QUESTION", question_id)
     locator = get_dynamodb_item(f"QUESTION#{question_id}", "META")
     if not locator:
         return None
     question_item = get_dynamodb_item(locator["question_pk"], locator["question_sk"])
     return question_from_dynamodb(question_item) if question_item else None
+
+
+def find_question_by_slug(exam_id: str, slug: str) -> Question | None:
+    exam_id = resolve_content_id("EXAM", exam_id)
+    alias = get_dynamodb_item(f"EXAM#{exam_id}", "QUESTION_SLUG#" + sha256(slug.encode()).hexdigest())
+    if alias:
+        return find_question_by_id(alias["question_id"])
+    direct = find_question(exam_id, slug)
+    if direct:
+        return direct
+    params = {"KeyConditionExpression": Key("pk").eq(f"EXAM#{exam_id}") & Key("sk").begins_with("QUESTION#")}
+    while True:
+        response = get_dynamodb_table().query(**params)
+        for item in response.get("Items", []):
+            if (item.get("slug") or to_kebab_case(item["title"])) == slug:
+                return question_from_dynamodb(item)
+        if not response.get("LastEvaluatedKey"):
+            return None
+        params["ExclusiveStartKey"] = response["LastEvaluatedKey"]
 
 
 def get_question_by_id(question_id: str) -> Question:
@@ -96,6 +118,7 @@ def get_question(exam_id: str, question_id: str) -> Question:
 
 
 def get_questions(exam_id: str) -> list[Question]:
+    exam_id = resolve_content_id("EXAM", exam_id)
     table = get_dynamodb_table()
     params = {
         "KeyConditionExpression": Key("pk").eq(f"EXAM#{exam_id}") & Key("sk").begins_with("QUESTION#"),
@@ -144,7 +167,7 @@ def verify_question_access(question: Question, user: User | None = None, exam=No
 
 def question_listing_item(question: Question) -> dict[str, Any]:
     return {key: value for key, value in asdict(question).items()
-            if key not in {"choices", "reference_urls", "offset"}}
+            if key not in {"choices", "reference_urls", "offset", "slug"}}
 
 
 def add_question_status_transacts(transacts, question, status, comment=None):
@@ -235,12 +258,14 @@ def create_question(exam, dto, user: User) -> Question:
     if user.status == UserStatus.BANNED:
         raise PermissionError("BANNED")
     now = utc_now()
-    question = Question(str(uuid4()), exam.id, user.id, to_kebab_case(dto.title), dto.title,
+    question_id = make_content_id(dto.title, fallback="question")
+    question = Question(question_id, exam.id, user.id, dto.title,
                         dto.choices, now, None, dto.reference_urls, exam_title=exam.title)
     item = {
         **asdict(question),
         "question": True,
     }
+    item.pop("slug", None)
     list_item = question_listing_item(question)
     transacts = []
     add_dynamodb_put_transact(transacts, (f"EXAM#{exam.id}", f"QUESTION#{question.id}"), item, new_pk_only=True)
@@ -268,8 +293,6 @@ def update_question(question: Question, dto, user: User) -> Question:
     changes = dto.get_changes(question)
     if not changes:
         return question
-    if "title" in changes:
-        changes["slug"] = to_kebab_case(changes["title"])
     changes["updated_at"] = utc_now()
     changes["status"] = QuestionStatus.UNPUBLISHED
     changes["comment"] = None

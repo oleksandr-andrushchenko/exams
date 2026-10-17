@@ -15,7 +15,7 @@ import search_engine_submissions
 
 
 @pytest.mark.parametrize("user_slug, expected_path", [
-    ("exam-author", "/@exam-author/practice-exam"),
+    ("exam-author", "/exams/exam-id"),
     (None, "/exams/exam-id"),
 ])
 def test_published_exam_notification_builds_public_url(monkeypatch, user_slug, expected_path):

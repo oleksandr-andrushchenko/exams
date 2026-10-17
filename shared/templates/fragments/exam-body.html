@@ -1,4 +1,23 @@
 <div class="card-body">
+    {% set exam_certification = exam.get_certification() %}
+    {% if exam_certification %}
+        <a href="{{ url('certification', certification_id=exam_certification.id) }}"
+           class="d-flex align-items-center gap-2 small link-body-emphasis text-decoration-none bg-body-tertiary rounded-3 p-2 mb-3">
+            {% if exam_certification.image_filename %}
+                {% with filename=exam_certification.image_filename, alt="", width=None, height=None,
+                    img_class="rounded-circle border bg-white p-1 object-fit-contain",
+                    img_style="width: 80px; height: 80px;", img_sizes={"default": "80px"},
+                    loading="lazy", decoding="async" %}
+                    {% include "fragments/image.html" %}
+                {% endwith %}
+            {% else %}
+                <i class="bi bi-patch-check text-primary fs-4" aria-hidden="true"></i>
+            {% endif %}
+            <span class="flex-grow-1">{{ exam_certification.name }}</span>
+            <i class="bi bi-arrow-right text-body-secondary" aria-hidden="true"></i>
+        </a>
+    {% endif %}
+
     <div class="small fw-semibold text-primary mb-2">
         <i class="bi bi-ui-checks-grid me-1" aria-hidden="true"></i>
         Practice exam

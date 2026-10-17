@@ -44,7 +44,7 @@
 
             <div class="d-flex flex-wrap gap-2">
                 {% if related_exams %}
-                    <a class="btn btn-primary" href="{{ url('certification', slug=certification.slug) }}#practice-exams">
+                    <a class="btn btn-primary" href="{{ url('certification', certification_id=certification.id) }}#practice-exams">
                         <i class="bi bi-play-circle me-1" aria-hidden="true"></i> View practice exams
                     </a>
                 {% endif %}
@@ -55,7 +55,7 @@
                     </a>
                 {% endif %}
                 {% if cur_user and check_auth(cur_user, Permission.UPDATE_CERTIFICATION) %}
-                    <a class="btn btn-outline-secondary" href="{{ url('edit-certification', slug=certification.slug) }}">
+                    <a class="btn btn-outline-secondary" href="{{ url('edit-certification', certification_id=certification.id) }}">
                         <i class="bi bi-pencil me-1" aria-hidden="true"></i> Edit certification
                     </a>
                 {% endif %}

@@ -3,18 +3,10 @@ from typing import Any
 from uuid import uuid4
 
 from shared_utils import (
-    DynamoDBTransactionError,
-    Key,
-    User,
-    add_dynamodb_put_transact,
-    add_dynamodb_update_transact,
-    build_dynamodb_delete_item_params,
-    dynamodb_transact_write,
-    get_dynamodb_item,
-    get_dynamodb_table,
-    get_exam,
-    utc_now,
+    DynamoDBTransactionError, Key, User, add_dynamodb_put_transact, add_dynamodb_update_transact,
+    build_dynamodb_delete_item_params, dynamodb_transact_write, get_dynamodb_item, get_dynamodb_table, utc_now,
 )
+from exam_utils import get_exam
 from question_utils import can_read_question, get_questions
 
 
@@ -91,6 +83,7 @@ def create_session(exam_id: str, user: User) -> ExamSession:
     if get_active_session(user.id):
         raise ActiveExamSessionError("Complete your active exam before starting another exam")
     exam = get_exam(exam_id, user)
+    exam_id = exam.id
     questions = [question for question in get_questions(exam_id) if can_read_question(question, user, exam)]
     if not questions:
         raise ValueError("An exam must have at least one question")

@@ -13,6 +13,7 @@ from pathlib import Path
 from urllib.parse import quote, urlsplit
 
 import pytest
+from boto3.dynamodb.conditions import Key
 from pyquery import PyQuery as pq
 
 from test_utils import (
@@ -31,6 +32,7 @@ from test_utils import (
     get_dynamodb_user,
     get_dynamodb_user_by_email,
     get_dynamodb_exam,
+    get_dynamodb_exam_locator,
     dynamodb_table,
 )
 
@@ -945,7 +947,7 @@ def test_exam_create_and_new_page_endpoints_success_and_failure(guest_client):
         if item.get("title") == "Functional endpoint coverage exam"
     )
     functional_state["exam_id"] = exam_item["id"]
-    functional_state["exam_slug"] = exam_item["exam_slug"]
+    functional_state["exam_slug"] = exam_item["id"]
     assert exam_item["exam_code"] == "SAA-C03"
     assert exam_item["duration_minutes"] == 130
     assert exam_item["description"] == EXAM_CONTENT
@@ -1119,7 +1121,7 @@ def test_exam_read_edit_update_status_endpoints_success_and_failure(guest_client
     assert "Exam code: SAA-C03" in read_doc("article header").text()
     assert read_doc('meta[property="og:type"]').attr("content") == "article"
     assert read_doc('meta[property="og:url"]').attr("content").endswith(
-        f"/@root-functional/{functional_state['exam_slug']}")
+        f"/exams/{exam_id}")
     assert not read_doc('meta[name="keywords"]')
     assert "aggregateRating" not in exam_schema
     assert exam_schema["commentCount"] == 0
@@ -1177,7 +1179,7 @@ def test_exam_read_edit_update_status_endpoints_success_and_failure(guest_client
         "tags": ["functional-tag", "coverage-tag"],
     })
     assert update_success.status_code == 200, update_success.text
-    functional_state["exam_slug"] = "updated-functional-endpoint-coverage-exam"
+    assert get_dynamodb_exam(exam_id)["id"] == exam_id
     update_failure = patch(root_client, f"/exams/{exam_id}", json={
         "title": "a",
         "description": EXAM_CONTENT,
@@ -1706,7 +1708,7 @@ def test_exam_bundle_import_dry_run_publish_and_safe_rerun(tmp_path, guest_clien
 
     applied = invoke("--apply")
     assert applied.returncode == 0, applied.stderr
-    exam_id = dynamodb_table.get_item(Key=locator_key)["Item"]["exam_id"]
+    exam_id = get_dynamodb_exam_locator("importer-functional-practice-exam")["exam_id"]
     exam_key = {"pk": f"EXAM#{exam_id}", "sk": "META"}
     record = dynamodb_table.get_item(Key=exam_key)["Item"]
     assert record["status"] == "published"
@@ -1737,7 +1739,7 @@ def test_related_exams_grid_autoload_and_crawlable_pagination(guest_client):
         })
         assert response.status_code == 200, response.text
         slug = title.lower().replace(" ", "-")
-        exam_id = dynamodb_table.get_item(Key={"pk": f"EXAM_SLUG#{slug}", "sk": "META"})["Item"]["exam_id"]
+        exam_id = get_dynamodb_exam_locator((f"EXAM_SLUG#{slug}")[10:])["exam_id"]
         if published:
             response = post(root_client, f"/exams/{exam_id}/status", json={"status": "published"})
             assert response.status_code == 200, response.text
@@ -1779,7 +1781,7 @@ def test_related_exams_grid_autoload_and_crawlable_pagination(guest_client):
             href = link.attr("href")
             for exam_id in expected_ids:
                 record = dynamodb_table.get_item(Key={"pk": f"EXAM#{exam_id}", "sk": "META"})["Item"]
-                if record["exam_slug"] in href or exam_id in href:
+                if exam_id in href:
                     rendered_ids.add(exam_id)
     assert rendered_ids == expected_ids
     assert get(guest_client, f"/exams/{source_id}/related-fragment", params={"offset": "invalid"}).status_code == 422
@@ -1803,7 +1805,7 @@ def test_question_page_context_sidebar(guest_client, include_certification_and_d
     })
     assert created.status_code == 200, created.text
     slug = title.lower().replace(" ", "-")
-    exam_id = dynamodb_table.get_item(Key={"pk": f"EXAM_SLUG#{slug}", "sk": "META"})["Item"]["exam_id"]
+    exam_id = get_dynamodb_exam_locator((f"EXAM_SLUG#{slug}")[10:])["exam_id"]
     created_question = post(root_client, f"/exams/{exam_id}/questions", json={
         "title": f"Which option matches the {suffix} sidebar scenario?",
         "choices": [
@@ -1823,7 +1825,7 @@ def test_question_page_context_sidebar(guest_client, include_certification_and_d
     dynamodb_table.update_item(Key=author_key, UpdateExpression="SET bmc_username = :username",
                                ExpressionAttributeValues={":username": donation_username})
     try:
-        for path in [f"/questions/{question['id']}", f"/@root-functional/{slug}/{question['slug']}"]:
+        for path in [f"/questions/{question['id']}", f"/@root-functional/{exam_id}/{question['id']}"]:
             response = get(guest_client, path)
             assert response.status_code == 200, response.text
             doc = pq(response.text)
@@ -1861,7 +1863,7 @@ def test_questions_listing_skips_inaccessible_and_missing_exams(guest_client):
         })
         assert created.status_code == 200, created.text
         slug = title.lower().replace(" ", "-")
-        exam_id = dynamodb_table.get_item(Key={"pk": f"EXAM_SLUG#{slug}", "sk": "META"})["Item"]["exam_id"]
+        exam_id = get_dynamodb_exam_locator((f"EXAM_SLUG#{slug}")[10:])["exam_id"]
         response = post(client, f"/exams/{exam_id}/questions", json={
             "title": f"Question listing {label} scenario?",
             "choices": [
@@ -1909,7 +1911,7 @@ def test_question_publication_lifecycle_and_status_pagination(guest_client):
         "title": title, "description": "Publication and status-index pagination coverage.", "tags": ["question-status"],
     })
     assert response.status_code == 200, response.text
-    exam_id = dynamodb_table.get_item(Key={"pk": "EXAM_SLUG#question-status-lifecycle-exam", "sk": "META"})["Item"]["exam_id"]
+    exam_id = get_dynamodb_exam_locator(("EXAM_SLUG#question-status-lifecycle-exam")[10:])["exam_id"]
 
     def add_question(number):
         response = post(root_client, f"/exams/{exam_id}/questions", json={
@@ -2008,7 +2010,7 @@ def test_legacy_question_status_backfill_preserves_publication_intent(guest_clie
         })
         assert response.status_code == 200, response.text
         slug = title.lower().replace(" ", "-")
-        exam_id = dynamodb_table.get_item(Key={"pk": f"EXAM_SLUG#{slug}", "sk": "META"})["Item"]["exam_id"]
+        exam_id = get_dynamodb_exam_locator((f"EXAM_SLUG#{slug}")[10:])["exam_id"]
         if published:
             assert post(root_client, f"/exams/{exam_id}/status", json={"status": "published"}).status_code == 200
         response = post(root_client, f"/exams/{exam_id}/questions", json={
@@ -2069,7 +2071,7 @@ def test_nonpublic_content_returns_404_without_hiding_author_review(guest_client
     })
     assert created.status_code == 200, created.text
     slug = title.lower().replace(" ", "-")
-    exam_id = dynamodb_table.get_item(Key={"pk": f"EXAM_SLUG#{slug}", "sk": "META"})["Item"]["exam_id"]
+    exam_id = get_dynamodb_exam_locator((f"EXAM_SLUG#{slug}")[10:])["exam_id"]
     response = post(owner_client, f"/exams/{exam_id}/questions", json={
         "title": f"Private visibility {exam_status} {question_status} question?",
         "choices": [
@@ -2090,8 +2092,8 @@ def test_nonpublic_content_returns_404_without_hiding_author_review(guest_client
         })
         assert status.status_code == 200, status.text
 
-    exam_urls = [f"/exams/{exam_id}", f"/@{username}/{slug}"]
-    question_urls = [f"/questions/{question['id']}", f"/@{username}/{slug}/{question['slug']}",
+    exam_urls = [f"/exams/{exam_id}", f"/@{username}/{exam_id}"]
+    question_urls = [f"/questions/{question['id']}", f"/@{username}/{exam_id}/{question['id']}",
                      f"/exams/{exam_id}/questions/{question['id']}"]
     for client in (guest_client, other_client):
         for url in exam_urls:
@@ -2116,3 +2118,436 @@ def test_nonpublic_content_returns_404_without_hiding_author_review(guest_client
         assert get(guest_client, exam_urls[1], allow_redirects=False).status_code == 404
         assert get(other_client, exam_urls[1], allow_redirects=False).status_code == 404
         assert get(owner_client, exam_urls[1], allow_redirects=False).status_code == 308
+
+
+def test_exam_certification_snapshot_cards_and_backfill(guest_client):
+    root_client = get_logged_in_client(root_user)
+    suffix = uuid.uuid4().hex[:10]
+    certification_data = {
+        "name": f"Snapshot Credential {suffix}", "provider": "Microsoft", "category": "other",
+        "level": "associate", "description": "Credential metadata for exam card snapshot coverage.",
+        "image_filename": "snapshot-badge_1040x1040.png",
+    }
+    response = post(root_client, "/certifications", json=certification_data)
+    assert response.status_code == 201, response.text
+    cert_url = response.json()
+    cert_slug = cert_url.rsplit("/", 1)[-1]
+    certification = dynamodb_table.get_item(Key={"pk": "CERTIFICATION", "sk": cert_slug})["Item"]
+    title = f"Snapshot practice {suffix}"
+    created = post(root_client, "/exams", json={
+        "title": title, "description": "An exam used to verify self-contained certification card metadata.",
+        "tags": ["snapshot-test"], "certification_id": certification["id"],
+    })
+    assert created.status_code == 200, created.text
+    locator = get_dynamodb_exam_locator((f"EXAM_SLUG#snapshot-practice-{suffix}")[10:])
+    exam_id = locator["exam_id"]
+    exam_key = {"pk": f"EXAM#{exam_id}", "sk": "META"}
+
+    def record():
+        return dynamodb_table.get_item(Key=exam_key, ConsistentRead=True)["Item"]
+
+    saved = record()
+    assert saved["certification_name"] == certification_data["name"]
+    assert saved["certification_id"] == cert_slug
+    assert saved["certification_image_filename"] == certification_data["image_filename"]
+    assert post(root_client, f"/exams/{exam_id}/status", json={"status": "published"}).status_code == 200
+    for path in ["/exams?type=latest&tags=snapshot-test", "/exams-fragment?type=latest&tags=snapshot-test"]:
+        response = get(guest_client, path)
+        assert response.status_code == 200, response.text
+        link = pq(response.text)(f'a[href="/certifications/{cert_slug}"]')
+        assert certification_data["name"] in link.text()
+        assert link("img").attr("src").endswith(certification_data["image_filename"])
+
+    certification_data["image_filename"] = "updated-badge_1040x1040.png"
+    updated = patch(root_client, f"/certifications/{cert_slug}", json=certification_data)
+    assert updated.status_code == 200, updated.text
+    assert record()["certification_image_filename"] == certification_data["image_filename"]
+    refreshed = patch(root_client, f"/exams/{exam_id}", json={})
+    assert refreshed.status_code == 200, refreshed.text
+    assert record()["certification_image_filename"] == certification_data["image_filename"]
+    assert record()["status"] == "published"
+
+    second_data = {**certification_data, "name": f"Alternate Credential {suffix}", "image_filename": None}
+    response = post(root_client, "/certifications", json=second_data)
+    assert response.status_code == 201, response.text
+    second_slug = response.json().rsplit("/", 1)[-1]
+    second = dynamodb_table.get_item(Key={"pk": "CERTIFICATION", "sk": second_slug})["Item"]
+    response = patch(root_client, f"/exams/{exam_id}", json={"certification_id": second["id"]})
+    assert response.status_code == 200, response.text
+    assert record()["certification_name"] == second_data["name"]
+    assert record()["certification_id"] == second_slug
+    assert record().get("certification_image_filename") is None
+    response = patch(root_client, f"/exams/{exam_id}", json={"certification_id": None})
+    assert response.status_code == 200, response.text
+    assert all(record().get(field) is None for field in (
+        "certification_id", "certification_name", "certification_image_filename",
+    ))
+    response = patch(root_client, f"/exams/{exam_id}", json={"certification_id": certification["id"]})
+    assert response.status_code == 200, response.text
+    dynamodb_table.update_item(Key=exam_key, UpdateExpression="REMOVE certification_image_filename")
+    assert record().get("certification_image_filename") is None
+
+    project = Path(os.environ["PROJECT_ROOT"])
+    env = dict(os.environ, DYNAMODB_TABLE=os.environ["TEST_DYNAMODB_TABLE"], APP_STAGE="local",
+               APP_ENV="test", PYTHONPATH=":".join(str(project / name) for name in (
+                   "scripts", "shared", "api-lambda", "web-lambda",
+               )))
+    command = [sys.executable, str(project / "scripts/backfill_exam_certifications.py"),
+               "--user-id", user_ids["root"]]
+    dry = subprocess.run(command, env=env, cwd=project, capture_output=True, text=True, timeout=60)
+    assert dry.returncode == 0, dry.stderr
+    plans = [json.loads(line) for line in dry.stdout.splitlines() if line.startswith('{"input":')]
+    plan = next(item for item in plans if item["input"]["id"] == exam_id)
+    assert plan["output"]["action"] == "refresh"
+    assert record().get("certification_image_filename") is None
+    applied = subprocess.run(command + ["--apply"], env=env, cwd=project, capture_output=True, text=True, timeout=60)
+    assert applied.returncode == 0, applied.stderr
+    assert record()["certification_image_filename"] == certification_data["image_filename"]
+    assert record()["status"] == "published"
+    retry = subprocess.run(command, env=env, cwd=project, capture_output=True, text=True, timeout=60)
+    assert retry.returncode == 0, retry.stderr
+    plans = [json.loads(line) for line in retry.stdout.splitlines() if line.startswith('{"input":')]
+    assert next(item for item in plans if item["input"]["id"] == exam_id)["output"]["action"] == "unchanged"
+
+
+def test_certification_edits_refresh_linked_exams_across_all_statuses(guest_client):
+    root_client = get_logged_in_client(root_user)
+    suffix = uuid.uuid4().hex[:10]
+    data = {
+        "name": f"Cascade Credential {suffix}", "provider": "Microsoft", "category": "other",
+        "level": "associate", "description": "A certification used to verify linked exam propagation.",
+        "image_filename": "cascade-original_1040x1040.png",
+    }
+    created = post(root_client, "/certifications", json=data)
+    assert created.status_code == 201, created.text
+    slug = created.json().rsplit("/", 1)[-1]
+    cert_key = {"pk": "CERTIFICATION", "sk": slug}
+    cert = dynamodb_table.get_item(Key=cert_key)["Item"]
+    keys = []
+    for status in ("published", "unpublished", "rejected"):
+        title = f"Cascade {status} exam {suffix}"
+        response = post(root_client, "/exams", json={
+            "title": title, "description": "An exam for validating certification metadata propagation.",
+            "tags": ["cascade-test"], "certification_id": cert["id"],
+        })
+        assert response.status_code == 200, response.text
+        locator = get_dynamodb_exam_locator((f"EXAM_SLUG#cascade-{status}-exam-{suffix}")[10:])
+        exam_id = locator["exam_id"]
+        if status != "unpublished":
+            response = post(root_client, f"/exams/{exam_id}/status", json={"status": status, "comment": "Test status"})
+            assert response.status_code == 200, response.text
+        keys.append({"pk": f"EXAM#{exam_id}", "sk": "META"})
+    before = [dynamodb_table.get_item(Key=key, ConsistentRead=True)["Item"] for key in keys]
+    control_title = f"Cascade unrelated exam {suffix}"
+    response = post(root_client, "/exams", json={
+        "title": control_title, "description": "An unrelated exam that must not be changed by certification edits.",
+        "tags": ["cascade-control"],
+    })
+    assert response.status_code == 200, response.text
+    control_id = get_dynamodb_exam_locator((f"EXAM_SLUG#cascade-unrelated-exam-{suffix}")[10:])["exam_id"]
+    control_key = {"pk": f"EXAM#{control_id}", "sk": "META"}
+    control_before = dynamodb_table.get_item(Key=control_key, ConsistentRead=True)["Item"]
+    owner_before = get_dynamodb_user(user_ids["root"])
+    data["name"] = f"Renamed Cascade Credential {suffix}"
+    data["image_filename"] = "cascade-updated_1040x1040.png"
+    response = patch(root_client, f"/certifications/{slug}", json=data)
+    assert response.status_code == 200, response.text
+    assert dynamodb_table.get_item(Key=control_key, ConsistentRead=True)["Item"] == control_before
+    owner_after = get_dynamodb_user(user_ids["root"])
+    for counter in ("published_exams_count", "unpublished_exams_count", "rejected_exams_count"):
+        assert owner_after.get(counter) == owner_before.get(counter)
+    for key, original in zip(keys, before):
+        saved = dynamodb_table.get_item(Key=key, ConsistentRead=True)["Item"]
+        assert saved["certification_name"] == data["name"]
+        assert saved["certification_id"] == slug
+        assert saved["certification_image_filename"] == data["image_filename"]
+        for field in ("status", "published_at", "updated_at", "questions_count", "category", "difficulty", "user_id"):
+            assert saved.get(field) == original.get(field)
+    assert dynamodb_table.get_item(Key=cert_key, ConsistentRead=True)["Item"]["exam_snapshot_sync_pending"] is False
+    page = get(guest_client, "/exams-fragment?type=latest&tags=cascade-test")
+    assert page.status_code == 200, page.text
+    link = pq(page.text)(f'a[href="/certifications/{slug}"]')
+    assert data["name"] in link.text()
+    assert link("img").attr("src").endswith(data["image_filename"])
+    # Removing the certification image clears it from every linked exam, including nonpublic ones.
+    data["image_filename"] = None
+    response = patch(root_client, f"/certifications/{slug}", json=data)
+    assert response.status_code == 200, response.text
+    for key in keys:
+        assert dynamodb_table.get_item(Key=key, ConsistentRead=True)["Item"].get("certification_image_filename") is None
+
+
+def test_homepage_shows_first_four_certifications_in_id_order(guest_client):
+    root_client = get_logged_in_client(root_user)
+    suffix = uuid.uuid4().hex[:10]
+    names = []
+    for index, provider in enumerate(("AWS", "AWS", "Google Cloud", "Google Cloud", "Microsoft", "Microsoft", "Cisco")):
+        name = f"Homepage {provider} credential {index} {suffix}"
+        names.append(name)
+        response = post(root_client, "/certifications", json={
+            "name": name, "provider": provider, "category": "other", "level": "associate",
+            "description": "A certification used to verify provider variety on the homepage.",
+        })
+        assert response.status_code == 201, response.text
+    first = get_index(guest_client)("#homepage-certifications")
+    cards = first(".certification-card")
+    assert len(cards) == 4
+    assert len({card.attr("href") for card in cards.items()}) == 4
+    expected = dynamodb_table.query(
+        KeyConditionExpression=Key("pk").eq("CERTIFICATION"), Limit=4,
+    )["Items"]
+    assert [card.attr("href") for card in cards.items()] == [
+        f"/certifications/{item['id']}" for item in expected
+    ]
+    second = get_index(guest_client)("#homepage-certifications .certification-card")
+    assert [card.attr("href") for card in cards.items()] == [card.attr("href") for card in second.items()]
+    catalog = get(guest_client, "/certifications")
+    assert catalog.status_code == 200, catalog.text
+    for name in names:
+        assert name in pq(catalog.text)(".certification-card").text()
+
+
+def test_certification_identifier_migration_preserves_urls_and_exam_state(guest_client):
+    root_client = get_logged_in_client(root_user)
+    suffix = uuid.uuid4().hex[:10]
+    data = {"name": f"Identity Migration Credential {suffix}", "provider": "AWS", "category": "other",
+            "level": "associate", "description": "Credential for the single-identifier migration."}
+    response = post(root_client, "/certifications", json=data)
+    assert response.status_code == 201, response.text
+    cert_url = response.json()
+    certification_id = cert_url.rsplit("/", 1)[-1]
+    cert_key = {"pk": "CERTIFICATION", "sk": certification_id}
+    certification = dynamodb_table.get_item(Key=cert_key, ConsistentRead=True)["Item"]
+    assert certification["id"] == certification_id
+    assert "slug" not in certification
+    exam_records = []
+    for status in ("published", "unpublished", "rejected"):
+        title = f"Identity migration {status} {suffix}"
+        created = post(root_client, "/exams", json={
+            "title": title, "description": "Verify identity migration preserves exam metadata.",
+            "certification_id": certification_id, "tags": ["identity-migration"],
+        })
+        assert created.status_code == 200, created.text
+        locator = get_dynamodb_exam_locator((f"EXAM_SLUG#identity-migration-{status}-{suffix}")[10:])
+        exam_id = locator["exam_id"]
+        if status != "unpublished":
+            result = post(root_client, f"/exams/{exam_id}/status", json={
+                "status": status, "comment": "Migration fixture" if status == "rejected" else None,
+            })
+            assert result.status_code == 200, result.text
+        key = {"pk": f"EXAM#{exam_id}", "sk": "META"}
+        exam_records.append(dynamodb_table.get_item(Key=key, ConsistentRead=True)["Item"])
+    legacy_id = str(uuid.uuid4())
+    dynamodb_table.update_item(Key=cert_key, UpdateExpression="SET id = :legacy, slug = :id",
+                               ExpressionAttributeValues={":legacy": legacy_id, ":id": certification_id})
+    for exam in exam_records:
+        dynamodb_table.update_item(Key={"pk": exam["pk"], "sk": exam["sk"]},
+                                   UpdateExpression="SET certification_id = :legacy, certification_slug = :id",
+                                   ExpressionAttributeValues={":legacy": legacy_id, ":id": certification_id})
+    # The new reader understands the legacy snapshot while the migration is pending.
+    before_page = get(root_client, f"/exams/{exam_records[0]['id']}")
+    assert before_page.status_code == 200, before_page.text
+    assert pq(before_page.text)(f'a[href="{cert_url}"]')
+    project = Path(os.environ["PROJECT_ROOT"])
+    env = dict(os.environ, DYNAMODB_TABLE=os.environ["TEST_DYNAMODB_TABLE"], APP_STAGE="local",
+               APP_ENV="test", PYTHONPATH=":".join(str(project / name) for name in (
+                   "scripts", "shared", "api-lambda", "web-lambda",
+               )))
+    command = [sys.executable, str(project / "scripts/migrate_certification_ids.py"),
+               "--user-id", user_ids["root"]]
+    dry_run = subprocess.run(command, env=env, cwd=project, capture_output=True, text=True, timeout=60)
+    assert dry_run.returncode == 0, dry_run.stdout + dry_run.stderr
+    assert dynamodb_table.get_item(Key=cert_key, ConsistentRead=True)["Item"]["id"] == legacy_id
+    applied = subprocess.run(command + ["--apply"], env=env, cwd=project, capture_output=True, text=True, timeout=60)
+    assert applied.returncode == 0, applied.stdout + applied.stderr
+    totals = json.loads(applied.stdout.strip().splitlines()[-1])["totals"]
+    assert totals["updated_certifications"] == 1
+    assert totals["updated_exams"] == 3
+    assert totals["errors"] == 0
+    stored = dynamodb_table.get_item(Key=cert_key, ConsistentRead=True)["Item"]
+    assert stored == certification
+    for original in exam_records:
+        stored_exam = dynamodb_table.get_item(Key={"pk": original["pk"], "sk": original["sk"]},
+                                             ConsistentRead=True)["Item"]
+        assert stored_exam == original
+        assert "certification_slug" not in stored_exam
+    rerun = subprocess.run(command + ["--apply"], env=env, cwd=project, capture_output=True, text=True, timeout=60)
+    assert rerun.returncode == 0, rerun.stdout + rerun.stderr
+    rerun_totals = json.loads(rerun.stdout.strip().splitlines()[-1])["totals"]
+    assert rerun_totals["updated_certifications"] == rerun_totals["updated_exams"] == 0
+    data["name"] = f"Renamed Identity Migration Credential {suffix}"
+    renamed = patch(root_client, cert_url, json=data)
+    assert renamed.status_code == 200, renamed.text
+    assert renamed.json() == cert_url
+    assert get(guest_client, cert_url).status_code == 200
+    stored = dynamodb_table.get_item(Key=cert_key, ConsistentRead=True)["Item"]
+    assert stored["id"] == certification_id
+    assert "slug" not in stored
+
+
+def test_readable_exam_and_question_ids_allow_duplicate_titles_and_remain_stable(guest_client):
+    suffix = uuid.uuid4().hex[:8]
+    title = f"Shared readable practice exam {suffix}"
+    exam_ids = []
+    clients = [get_logged_in_client(root_user), get_logged_in_client(regular_user)]
+    for client in (clients[0], clients[0], clients[1]):
+        created = post(client, "/exams", json={
+            "title": title, "description": "Different authors and attempts can share this title.", "tags": ["readable-id"],
+        })
+        assert created.status_code == 200, created.text
+        exam_id = created.json().rsplit("/", 1)[-1]
+        assert exam_id.startswith(f"shared-readable-practice-exam-{suffix}-")
+        exam_ids.append(exam_id)
+        raw = get_dynamodb_exam(exam_id)
+        assert "exam_slug" not in raw
+        renamed = patch(client, f"/exams/{exam_id}", json={"title": title + " renamed"})
+        assert renamed.status_code == 200, renamed.text
+        assert renamed.json() == f"/exams/{exam_id}"
+        assert get_dynamodb_exam(exam_id)["id"] == exam_id
+    assert len(set(exam_ids)) == 3
+    choices = [{"title": "First", "explanation": "First is correct.", "is_correct": True},
+               {"title": "Second", "explanation": "Second is incorrect.", "is_correct": False}]
+    question_ids = []
+    for _ in range(2):
+        created = post(clients[0], f"/exams/{exam_ids[0]}/questions", json={
+            "title": "Which architecture meets these requirements?", "choices": choices,
+        })
+        assert created.status_code == 200, created.text
+        question_id = created.json()["id"]
+        assert question_id.startswith("which-architecture-meets-these-requirements-")
+        assert "slug" not in created.json()
+        question_ids.append(question_id)
+        updated = patch(clients[0], f"/exams/{exam_ids[0]}/questions/{question_id}", json={
+            "title": "Which architecture meets the clarified requirements?",
+        })
+        assert updated.status_code == 200, updated.text
+        assert updated.json()["id"] == question_id
+    assert len(set(question_ids)) == 2
+    unicode_question = post(clients[0], f"/exams/{exam_ids[0]}/questions", json={
+        "title": "界" * 500, "choices": choices,
+    })
+    assert unicode_question.status_code == 200, unicode_question.text
+    unicode_id = unicode_question.json()["id"]
+    assert unicode_id.startswith("界")
+    assert len(unicode_id.encode("utf-8")) <= 600
+    encoded_id = quote(unicode_id, safe="")
+    page = get(clients[0], f"/questions/{encoded_id}")
+    assert page.status_code == 200, page.text
+    exam_page = get(clients[0], f"/exams/{exam_ids[0]}")
+    assert f'/questions/{encoded_id}' in exam_page.text
+
+
+def test_exam_and_question_id_migrations_preserve_relationships_and_redirects(guest_client, tmp_path):
+    root_client = get_logged_in_client(root_user)
+    owner = get_dynamodb_user(user_ids["root"])
+    exam_id = str(uuid.uuid4())
+    question_ids = [str(uuid.uuid4()), str(uuid.uuid4())]
+    session_id = str(uuid.uuid4())
+    now = int(time.time() * 1000)
+    old_slug = "legacy-readable-migration-" + exam_id[:8]
+    title = "Legacy readable ID migration " + exam_id[:8]
+    exam = {"pk": f"EXAM#{exam_id}", "sk": "META", "id": exam_id, "title": title,
+            "exam_slug": old_slug, "user_id": owner["id"], "user_slug": owner["username"],
+            "user_name": owner["name"], "description": "Legacy content to verify complete ID migration.",
+            "category": "other", "tags": ["migration-fixture"], "rating_sk": now, "status": "published",
+            "import_bundle_sha256": "reviewed-fingerprint",
+            "created_at": now, "questions_count": 2, "comments_count": 0,
+            "exam_status_pk": "EXAM#published", "exam_user_status_pk": f"EXAM#{owner['id']}#published",
+            "exam_category_status_pk": "EXAM#other#published"}
+    dynamodb_table.put_item(Item=exam)
+    membership = {"pk": "EXAM_TAG_COMBO#migration-fixture", "sk": f"EXAM#{now}#{exam_id}", "exam_id": exam_id}
+    dynamodb_table.put_item(Item=membership)
+    choices = [{"title": "Correct", "explanation": "This meets the requirement.", "is_correct": True},
+               {"title": "Incorrect", "explanation": "This does not meet the requirement.", "is_correct": False}]
+    questions = []
+    for index, question_id in enumerate(question_ids):
+        question = {"pk": exam["pk"], "sk": f"QUESTION#{question_id}", "id": question_id,
+                    "exam_id": exam_id, "owner_id": owner["id"], "title": f"Legacy migration question {index}",
+                    "slug": f"legacy-migration-question-{index}", "choices": choices, "reference_urls": [],
+                    "created_at": now + index, "status": "published", "exam_title": title}
+        questions.append(question)
+        dynamodb_table.put_item(Item=question)
+        dynamodb_table.put_item(Item={"pk": f"QUESTION#{question_id}", "sk": "META",
+                                      "question_pk": exam["pk"], "question_sk": question["sk"]})
+        listing = {key: value for key, value in question.items() if key not in {"choices", "reference_urls"}}
+        listing.update(pk="QUESTIONS#published", sk=f"{now + index}#{question_id}")
+        dynamodb_table.put_item(Item=listing)
+        dynamodb_table.put_item(Item={"pk": f"EXAM_SESSION#{session_id}", "sk": f"QUESTION#{question_id}",
+                                      "question_id": question_id, "choice_indices": [0]})
+    session_key = {"pk": f"USER#{owner['id']}", "sk": f"EXAM_SESSION#{now}#{session_id}"}
+    session = {**session_key, "id": session_id, "session_id": session_id, "exam_session": True,
+               "exam_id": exam_id, "user_id": owner["id"], "status": "in_progress", "question_ids": question_ids,
+               "total_questions": 2, "answered_questions": 2, "correct_answers": 2, "score": 100,
+               "started_at": now, "completed_at": now, "viewed_questions": 2}
+    dynamodb_table.put_item(Item=session)
+    dynamodb_table.put_item(Item={"pk": session_key["pk"], "sk": f"EXAM_SESSION_ID#{session_id}",
+                                  "session_pk": session_key["pk"], "session_sk": session_key["sk"]})
+    project = Path(os.environ["PROJECT_ROOT"])
+    env = dict(os.environ, DYNAMODB_TABLE=os.environ["TEST_DYNAMODB_TABLE"], APP_STAGE="local", APP_ENV="test",
+               PYTHONPATH=":".join(str(project / name) for name in ("scripts", "shared", "api-lambda", "web-lambda")))
+
+    def invoke(kind, ids, apply=False):
+        command = [sys.executable, str(project / f"scripts/migrate_{kind}_ids.py"), "--user-id", owner["id"],
+                   "--checkpoint-dir", str(tmp_path / "checkpoints")]
+        for content_id in ids:
+            command.extend(["--id", content_id])
+        if apply:
+            command.append("--apply")
+        return subprocess.run(command, env=env, cwd=project, capture_output=True, text=True, timeout=60)
+
+    blocked = invoke("exam", [exam_id], apply=True)
+    assert blocked.returncode == 1
+    assert "Finish active exam sessions" in blocked.stdout
+    assert get_dynamodb_exam(exam_id) == exam
+    dynamodb_table.update_item(Key=session_key, UpdateExpression="SET #status = :passed",
+                               ExpressionAttributeNames={"#status": "status"},
+                               ExpressionAttributeValues={":passed": "passed"})
+    owner_before = get_dynamodb_user(owner["id"])
+    dry_run = invoke("exam", [exam_id])
+    assert dry_run.returncode == 0, dry_run.stdout + dry_run.stderr
+    assert get_dynamodb_exam(exam_id) == exam
+    applied = invoke("exam", [exam_id], apply=True)
+    assert applied.returncode == 0, applied.stdout + applied.stderr
+    alias = get_dynamodb_exam(exam_id)
+    new_exam_id = alias["content_redirect_id"]
+    assert new_exam_id.startswith("legacy-readable-id-migration-")
+    migrated_exam = get_dynamodb_exam(new_exam_id)
+    assert migrated_exam == {key: value for key, value in {
+        **exam, "pk": f"EXAM#{new_exam_id}", "id": new_exam_id,
+    }.items() if key != "exam_slug"}
+    assert get_dynamodb_user(owner["id"]) == owner_before
+    for question in questions:
+        migrated_question = dynamodb_table.get_item(Key={"pk": f"EXAM#{new_exam_id}", "sk": question["sk"]})["Item"]
+        assert migrated_question["exam_id"] == new_exam_id
+        assert migrated_question["choices"] == choices
+        assert "Item" not in dynamodb_table.get_item(Key={"pk": exam["pk"], "sk": question["sk"]})
+    applied_questions = invoke("question", question_ids, apply=True)
+    assert applied_questions.returncode == 0, applied_questions.stdout + applied_questions.stderr
+    new_question_ids = [dynamodb_table.get_item(Key={"pk": f"QUESTION#{old}", "sk": "META"})["Item"]["content_redirect_id"]
+                        for old in question_ids]
+    migrated_session = dynamodb_table.get_item(Key=session_key)["Item"]
+    assert migrated_session["question_ids"] == new_question_ids
+    assert migrated_session["exam_id"] == new_exam_id
+    for original, new_question_id in zip(questions, new_question_ids):
+        current = dynamodb_table.get_item(Key={"pk": f"EXAM#{new_exam_id}", "sk": f"QUESTION#{new_question_id}"})["Item"]
+        assert current["choices"] == original["choices"]
+        assert current["status"] == "published"
+        assert "slug" not in current
+        answer = dynamodb_table.get_item(Key={"pk": f"EXAM_SESSION#{session_id}", "sk": f"QUESTION#{new_question_id}"})["Item"]
+        assert answer["choice_indices"] == [0]
+        assert answer["question_id"] == new_question_id
+        for old_url in (f"/questions/{original['id']}?source=old",
+                        f"/@{owner['username']}/{old_slug}/{original['slug']}?source=old"):
+            redirected = get(guest_client, old_url, allow_redirects=False)
+            assert redirected.status_code == 308, redirected.text
+            assert redirected.headers["location"] == f"/questions/{new_question_id}?source=old"
+        assert get(guest_client, f"/questions/{new_question_id}").status_code == 200
+    for old_url in (f"/exams/{exam_id}?source=old", f"/@{owner['username']}/{old_slug}?source=old"):
+        redirected = get(guest_client, old_url, allow_redirects=False)
+        assert redirected.status_code == 308, redirected.text
+        assert redirected.headers["location"] == f"/exams/{new_exam_id}?source=old"
+    assert get(root_client, f"/exam-sessions/{session_id}").status_code == 200
+    assert get_dynamodb_user(owner["id"]) == owner_before
+    rerun = invoke("exam", [exam_id], apply=True)
+    assert rerun.returncode == 0, rerun.stdout + rerun.stderr
+    assert json.loads(rerun.stdout.strip().splitlines()[-1])["totals"]["updated"] == 0

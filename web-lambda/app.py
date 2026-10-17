@@ -10,7 +10,7 @@ from form_options import CERTIFICATION_LEVELS, CERTIFICATION_PROVIDERS
 from notifications import get_access_log
 from query_dtos import RelatedExamQueryDTO, TagQueryDTO
 from related_exam_utils import get_related_exams
-from question_utils import (can_read_question, get_question_by_id, get_question_listing, get_questions,
+from question_utils import (find_question_by_slug, can_read_question, get_question_by_id, get_question_listing, get_questions,
                             verify_question_access)
 from session_utils import get_active_session, get_question_result, get_session, get_session_answers, get_sessions
 from shared_utils import decode_offset, find_redirect, get_indexnow_key, template_request
@@ -27,10 +27,16 @@ from shared_deps import (
     TagQueryDep,
     CategoryDep,
 )
-from shared_utils import ExamNotFoundError, get_exam
+from shared_utils import ExamNotFoundError
+from exam_utils import (
+    get_exam,
+    find_exam_by_slug_follow_redirects,
+    get_latest_exams_by_user,
+    get_exams,
+)
 from shared_utils import (
-    find_category, find_exam_by_slug_follow_redirects, find_user_by_username_follow_redirects,
-    get_categories, get_category, get_static_base_url, get_static_url, get_tags
+    find_category, find_user_by_username_follow_redirects, get_categories, get_category, get_static_base_url,
+    get_static_url, get_tags,
 )
 from web import (
     Application,
@@ -53,6 +59,8 @@ from web_deps import (
     get_error_response,
 )
 from web_utils import (
+    get_homepage_certifications,
+    content_canonical_redirect,
     set_token_cookie,
     drop_token_cookie,
     to_thread,
@@ -71,8 +79,6 @@ from web_utils import (
     get_url,
     get_exam_url,
     get_users,
-    get_latest_exams_by_user,
-    get_exams,
     get_latest_published_exams,
     get_popular_tags,
     get_popular_published_exams,
@@ -249,8 +255,7 @@ async def not_authorized_error_handler(_request: Request, exc: NotAuthorizedErro
 
 @app.exception_handler(ExamByOldSlugRequestedError)
 async def exam_redirect_exception_handler(request: Request, exc: ExamByOldSlugRequestedError):
-    url = get_exam_url(request, exc.exam)
-    return RedirectResponse(url=url, status_code=308)
+    return content_canonical_redirect(request, "exam", exam_id=exc.exam.id)
 
 
 @app.exception_handler(UserByOldSlugRequestedError)
@@ -288,7 +293,7 @@ async def index(cur_user: OptCurUserDep) -> str:
         to_thread(get_latest_exam_comments, latest_exam_comments_query),
         to_thread(get_popular_active_users, limit=8),
         to_thread(get_categories),
-        to_thread(get_certifications),
+        to_thread(get_homepage_certifications, limit=4),
     )
     return get_html_content("index.html", {
         "cur_user": cur_user,
@@ -326,7 +331,7 @@ async def _exam_page(exam: ExamDep, cur_user: OptCurUserDep, related_offset: str
         to_thread(find_category, exam.category),
         to_thread(get_questions, exam.id),
         to_thread(get_active_session, cur_user.id) if cur_user else asyncio.sleep(0, result=None),
-        to_thread(find_certification, exam.certification_slug) if exam.certification_slug else asyncio.sleep(0, result=None),
+        to_thread(find_certification, exam.certification_id) if exam.certification_id else asyncio.sleep(0, result=None),
     )
     questions = [question for question in questions if can_read_question(question, cur_user, exam)]
     html_content = get_html_content("exam.html", {
@@ -435,9 +440,9 @@ async def new_certification_page(cur_user: CurUserDep) -> str:
 
 
 @route("get", "certification", response_class=HTMLResponse)
-async def certification_page(slug: str, cur_user: OptCurUserDep) -> str:
+async def certification_page(certification_id: str, cur_user: OptCurUserDep) -> str:
     try:
-        certification = get_certification(slug)
+        certification = get_certification(certification_id)
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     exams, category = await asyncio.gather(
@@ -454,10 +459,10 @@ async def certification_page(slug: str, cur_user: OptCurUserDep) -> str:
 
 
 @route("get", "edit-certification", response_class=HTMLResponse)
-async def edit_certification_page(slug: str, cur_user: CurUserDep) -> str:
+async def edit_certification_page(certification_id: str, cur_user: CurUserDep) -> str:
     verify_authorization(cur_user, Permission.UPDATE_CERTIFICATION)
     try:
-        certification = get_certification(slug)
+        certification = get_certification(certification_id)
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return get_html_content("edit-certification.html", {
@@ -470,7 +475,9 @@ async def edit_certification_page(slug: str, cur_user: CurUserDep) -> str:
 
 
 @route("get", "exam")
-async def exam_page(exam: ExamDep, cur_user: OptCurUserDep, related_offset: str | None = None):
+async def exam_page(request: Request, exam: ExamDep, cur_user: OptCurUserDep, related_offset: str | None = None):
+    if request.path_params["exam_id"] != exam.id:
+        return content_canonical_redirect(request, "exam", exam_id=exam.id)
     return await _exam_page(exam, cur_user, related_offset)
 
 
@@ -493,9 +500,9 @@ async def user_page_by_slug(user: UserBySlugDep, exams_query_dto: ExamQueryDep,
 
 
 @route("get", "exam-by-slugs", response_class=HTMLResponse)
-async def exam_page_by_slugs(exam: ExamBySlugsDep, cur_user: OptCurUserDep,
+async def exam_page_by_slugs(request: Request, exam: ExamBySlugsDep, cur_user: OptCurUserDep,
                              related_offset: str | None = None) -> HTMLResponse:
-    return await _exam_page(exam, cur_user, related_offset)
+    return content_canonical_redirect(request, "exam", exam_id=exam.id)
 
 
 @route("get", "exams-by-slugs", response_class=HTMLResponse)
@@ -753,7 +760,7 @@ async def _render_question_page(question, cur_user: OptCurUserDep) -> str:
         raise HTTPException(status_code=404, detail="Question not found") from exc
     author, certification, active_session = await asyncio.gather(
         to_thread(find_user, exam.owner_id),
-        to_thread(find_certification, exam.certification_slug) if exam.certification_slug else asyncio.sleep(0, result=None),
+        to_thread(find_certification, exam.certification_id) if exam.certification_id else asyncio.sleep(0, result=None),
         to_thread(get_active_session, cur_user.id) if cur_user else asyncio.sleep(0, result=None),
     )
     return get_html_content("question.html", {
@@ -767,25 +774,34 @@ async def _render_question_page(question, cur_user: OptCurUserDep) -> str:
 
 
 @route("get", "question-by-id", response_class=HTMLResponse)
-async def question_page_by_id(question_id: str, cur_user: OptCurUserDep) -> str:
+async def question_page_by_id(request: Request, question_id: str, cur_user: OptCurUserDep) -> str:
     try:
         question = get_question_by_id(question_id)
+        exam = get_exam(question.exam_id, cur_user)
+        verify_question_access(question, cur_user, exam)
     except (ExamNotFoundError, LookupError) as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    if question_id != question.id:
+        return content_canonical_redirect(request, "question-by-id", question_id=question.id)
     return await _render_question_page(question, cur_user)
 
 
 @route("get", "question-by-slugs", response_class=HTMLResponse)
-async def question_page_by_slugs(user_slug: str, exam_slug: str, question_slug: str,
+async def question_page_by_slugs(request: Request, user_slug: str, exam_slug: str, question_slug: str,
                                  cur_user: OptCurUserDep) -> str:
     user = find_user_by_username_follow_redirects(user_slug)
     exam = find_exam_by_slug_follow_redirects(exam_slug)
     question = None
     if user and exam and exam.owner_id == user.id:
-        question = next((item for item in get_questions(exam.id) if item.slug == question_slug), None)
+        question = find_question_by_slug(exam.id, question_slug)
     if question is None:
         raise HTTPException(status_code=404, detail="Question not found")
-    return await _render_question_page(question, cur_user)
+    try:
+        exam = get_exam(question.exam_id, cur_user)
+        verify_question_access(question, cur_user, exam)
+    except (ExamNotFoundError, LookupError) as exc:
+        raise HTTPException(status_code=404, detail="Question not found") from exc
+    return content_canonical_redirect(request, "question-by-id", question_id=question.id)
 
 
 @route("get", "edit-question", response_class=HTMLResponse)

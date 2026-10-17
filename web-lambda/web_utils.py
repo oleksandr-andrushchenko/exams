@@ -1,16 +1,22 @@
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from urllib.parse import quote, unquote, urlparse
 
+from certification_utils import Certification, certification_from_dynamodb
 from web_route_metadata import WEB_AUTH_URL_ROUTES
 
+from exam_utils import (
+    get_latest_exams,
+    get_popular_exams,
+    Exam,
+    find_exam_by_slug_follow_redirects,
+    exam_from_dynamodb,
+)
 from shared_utils import *
 from shared_utils import (
-    Exam, ExamStatus, ExamQueryType, ExamNotFoundError,
-    ExamByOldSlugRequestedError, User, UserStatus, UserNotFoundError,
-    UserByOldSlugRequestedError, NotAuthenticatedError, Permission,
-    find_exam_by_slug_follow_redirects, find_user_by_username_follow_redirects,
-    verify_authorization, check_authorization, get_web_base_url, is_prod, get_auth_token_max_age,
-    get_dynamodb_table, exam_from_dynamodb, query_dynamodb_table, Key, to_thread,
+    ExamStatus, ExamQueryType, ExamNotFoundError, ExamByOldSlugRequestedError, User, UserStatus, UserNotFoundError,
+    UserByOldSlugRequestedError, NotAuthenticatedError, Permission, find_user_by_username_follow_redirects,
+    verify_authorization, check_authorization, get_web_base_url, is_prod, get_auth_token_max_age, get_config,
+    get_dynamodb_table, query_dynamodb_table, Key, to_thread,
 )
 
 
@@ -210,6 +216,41 @@ def get_user_activities(user: User, year: int | None = None, recent_limit: int =
     }
 
 
+def content_canonical_redirect(request, route_name, **params):
+    from starlette.responses import RedirectResponse
+
+    target = get_url(request, route_name, **params)
+    if request.url.query:
+        target += "?" + request.url.query
+    return RedirectResponse(target, status_code=308)
+
+
+def get_homepage_certifications(limit: int = 4) -> list[Certification]:
+    certification_ids = get_config().get("index_page_certification_ids") or []
+    if not isinstance(certification_ids, list) or any(
+        not isinstance(value, str) or not value.strip() for value in certification_ids
+    ):
+        raise ValueError("index_page_certification_ids must be an array of nonempty certification IDs")
+    certification_ids = list(dict.fromkeys(certification_ids))
+    if len(certification_ids) > 100:
+        raise ValueError("index_page_certification_ids supports at most 100 distinct IDs")
+    if not certification_ids and limit <= 0:
+        return []
+    table = get_dynamodb_table()
+    if not certification_ids:
+        response = table.query(KeyConditionExpression=Key("pk").eq("CERTIFICATION"), Limit=limit)
+        return [certification_from_dynamodb(item) for item in response.get("Items", [])]
+    response = table.meta.client.batch_get_item(RequestItems={table.name: {
+        "Keys": [{"pk": "CERTIFICATION", "sk": certification_id} for certification_id in certification_ids],
+    }})
+    if response.get("UnprocessedKeys", {}).get(table.name, {}).get("Keys"):
+        raise RuntimeError("Unable to load all selected homepage certifications; retry this page")
+    certifications = [certification_from_dynamodb(item)
+                      for item in response.get("Responses", {}).get(table.name, [])]
+    by_id = {certification.id: certification for certification in certifications}
+    return [by_id[certification_id] for certification_id in certification_ids if certification_id in by_id]
+
+
 def get_latest_published_exams(limit: int = BaseQueryDTO.DEFAULT_LIMIT) -> list[Exam]:
     query_dto = ExamQueryDTO(limit=limit)
     return get_latest_exams(query_dto)
@@ -271,13 +312,12 @@ def get_exam_by_slugs(user_slug: str, exam_slug: str, cur_user: User = None) -> 
     exam = find_exam_by_slug_follow_redirects(exam_slug)
     if exam is None:
         raise ExamNotFoundError(f"Post '{exam_slug}' not found")
-    if exam.user_slug != user_slug:
+    owner = find_user_by_username_follow_redirects(user_slug)
+    if owner is None or owner.id != exam.owner_id:
         raise UserNotFoundError(f"User '{user_slug}' not found")
     if exam.status != ExamStatus.PUBLISHED and (
             not cur_user or not check_authorization(cur_user, Permission.READ_NON_PUBLISHED_EXAM, exam)):
         raise ExamNotFoundError(f"Post '{exam_slug}' not found")
-    if exam.slug != exam_slug:
-        raise ExamByOldSlugRequestedError(exam_slug, exam)
     return exam
 
 

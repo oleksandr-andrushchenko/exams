@@ -1,10 +1,8 @@
 """Paged, shared-tag exam recommendations for page renders and lazy loads."""
 
 from query_dtos import RelatedExamQueryDTO
-from shared_utils import (
-    ExamStatus, Key, decode_offset, encode_offset, exam_from_dynamodb, get_dynamodb_table,
-    query_dynamodb_table,
-)
+from shared_utils import ExamStatus, Key, decode_offset, encode_offset, get_dynamodb_table, query_dynamodb_table
+from exam_utils import exam_from_dynamodb
 
 
 def _get_exams_by_ids(exam_ids):

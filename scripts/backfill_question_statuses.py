@@ -7,8 +7,9 @@ from question_utils import add_question_status_transacts, get_questions, questio
 from query_dtos import ExamQueryDTO, ExamStatus, QuestionStatus
 from shared_utils import (
     Permission, UserStatus, add_dynamodb_delete_transact, dynamodb_transact_write, get_dynamodb_item,
-    get_dynamodb_table_name, get_latest_exams, get_user, verify_authorization,
+    get_dynamodb_table_name, get_user, verify_authorization,
 )
+from exam_utils import get_latest_exams
 
 
 def run(user_id, apply=False, remove_legacy=False):

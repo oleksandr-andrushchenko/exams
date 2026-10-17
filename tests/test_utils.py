@@ -84,6 +84,24 @@ def get_dynamodb_exam(exam_id: str) -> dict:
     return res["Item"]
 
 
+def get_dynamodb_exam_locator(initial_title_prefix):
+    """Locate unique fixture content without relying on legacy title locks."""
+    matches = []
+    for status in ("published", "unpublished", "rejected"):
+        params = {"IndexName": "EXAMS_BY_STATUS_CREATED_AT_2",
+                  "KeyConditionExpression": "exam_status_pk = :status",
+                  "ExpressionAttributeValues": {":status": f"EXAM#{status}"}}
+        while True:
+            response = dynamodb_table.query(**params)
+            matches.extend(item["id"] for item in response.get("Items", [])
+                           if item["id"].startswith(initial_title_prefix + "-"))
+            if not response.get("LastEvaluatedKey"):
+                break
+            params["ExclusiveStartKey"] = response["LastEvaluatedKey"]
+    assert len(matches) == 1, matches
+    return {"exam_id": matches[0]}
+
+
 def recreate_dynamodb_table():
     schema = {**get_dynamodb_schema(), "TableName": TEST_DYNAMODB_TABLE}
     table_name = schema.get("TableName", TEST_DYNAMODB_TABLE)

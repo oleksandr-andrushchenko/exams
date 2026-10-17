@@ -3,7 +3,7 @@
 API_URL_ROUTES = {
     "api-certifications": "/certifications",
     "create-certification": "/certifications",
-    "update-certification": "/certifications/{slug}",
+    "update-certification": "/certifications/{certification_id}",
     "upload-public-file": "/public-file",
     "create-exam": "/exams",
     "create-question": "/exams/{exam_id}/questions",

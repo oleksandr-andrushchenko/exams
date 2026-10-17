@@ -8,14 +8,16 @@ from pathlib import Path
 
 from api_utils import create_exam, update_exam_status
 from certification_dtos import CertificationDTO
-from certification_utils import create_certification, find_certification, get_certification_by_id
+from certification_utils import create_certification, find_certification, get_certification
 from exam_dtos import ExamDTO, UpdateExamStatusDTO
+from content_ids import make_content_id
 from question_dtos import QuestionDTO
 from question_utils import create_question, get_questions
 from shared_utils import (
-    ExamStatus, Permission, UserStatus, add_dynamodb_update_transact, dynamodb_transact_write,
-    find_exam, get_category, get_dynamodb_item, get_user, get_web_base_url, to_kebab_case, verify_authorization,
+    ExamStatus, Permission, UserStatus, add_dynamodb_update_transact, dynamodb_transact_write, get_category,
+    get_dynamodb_item, get_user, get_web_base_url, to_kebab_case, verify_authorization,
 )
+from exam_utils import find_exam
 
 
 def read_bundle(path):
@@ -78,7 +80,7 @@ def run(path, owner_id, approve_by=None, apply=False):
     exam_dto, certification_dto, questions, fingerprint = read_bundle(path)
     owner = require_user(owner_id, Permission.CREATE_EXAM)
     approver = require_user(approve_by, Permission.UPDATE_EXAM_STATUS) if approve_by else None
-    certification = (get_certification_by_id(exam_dto.certification_id) if exam_dto.certification_id
+    certification = (get_certification(exam_dto.certification_id) if exam_dto.certification_id
                      else find_certification(to_kebab_case(certification_dto.name)))
     if certification:
         if (to_kebab_case(certification.name) != to_kebab_case(certification_dto.name)
@@ -91,7 +93,16 @@ def run(path, owner_id, approve_by=None, apply=False):
 
     # Use the unique slug locator, not an eventually consistent catalog index.
     locator = get_dynamodb_item(f"EXAM_SLUG#{to_kebab_case(exam_dto.title)}", "META")
-    exam = find_exam(locator["exam_id"]) if locator else None
+    stable_exam_id = make_content_id(exam_dto.title, unique_suffix=hashlib.sha256(
+        (owner.id + fingerprint).encode()
+    ).hexdigest()[:16])
+    exam = find_exam(stable_exam_id)
+    if exam is None and locator:
+        legacy = find_exam(locator["exam_id"])
+        if legacy and legacy.owner_id == owner.id:
+            record = get_dynamodb_item(f"EXAM#{legacy.id}", "META")
+            if record.get("import_bundle_sha256") == fingerprint:
+                exam = legacy
     if locator and not exam:
         raise ValueError("Exam slug locator points to a missing exam")
     if exam:
@@ -121,7 +132,7 @@ def run(path, owner_id, approve_by=None, apply=False):
         certification = create_certification(certification_dto, owner)
     exam_dto.certification_id = certification.id
     if not exam:
-        exam = create_exam(exam_dto, owner)
+        exam = create_exam(exam_dto, owner, exam_id=stable_exam_id)
         print(json.dumps({"created_exam_id": exam.id}), flush=True)
         set_import_metadata(exam.id, {"import_bundle_sha256": fingerprint})
     for index, question_dto in enumerate(missing, 1):

@@ -5,14 +5,12 @@ from query_dtos import ExamListingQueryDTO, QuestionQueryDTO, RelatedExamQueryDT
 from shared_utils import (
     User,
     ExamQueryDTO,
-    Exam,
     TagQueryDTO,
     UserQueryDTO,
     InvalidTokenError,
     ExamNotFoundError,
     UserNotFoundError,
     get_user_by_auth_token,
-    get_exam,
     get_user,
     Tag,
     TagNotFoundError,
@@ -21,6 +19,7 @@ from shared_utils import (
     CategoryNotFoundError,
     get_category,
 )
+from exam_utils import Exam, get_exam
 from web import (
     Depends,
     HTTPException,

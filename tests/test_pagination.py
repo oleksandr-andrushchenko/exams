@@ -1,6 +1,7 @@
 """Cursor/index contracts, filter links, and crawlable pagination metadata."""
 import os
 import sys
+from dataclasses import replace
 from html.parser import HTMLParser
 from pathlib import Path
 from types import SimpleNamespace
@@ -15,9 +16,10 @@ for directory in ('shared', 'web-lambda'):
     sys.path.insert(0, str(project_root / directory))
 
 from api_route_metadata import API_URL_ROUTES
+from certification_utils import Certification
 from query_dtos import (ExamListingQueryDTO, ExamQueryDTO, TagQueryDTO, UserQueryDTO)
-from shared_utils import (encode_offset, get_jinja2_env, get_exams_url, exam_from_dynamodb,
-                          user_from_dynamodb)
+from shared_utils import encode_offset, get_jinja2_env, get_exams_url, user_from_dynamodb
+from exam_utils import exam_from_dynamodb
 from web import Application, Request, RequestValidationError, parse_dto
 from web_route_metadata import WEB_URL_ROUTES
 
@@ -130,6 +132,49 @@ def render():
     return render_template
 
 
+@pytest.mark.parametrize("template", ["fragments/exam.html", "fragments/horizontal-exam.html"])
+def test_exam_cards_render_certification_snapshot_without_database_reads(render, monkeypatch, template):
+    import shared_utils
+
+    def unexpected_read():
+        raise AssertionError("Exam cards must not load certification records")
+
+    monkeypatch.setattr(shared_utils, "get_dynamodb_table", unexpected_read)
+    render.exam.certification_name = "Stored Credential"
+    render.exam.certification_id = "stored-credential"
+    render.exam.certification_image_filename = "badge_1040x1040.png"
+    render.exam.image_filename = "exam-cover_1280x800.jpg"
+    certification = render.exam.get_certification()
+    assert isinstance(certification, Certification)
+    assert certification.id == render.exam.certification_id
+    assert certification.category == render.exam.category
+    assert certification.provider == ""
+    assert certification.description == ""
+    assert certification.level == "other"
+    assert certification.created_at == 0
+    assert certification.name == "Stored Credential"
+    assert certification.id == "stored-credential"
+    assert certification.image_filename == "badge_1040x1040.png"
+    html = render(template, exam=render.exam)
+    assert 'href="/certifications/stored-credential"' in html
+    assert "Stored Credential" in html
+    assert "badge_1040x1040.png" in html
+    assert "badge_32x32.webp" not in html
+    assert "badge_40x40.webp" not in html
+    assert "badge_80x80.webp" not in html
+    assert "exam-cover_1280x800.jpg" not in html
+    assert "rounded-circle" in html
+    assert "width: 80px; height: 80px;" in html
+    assert html.index("Stored Credential") < html.index("card-title")
+    render.exam.certification_image_filename = None
+    html = render(template, exam=render.exam)
+    assert "Stored Credential" in html
+    assert "badge_1040x1040.png" not in html
+    render.exam.certification_id = None
+    assert render.exam.get_certification() is None
+    assert "Stored Credential" not in render(template, exam=render.exam)
+
+
 @pytest.mark.parametrize('change', [{'type': 'popular'}, {'status': 'unpublished'}, {'tags': ['other']},
                                    {'category': 'writing'}])
 def test_exam_url_filter_changes_clear_cursor(render, change):
@@ -138,6 +183,22 @@ def test_exam_url_filter_changes_clear_cursor(render, change):
     assert 'offset' not in parse_qs(urlsplit(url).query)
     assert 'offset=next' in get_exams_url(render.request, query=query, offset='next')
     assert 'offset=old-cursor' in get_exams_url(render.request, query=query)
+
+
+@pytest.mark.parametrize("params,expected", [
+    ({}, "Latest Exams"),
+    ({"type": "popular"}, "Popular Exams"),
+    ({"tags": ["python"]}, "Latest Python Exams"),
+    ({"type": "latest", "tags": ["python", "aws"]}, "Latest Aws Python Exams"),
+    ({"status": "unpublished"}, "Latest Unpublished Exams"),
+    ({"status": "rejected"}, "Latest Rejected Exams"),
+])
+def test_exam_listing_title_does_not_repeat_site_about(render, params, expected):
+    html = render("exams.html", exam_query=ExamQueryDTO(**params), site_about="Practice Exams", site_name="ExamMe")
+    assert f"<title>{expected} | ExamMe</title>" in html
+    assert f"<h1>{expected}</h1>" in html
+    assert [meta["content"] for meta in Elements(html).tags["meta"]
+            if meta.get("property") == "og:title"] == [f"{expected} | ExamMe"]
 
 
 @pytest.mark.parametrize('template,query_name,query_type', [
@@ -216,12 +277,23 @@ def test_external_images_keep_their_original_url(render):
     assert 'source' not in elements.tags
 
 
-def test_initial_exam_images_can_be_eager_while_fragments_remain_lazy(render):
+def test_exam_cards_keep_each_exams_preview_independent(render):
+    exams = [replace(render.exam, preview=None), replace(render.exam, preview="Visible second preview")]
+    assert "Visible second preview" in render("fragments/exams.html", exams=exams)
+
+
+def test_exam_cards_use_lazy_certification_badges_instead_of_cover_images(render):
     render.exam.image_filename = 'sample_1280x800.jpg'
-    initial = Elements(render('fragments/exams.html', eager_exam_images=1)).tags['img']
+    render.exam.certification_name = 'Stored Credential'
+    render.exam.certification_id = 'stored-credential'
+    render.exam.certification_image_filename = 'badge_1040x1040.png'
+    initial_html = render('fragments/exams.html')
+    initial = Elements(initial_html).tags['img']
     fragment = Elements(render('fragments/exams.html')).tags['img']
-    assert initial[0]['loading'] == 'eager'
+    assert initial[0]['loading'] == 'lazy'
     assert fragment[0]['loading'] == 'lazy'
+    assert 'sample_1280x800.jpg' not in initial_html
+    assert initial[0]['src'].endswith('badge_1040x1040.png')
     html = render('exams.html', exam_query=ExamQueryDTO())
     assert 'data-masonry-options=' in html
     assert 'data-masonry=' not in html
@@ -240,7 +312,7 @@ def test_category_images_and_conditional_tagify_assets_render(render):
 
 
 def test_tag_filtered_exam_query_preserves_order_and_continuation(monkeypatch):
-    import shared_utils
+    import exam_utils
 
     cursor = {'pk': 'EXAM_TAG_COMBO#aws', 'sk': 'EXAM#123#second'}
     table = Mock(name='table')
@@ -250,15 +322,15 @@ def test_tag_filtered_exam_query_preserves_order_and_continuation(monkeypatch):
     table.meta.client.batch_get_item.return_value = {'Responses': {'app_test': [
         {'id': 'first'}, {'id': 'second'},
     ]}}
-    monkeypatch.setattr(shared_utils, 'get_dynamodb_table', lambda: table)
-    monkeypatch.setattr(shared_utils, 'exam_from_dynamodb', lambda item: SimpleNamespace(id=item['id'], offset=None))
-    exams = shared_utils.get_latest_exams_by_tags(ExamQueryDTO(tags=['aws'], limit=2))
+    monkeypatch.setattr(exam_utils, 'get_dynamodb_table', lambda: table)
+    monkeypatch.setattr(exam_utils, 'exam_from_dynamodb', lambda item: SimpleNamespace(id=item['id'], offset=None))
+    exams = exam_utils.get_latest_exams_by_tags(ExamQueryDTO(tags=['aws'], limit=2))
     assert [exam.id for exam in exams] == ['second', 'first']
     assert exams[-1].offset == encode_offset(cursor)
 
 
 def test_category_and_tag_filter_follows_sparse_pages(monkeypatch):
-    import shared_utils
+    import exam_utils
 
     cursor = encode_offset({'pk': 'EXAM#next', 'sk': 'META',
                             'exam_category_status_pk': 'EXAM#other#published', 'created_at': 123})
@@ -266,7 +338,7 @@ def test_category_and_tag_filter_follows_sparse_pages(monkeypatch):
         [SimpleNamespace(tags=['unrelated'], offset=cursor)],
         [SimpleNamespace(id='matching', tags=['aws'], offset=None)],
     ])
-    monkeypatch.setattr(shared_utils, 'get_latest_exams', fetch)
-    exams = shared_utils.get_exams(ExamQueryDTO(category='other', tags=['aws'], limit=2))
+    monkeypatch.setattr(exam_utils, 'get_latest_exams', fetch)
+    exams = exam_utils.get_exams(ExamQueryDTO(category='other', tags=['aws'], limit=2))
     assert [exam.id for exam in exams] == ['matching']
     assert fetch.call_count == 2

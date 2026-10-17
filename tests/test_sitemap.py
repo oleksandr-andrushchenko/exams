@@ -83,7 +83,7 @@ def test_sitemap_covers_all_pages_and_uses_record_dates(sitemap_context, monkeyp
     monkeypatch.setattr(api_utils, "verify_authorization", lambda *_: None)
     monkeypatch.setattr(api_utils, "is_prod", lambda: False)
     monkeypatch.setattr(api_utils, "submit_sitemap_to_search_engines", submissions.append)
-    monkeypatch.setattr(api_utils, "get_certifications", lambda: [SimpleNamespace(slug="credential")])
+    monkeypatch.setattr(api_utils, "get_certifications", lambda: [SimpleNamespace(id="credential")])
     monkeypatch.setattr(api_utils, "get_categories", lambda: [
         SimpleNamespace(slug="writing", published_exams_count=2),
         SimpleNamespace(slug="empty", published_exams_count=0),
@@ -150,11 +150,11 @@ def test_sitemap_covers_all_pages_and_uses_record_dates(sitemap_context, monkeyp
     assert "https://example.com/popular/second/exams" in urls
     assert "https://example.com/exams?category=writing" in urls
     assert not any("category=empty" in url for url in urls)
-    assert urls["https://example.com/@creator/one"] == "2024-01-02"
-    assert urls["https://example.com/@creator/two"] == "2024-01-03"
+    assert urls["https://example.com/exams/p1"] == "2024-01-02"
+    assert urls["https://example.com/exams/p2"] == "2024-01-03"
     assert question_calls == ["p1", "p2", "p3"]
-    assert urls["https://example.com/@creator/one/first-question"] == "2024-01-02"
-    assert urls["https://example.com/@creator/one/second-question"] == "2024-01-03"
+    assert urls["https://example.com/questions/q1"] == "2024-01-02"
+    assert urls["https://example.com/questions/q2"] == "2024-01-03"
     assert urls["https://example.com/questions/q3"] == "2024-01-02"
     assert urls["https://example.com/@creator"] == "2024-01-01"
     assert urls["https://example.com/users/u2"] is None

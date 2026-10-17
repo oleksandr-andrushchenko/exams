@@ -89,7 +89,7 @@ def test_session_includes_every_exam_question(monkeypatch):
         "get_questions",
         lambda _exam_id: questions,
     )
-    monkeypatch.setattr(session_utils, "get_exam", lambda _exam_id, _user: SimpleNamespace())
+    monkeypatch.setattr(session_utils, "get_exam", lambda _exam_id, _user: SimpleNamespace(id=_exam_id))
     monkeypatch.setattr(session_utils, "get_active_session", lambda _user_id: None)
     monkeypatch.setattr(
         session_utils,

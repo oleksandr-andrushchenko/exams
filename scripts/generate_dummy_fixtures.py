@@ -31,6 +31,7 @@ from question_utils import create_question
 from shared_utils import get_user_tag_subscription_for_tags
 from certification_dtos import CertificationDTO
 from certification_utils import create_certification, find_certification
+from certification_mutations import update_certification
 from shared_utils import to_kebab_case
 
 
@@ -165,9 +166,7 @@ def create_dummy_fixtures() -> None:
         certification = find_certification(to_kebab_case(dto.name))
         if certification is None:
             return create_certification(dto, root_user)
-        if dto.image_filename and certification.image_filename != dto.image_filename:
-            update_dynamodb_item(("CERTIFICATION", certification.slug), {"image_filename": dto.image_filename})
-            certification.image_filename = dto.image_filename
+        update_certification(certification, dto, root_user)
         return certification
 
     certifications = [
@@ -197,6 +196,15 @@ def create_dummy_fixtures() -> None:
             level="professional",
             official_url="https://cloud.google.com/learn/certification/cloud-architect",
             image_filename="5b027ec7-c018-4744-9eda-00abf75cf685_1111x712.png",
+        )),
+        ensure_certification(CertificationDTO(
+            name="Microsoft Certified: Azure Administrator Associate",
+            provider="Microsoft",
+            description="Manage Azure identities, governance, storage, compute, and virtual networks.",
+            category="operations",
+            level="associate",
+            official_url="https://learn.microsoft.com/en-us/credentials/certifications/azure-administrator/",
+            image_filename="6a5118c0-a073-483b-ac5b-79e0a554e703_988x494.png",
         )),
     ]
 

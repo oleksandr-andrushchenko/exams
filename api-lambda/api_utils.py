@@ -1,10 +1,12 @@
 from dataclasses import replace
 from html.parser import HTMLParser
-from urllib.parse import unquote, urlparse
+from urllib.parse import quote, unquote, urlparse
 from xml.etree.ElementTree import Element, SubElement, tostring
 
 from basic_dtos import ContactMessageDTO, FileDTO, ImageFileDTO
-from certification_utils import get_certification_by_id, get_certifications
+from certification_utils import get_certification, get_certifications
+from certification_mutations import exam_certification_fields
+from content_ids import make_content_id
 from exam_dtos import (
     ExamCommentDTO, ExamDTO, UpdateCategoryDTO, UpdateExamCommentDTO, UpdateExamDTO, UpdateExamImpressionDTO,
     UpdateExamStatusDTO, UpdateTagDTO,
@@ -16,10 +18,19 @@ from question_utils import (complete_question_status_sync, create_question, get_
                             synchronize_exam_questions)
 from redirect_dtos import UpsertRedirectDTO
 from search_engine_submissions import notify_search_engines, submit_sitemap_to_search_engines
+from exam_utils import (
+    Exam,
+    exam_from_dynamodb,
+    get_latest_exams,
+    get_latest_exams_by_tags,
+    find_exam,
+    find_exam_by_slug_follow_redirects,
+    get_exams,
+)
 from shared_utils import *
 from shared_utils import (
-    Category, Redirect, User, find_exam, find_exam_by_slug_follow_redirects, find_user_by_username_follow_redirects,
-    get_dynamodb_item, get_exams, get_static_base_url, get_tags, get_web_base_url, logger,
+    Category, Redirect, User, find_user_by_username_follow_redirects, get_dynamodb_item, get_static_base_url, get_tags,
+    get_web_base_url, logger,
 )
 from tag_subscription_dtos import TagSubscriptionDTO
 from user_dtos import (
@@ -332,7 +343,7 @@ def generate_sitemap(user: User, req) -> tuple[int, str]:
         for route in ("index", "tags", "certifications", "categories", "contacts", "policy", "rules", "terms", "earn"):
             yield get_url(req, route, True), None
         for certification in get_certifications():
-            yield get_url(req, "certification", True, slug=certification.slug), None
+            yield get_url(req, "certification", True, certification_id=certification.id), None
         for type_ in ExamQueryType:
             yield get_exams_url(req, type=type_, absolute=True), None
         for category in get_categories():
@@ -358,11 +369,7 @@ def generate_sitemap(user: User, req) -> tuple[int, str]:
                 for question in get_questions(exam.id):
                     if question.status != QuestionStatus.PUBLISHED:
                         continue
-                    if exam.user_slug and exam.slug:
-                        question_url = get_url(req, "question-by-slugs", True, user_slug=exam.user_slug,
-                                               exam_slug=exam.slug, question_slug=question.slug)
-                    else:
-                        question_url = get_url(req, "question-by-id", True, question_id=question.id)
+                    question_url = get_url(req, "question-by-id", True, question_id=question.id)
                     yield question_url, lastmod(question.updated_at, question.created_at)
             offset = exams[-1].offset
             if not offset:
@@ -635,7 +642,7 @@ def create_category(slug: str, name: str, description: str, cur_user: User, pare
     return category_from_dynamodb(slug, {**values, "pk": "CATEGORY", "sk": slug})
 
 
-def create_exam(exam_dto: ExamDTO, cur_user: User) -> Exam:
+def create_exam(exam_dto: ExamDTO, cur_user: User, *, exam_id: str | None = None) -> Exam:
     verify_authorization(cur_user, Permission.CREATE_EXAM)
 
     if cur_user.status == UserStatus.BANNED:
@@ -643,23 +650,21 @@ def create_exam(exam_dto: ExamDTO, cur_user: User) -> Exam:
 
     now = utc_now()
     status = ExamStatus.UNPUBLISHED
-    exam_id = str(uuid.uuid4())
+    exam_id = exam_id or make_content_id(exam_dto.title, fallback="exam")
     title = exam_dto.title
     description = exam_dto.description
     preview = description[:300]
     image_filename = exam_dto.image_filename
     tags = sanitize_tags(exam_dto.tags)
-    certification = get_certification_by_id(exam_dto.certification_id) if exam_dto.certification_id else None
+    certification = get_certification(exam_dto.certification_id) if exam_dto.certification_id else None
     category = certification.category if certification else "other"
     difficulty = CERTIFICATION_LEVEL_DIFFICULTIES.get(certification.level, "other") if certification else "other"
-    slug = to_kebab_case(title)
 
     transacts = []
 
     exam_item = {
         "id": exam_id,
         "title": title,
-        "exam_slug": slug,
         "user_id": cur_user.id,
         "user_name": cur_user.name,
         "description": description,
@@ -668,8 +673,7 @@ def create_exam(exam_dto: ExamDTO, cur_user: User) -> Exam:
         "certification_id": certification.id if certification else None,
         "exam_code": exam_dto.exam_code,
         "duration_minutes": exam_dto.duration_minutes,
-        "certification_slug": certification.slug if certification else None,
-        "certification_name": certification.name if certification else None,
+        **exam_certification_fields(certification),
         "difficulty": difficulty,
         "language": "en",
         "questions_count": 0,
@@ -694,8 +698,6 @@ def create_exam(exam_dto: ExamDTO, cur_user: User) -> Exam:
     add_dynamodb_user_update_transact(transacts, cur_user, deltas={
         "unpublished_exams_count": 1,
     })
-    # todo: should be unique in combination with username (cur_user, post)
-    add_dynamodb_put_transact(transacts, (f"EXAM_SLUG#{slug}", "META"), {"exam_id": exam_id}, new_pk_only=True)
 
     try:
         dynamodb_transact_write(transacts)
@@ -716,20 +718,22 @@ def update_exam(exam: Exam, update_exam_dto: UpdateExamDTO, cur_user: User) -> N
         raise UserBannedError()
 
     changes = update_exam_dto.get_changes(exam)
-    if not changes:
-        return
+    certification_id = changes.get("certification_id", exam.certification_id)
+    certification = get_certification(certification_id) if certification_id else None
+    for field, value in exam_certification_fields(certification).items():
+        if getattr(exam, field) != value:
+            changes[field] = value
 
     if "certification_id" in changes:
-        certification_id = changes["certification_id"]
-        certification = get_certification_by_id(certification_id) if certification_id else None
+        changes["certification_slug"] = None
         changes["certification_id"] = certification.id if certification else None
-        changes["certification_slug"] = certification.slug if certification else None
-        changes["certification_name"] = certification.name if certification else None
         changes["category"] = certification.category if certification else "other"
         changes["difficulty"] = (CERTIFICATION_LEVEL_DIFFICULTIES.get(certification.level, "other")
                                  if certification else "other")
     elif "category" in changes and exam.certification_id:
-        changes["category"] = get_certification_by_id(exam.certification_id).category
+        changes["category"] = certification.category
+    if not changes:
+        return
     if "category" in changes:
         get_category(changes["category"])
 
@@ -748,20 +752,6 @@ def update_exam(exam: Exam, update_exam_dto: UpdateExamDTO, cur_user: User) -> N
         new_title = changes["title"]
         if published_already and get_text_diff_percentage(old_title, new_title) > 10:
             changes["status"] = ExamStatus.UNPUBLISHED
-        old_slug = exam.slug
-        slug = to_kebab_case(new_title)
-        if old_slug != slug:
-            changes["exam_slug"] = slug
-            # Create redirect item so old slug resolves
-            redirect_item = {
-                "exam_slug": old_slug,
-                "redirect_to": slug,
-                "created_at": now
-            }
-            add_dynamodb_put_transact(transacts, (f"EXAM_REDIRECT#{old_slug}", "META"), redirect_item, new_pk_only=True)
-            # Create new slug lock
-            add_dynamodb_put_transact(transacts, (f"EXAM_SLUG#{slug}", "META"), {"exam_id": exam.id},
-                                      new_pk_only=True)
 
     old_description = exam.description
     if "description" in changes:
@@ -863,7 +853,6 @@ def create_exam_comment(exam: Exam, exam_comment_dto: ExamCommentDTO, cur_user: 
 
         "exam_id": exam.id,
         "exam_title": exam.title,
-        "comment_exam_slug": exam.slug,
         "exam_comment_pk": "EXAM_COMMENT",
         "exam_comment_user_pk": f"USER#{cur_user.id}",
 
@@ -1352,10 +1341,10 @@ def _notify_exam_search_engines(exam: Exam) -> None:
     from starlette.routing import Route
     from web_route_metadata import WEB_URL_ROUTES
 
-    name = "exam-by-slugs" if exam.user_slug else "exam"
-    params = {"user_slug": exam.user_slug, "exam_slug": exam.slug} if exam.user_slug else {"exam_id": exam.id}
+    name = "exam"
+    params = {"exam_id": exam.id}
     path = Route(WEB_URL_ROUTES[name], endpoint=lambda request: None, name=name).url_path_for(name, **params)
-    notify_search_engines(f"{get_web_base_url().rstrip('/')}{path}")
+    notify_search_engines(f"{get_web_base_url().rstrip('/')}{quote(str(path), safe='/@%')}")
 
 
 def handle_exam_published_event(event: ExamPublishedEvent) -> None:

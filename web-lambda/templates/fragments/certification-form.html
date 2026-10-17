@@ -135,7 +135,7 @@
 
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    handleFormSubmit("#certification-form", {{ (url('update-certification', slug=certification.slug, absolute=True) if certification else url('create-certification', absolute=True))|tojson }}, {
+    handleFormSubmit("#certification-form", {{ (url('update-certification', certification_id=certification.id, absolute=True) if certification else url('create-certification', absolute=True))|tojson }}, {
       method: "{{ 'PATCH' if certification else 'POST' }}",
       rules: {
         name: [{rule: "required"}, {rule: "minLength", value: 3}, {rule: "maxLength", value: 200}],

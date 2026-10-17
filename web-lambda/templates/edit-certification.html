@@ -5,7 +5,7 @@
 {% set layout_assets = {"validation": true} %}
 
 {% block breadcrumbs %}
-    {% with breadcrumbs = {"Home": url("index"), "Certifications": url("certifications"), certification.name: url("certification", slug=certification.slug), "Edit": None} %}
+    {% with breadcrumbs = {"Home": url("index"), "Certifications": url("certifications"), certification.name: url("certification", certification_id=certification.id), "Edit": None} %}
         {% include "fragments/breadcrumbs.html" %}
     {% endwith %}
 {% endblock %}

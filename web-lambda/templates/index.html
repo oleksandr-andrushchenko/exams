@@ -105,7 +105,7 @@
                 </a>
             </div>
             <div class="{{ {"def": 1, "md": 2, "lg": 4} | row_classes }} g-3" id="homepage-certifications">
-                {% for certification in (certifications | default([]))[:6] %}
+                {% for certification in certifications | default([]) %}
                     {% with certification_heading_level=3 %}
                         {% include "fragments/certification-card.html" %}
                     {% endwith %}
@@ -221,7 +221,7 @@
             {% if latest_exams %}
                 <div id="exams" class="{{ {"def": 1, "sm": 2, "lg": 3} | row_classes }} g-3 mb-2"
                      data-masonry-options='{"percentPosition": true }'>
-                    {% with exams=latest_exams, eager_exam_images=1,
+                    {% with exams=latest_exams,
                             exam_img_sizes={"1400px": "328px", "1200px": "288px", "992px": "444px", "768px": "324px", "default": "100vw"} %}
                         {% include "fragments/exams.html" %}
                     {% endwith %}

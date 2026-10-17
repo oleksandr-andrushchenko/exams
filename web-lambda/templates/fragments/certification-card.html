@@ -1,6 +1,6 @@
 <div class="col">
     <a class="card certification-card h-100 overflow-hidden text-decoration-none"
-       href="{{ url('certification', slug=certification.slug) }}">
+       href="{{ url('certification', certification_id=certification.id) }}">
         {% if certification.image_filename %}
             <img class="card-img-top" src="{{ static_url(certification.image_filename) }}"
                  alt="{{ certification.name }}" loading="lazy" decoding="async">

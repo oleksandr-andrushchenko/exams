@@ -55,7 +55,7 @@ def test_question_query_rejects_invalid_statuses_and_cross_status_cursors(status
 
 
 def test_full_exam_question_publication_batches_stay_under_transaction_limit(monkeypatch):
-    questions = [question_utils.Question(str(i), "exam-1", "owner", f"question-{i}", f"Question {i}", [], i, None)
+    questions = [question_utils.Question(str(i), "exam-1", "owner", f"Question {i}", [], i, None)
                  for i in range(65)]
     batches = []
     monkeypatch.setattr(question_utils, "get_questions", lambda exam_id: questions)
