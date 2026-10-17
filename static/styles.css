@@ -1,5 +1,5 @@
 body {
-    font-family: "Rethink Sans", sans-serif;
+    font-family: var(--bs-body-font-family);
     font-optical-sizing: auto;
     font-weight: 400;
     font-style: normal;
@@ -29,7 +29,9 @@ h6,
 .h3,
 .h4,
 .h5,
-.h6 {
+.h6,
+.navbar-brand {
+    font-family: var(--bs-heading-font-family);
     font-weight: 700;
 }
 
@@ -43,7 +45,6 @@ h6,
 
 .form-control.h1 {
     font-size: 2.5rem;
-    font-weight: 500;
 }
 
 .avatar-letter {
@@ -95,6 +96,9 @@ h6,
 
 /* Bootstrap handles layout and components; these rules define the shared visual theme. */
 :root {
+    --bs-font-sans-serif: "Lato", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --bs-body-font-family: var(--bs-font-sans-serif);
+    --bs-heading-font-family: "Montserrat", var(--bs-font-sans-serif);
     --bs-body-bg: #f6f8fc;
     --bs-body-color: #24324b;
     --bs-border-color: #dee5ef;

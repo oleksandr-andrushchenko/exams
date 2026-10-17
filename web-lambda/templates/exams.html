@@ -10,7 +10,8 @@
     (ExamStatus.REJECTED): {"title": "Rejected", "subtitle": "Rejected"}
 } %}
 
-{% set title = ([val_map[exam_query.type]["title"]] + (exam_query.tags if exam_query.tags else [site_about]) + [val_map[exam_query.status]["title"]] + ["Exams"]) | select | join(" ") | title %}
+{% set title = ([val_map[exam_query.type]["title"]] + exam_query.tags
+    + [val_map[exam_query.status]["title"], "Exams"]) | select | join(" ") | title %}
 {% set meta_robots = "noindex, follow" if exam_query.offset or exam_query.status != ExamStatus.PUBLISHED else "index, follow" %}
 {% set subtitle = ([val_map[exam_query.type]["subtitle"]]  + exam_query.tags + [val_map[exam_query.status]["subtitle"]] + ["Exams"]) | select | join(" ") | title %}
 {% set meta_title = title ~ " | " ~ site_name %}
@@ -191,7 +192,7 @@
                 {% include "fragments/tag-subscription.html" %}
             {% endwith %}
 
-            {% with eager_exam_images=1, h_tag_size=2,
+            {% with h_tag_size=2,
                 exam_img_sizes={"1400px": "196px", "1200px": "166px", "992px": "96px", "768px": "156px", "default": "100vw"} %}
                 {% include "fragments/exams.html" %}
             {% endwith %}
